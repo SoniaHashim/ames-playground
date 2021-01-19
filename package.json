@@ -2,9 +2,10 @@
   "name": "ames-playground",
   "version": "1.0.0",
   "description": "AMES svg playground ",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "server": "live-server"
+	"build": "npm run install && node run app.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
     "@svgdotjs/svg.js": "^3.0.16",
     "bootstrap": "^5.0.0-beta1",
     "bootstrap-icons": "^1.3.0",
-    "live-server": "^1.2.1"
+    "live-server": "^1.2.1",
+    "node-static": "^0.7.11"
   }
 }
