@@ -4,8 +4,8 @@
   "description": "AMES svg playground ",
   "main": "app.js",
   "scripts": {
-    "server": "live-server"
-	"build": "npm run install && node run app.js"
+    "server": "live-server",
+	"build": ""
   },
   "repository": {
     "type": "git",
