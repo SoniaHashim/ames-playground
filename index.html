@@ -5,39 +5,103 @@
 		<title>AMES Playground</title>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
 		<style>
-			body {
-				padding-top: 65px;
+
+			.nav-vertical-block {
+				padding-top: 3rem;
+			}
+
+			.vertical-block {
+				padding-top: 1rem;
+			}
+
+			.ames-text {
+				color: purple;
+			}
+
+			.toolbar {
+				justify-content: center;
+			}
+
+			.toolbar > * {
+				padding-top: .125rem;
+				padding-bottom: .125rem;
+			}
+
+			.btn-tool {
+				font-size: .5rem;
+				max-width: 4rem;
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
-			<nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-lg">
+			<nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-lg" style="height:2rem">
 				<div class="container-fluid">
-					<a class="navbar-brand" href="#">AMES</a>
-					<span class="navbar-text">A direct manipulation interface for animating multiple elements simultaneously.</span>
+					<a class="ames-text" href="#">AMES</a>
+					<span class="ames-text">Animating Multiple Elements Simultaneously</span>
 				</div>
 			</nav>
 		</div>
 
-		<div class="container-fluid min-vh-100" id="main">
-			<div class="row">
-				<div class="col-1" id="toolbar" style="">
-					<div class="btn-group-vertical">
-						<button type="button" class="btn btn-outline-dark" onclick="makeSquare()">Square</button>
-						<button type="button" class="btn btn-outline-dark">Dark</button>
-						<button type="button" class="btn btn-outline-dark">Dark</button>
-						<button type="button" class="btn btn-outline-dark">Dark</button>
-						<button type="button" class="btn btn-outline-dark">Dark</button>
+		<div class="container-fluid min-vh-100" id="main" style="background-color:lightcoral">
+
+			<div class="row nav-vertical-block" >
+				<div class="col-12" id="toolbars" style="background-color:orange">
+					<div class="row toolbar">
+						<div class="col-11 btn-group" id="toolbar-tools" style="background-color:gray">
+							<button type="button" class="btn btn-outline-dark btn-tool" onclick="makeSquare()">Square</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+						</div>
+						<div class="col-1 btn-group" id="toolbar-tools" style="background-color:lightpink">
+							<button type="button" class="btn btn-outline-dark btn-tool">Log</button>
+						</div>
+					</div>
+					<div class="row toolbar">
+						<div class="col-11 btn-group" id="toolbar-fx" style="background-color:gray">
+							<button type="button" class="btn btn-outline-dark btn-tool" onclick="makeSquare()">Square</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+						</div>
+						<div class="col-1 btn-group" id="toolbar-tools" style="background-color:lightpink">
+							<button type="button" class="btn btn-outline-dark btn-tool">Help</button>
+						</div>
 					</div>
 				</div>
-				<div class="col" id="canvas" style=""></div>
 			</div>
+
+
+			<div class="row vertical-block" style="background-color:green;">
+				<div class="col-9" id="env-animation" style="background-color:white">test</div>
+				<div class="col-3" id="sidebar" style="background-color:gray">
+					<div class="row"><div class="col-12" style="background-color:thistle">
+						player preview
+					</div></div>
+					<div class="row vertical-block"><div class="col-12" style="background-color:beige">
+						player controls
+					</div></div>
+					<div class="row vertical-block"><div class="col-12" style="background-color:steelblue">
+						sequence editor
+					</div></div>
+				</div>
+			</div>
+
+			<div class="row vertical-block toolbar" style="background-color:limegreen">
+				<div class="col-12" style="background-color:thistle">
+					timelines
+				</div>
+			</div>
+
+
 		</div>
 
 		<script src="./scripts/svg.js/dist/svg.min.js"></script>
 		<script src="./scripts/svg.draggable.js/dist/svg.draggable.js"></script>
 		<script src="./scripts/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-		<script src="./scripts/ames.js"></script>
+		<!-- <script src="./scripts/ames.js"></script> -->
 	</body>
 </html>
