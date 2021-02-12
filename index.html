@@ -15,10 +15,10 @@
 			}
 
 			.ames-text {
-				color: purple;
+				color: lavender;
 			}
 
-			.toolbar {
+			.horizontal-distribute {
 				justify-content: center;
 			}
 
@@ -29,7 +29,12 @@
 
 			.btn-tool {
 				font-size: .5rem;
-				max-width: 4rem;
+				min-width: 5rem;
+				max-width: 5rem;
+			}
+
+			svg {
+				border: solid .125rem;
 			}
 		</style>
 	</head>
@@ -37,7 +42,7 @@
 		<div class="container">
 			<nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-lg" style="height:2rem">
 				<div class="container-fluid">
-					<a class="ames-text" href="#">AMES</a>
+					<span class="ames-text">AMES</span>
 					<span class="ames-text">Animating Multiple Elements Simultaneously</span>
 				</div>
 			</nav>
@@ -47,9 +52,11 @@
 
 			<div class="row nav-vertical-block" >
 				<div class="col-12" id="toolbars" style="background-color:orange">
-					<div class="row toolbar">
+					<div class="row horiontal-distribute">
 						<div class="col-11 btn-group" id="toolbar-tools" style="background-color:gray">
 							<button type="button" class="btn btn-outline-dark btn-tool" onclick="makeSquare()">Square</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" onclick="makeSphere()">Sphere</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" onclick="makeRectangle()">Rectangle</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
@@ -60,12 +67,16 @@
 						</div>
 					</div>
 					<div class="row toolbar">
-						<div class="col-11 btn-group" id="toolbar-fx" style="background-color:gray">
-							<button type="button" class="btn btn-outline-dark btn-tool" onclick="makeSquare()">Square</button>
-							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
-							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
-							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
-							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
+						<div class="col-11" id="toolbar-fx" style="background-color:gray">
+							<div class="btn-group" id="toolbar-mode-element" style="background-color:gray">
+								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-element" onclick="changeMode('ELEMENT')">Element</button>
+								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-list" onclick="changeMode('LIST')">List</button>
+							</div>
+							<div class="btn-group" id="toolbar-mode-edit" style="background-color:gray">
+								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-shape" onclick="changeEditMode('SHAPE')">Shape</button>
+								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-constraint" onclick="changeEditMode('CONSTRAINT')">Constraint</button>
+								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-animate" onclick="changeEditMode('ANIMATE')">Animation</button>
+							</div>
 						</div>
 						<div class="col-1 btn-group" id="toolbar-tools" style="background-color:lightpink">
 							<button type="button" class="btn btn-outline-dark btn-tool">Help</button>
@@ -76,9 +87,11 @@
 
 
 			<div class="row vertical-block" style="background-color:green;">
-				<div class="col-9" id="env-animation" style="background-color:white">test</div>
+				<div class="col-9" style="background-color:beige">
+					<svg id="env-animation" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" width="980" height="595"></svg>
+				</div>
 				<div class="col-3" id="sidebar" style="background-color:gray">
-					<div class="row"><div class="col-12" style="background-color:thistle">
+					<div class="row horizontal-distribute"><div class="col-12" style="background-color:thistle">
 						player preview
 					</div></div>
 					<div class="row vertical-block"><div class="col-12" style="background-color:beige">
@@ -92,7 +105,7 @@
 
 			<div class="row vertical-block toolbar" style="background-color:limegreen">
 				<div class="col-12" style="background-color:thistle">
-					timelines
+					<svg id="env-sequence" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" width="1320" height="200"></svg>
 				</div>
 			</div>
 
@@ -100,8 +113,11 @@
 		</div>
 
 		<script src="./scripts/svg.js/dist/svg.min.js"></script>
-		<script src="./scripts/svg.draggable.js/dist/svg.draggable.js"></script>
+		<script src="./scripts/svg.draggable.js/dist/svg.draggable.min.js"></script>
+		<script src="./scripts/svg.topath.js/dist/svg.topath.min.js"></script>
+		<script src="./scripts/svg.topoly.js/dist/svg.topoly.min.js"></script>
 		<script src="./scripts/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-		<!-- <script src="./scripts/ames.js"></script> -->
+		<script src="./scripts/ames_mode.js"></script>
+		<script src="./scripts/ames.js"></script>
 	</body>
 </html>
