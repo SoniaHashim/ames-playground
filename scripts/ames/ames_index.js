@@ -9,7 +9,7 @@
 
 console.log("Growth mindset & learning opportunities")
 paper.install(window);
-import {AMES} from './ames/ames.js'
+import {AMES} from './ames.js'
 
 window.AMES = AMES;
 

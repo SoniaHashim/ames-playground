@@ -32,5 +32,11 @@
     "live-server": "^1.2.1",
     "node-static": "^0.7.11",
     "paper": "^0.12.11"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.12.17",
+    "@babel/core": "^7.12.17",
+    "@babel/plugin-proposal-class-properties": "^7.12.13",
+    "@babel/preset-env": "^7.12.17"
   }
 }

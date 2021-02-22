@@ -247,7 +247,6 @@ export class PropertyBox {
 			// ux feedback: change to active color to indicate clickable
 			p_text.on('mouseenter', (e) => {
 				p_text.fillColor = utils.ACTIVE_COLOR;
-				console.log("mousenter")
 			});
 			p_text.on('mouseleave', (e) => {
 				// ux feedback: if the current property is not active show the object is not about to be clicked
@@ -264,8 +263,13 @@ export class PropertyBox {
 		});
 		this.box.addChild(this.close_text)
 		this.close_text.on('click', (e) => {
-			console.log(this)
 			this.box.visible = false;
+			// Deactivate previous active property
+			if (this.active_prop) {
+				this.property_callbacks[this.active_prop](e, this.parent, this.elisteners, {'activate': false});
+				// ux feedback: show inactive color to indicate property is deactivated
+				this.props_text[this.active_prop].fillColor = utils.INACTIVE_COLOR;
+			}
 		});
 		this.close_text.on('mouseenter', (e) => {
 			this.close_text.fillColor = utils.ACTIVE_COLOR;
