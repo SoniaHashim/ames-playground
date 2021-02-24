@@ -4,7 +4,7 @@
   "description": "AMES svg playground ",
   "main": "app.js",
   "scripts": {
-    "server": "live-server",
+    "start": "live-server",
     "build": "./node_modules/.bin/babel js/ames --out-dir js/lib --presets=@babel/env && browserify js/lib/ames_index.js -o dist/js/bundle.js"
   },
   "repository": {
@@ -29,6 +29,7 @@
     "@svgdotjs/svg.topoly.js": "^1.0.3",
     "bootstrap": "^5.0.0-beta1",
     "bootstrap-icons": "^1.3.0",
+    "browserify": "^17.0.0",
     "live-server": "^1.2.1",
     "node-static": "^0.7.11",
     "paper": "^0.12.11"
