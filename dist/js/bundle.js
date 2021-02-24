@@ -200,6 +200,8 @@ var PropertyBox = /*#__PURE__*/function () {
 
     _defineProperty(this, "elisteners", {});
 
+    _defineProperty(this, "cb_handlers", {});
+
     _defineProperty(this, "property_callbacks", {
       'Position': this.callback_position,
       'Scale': this.callback_scale
@@ -327,14 +329,12 @@ var PropertyBox = /*#__PURE__*/function () {
     this.close_text.on('mouseleave', function (e) {
       _this.close_text.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
     }); // Add draggablity to box
-    // this.dragBox = false;
-    // this.rect.on("click", (e) => {
-    // 	this.dragBox = !this.dragBox;
-    // 	console.log("click on box: ", e.point);
-    // });
 
+    this.rect.on("mousedown", function (e) {
+      _this.rect_offset = _this.rect.position.subtract(e.point);
+    });
     this.rect.on("mousedrag", function (e) {
-      _this.box.position = e.point;
+      _this.box.position = e.point.add(_this.rect_offset);
     });
   }
 
@@ -343,67 +343,56 @@ var PropertyBox = /*#__PURE__*/function () {
     value: // Display variables
     // Control variables
     // Store handlers for callbacks to remove as needed
-    // callback_position(e, shape, elisteners, opt)
+    // callback_position(e, shape, cb_handlers, opt)
     // Description: Callback to manipulate position property
-    function callback_position(e, shape, elisteners, opt) {
-      console.log(shape);
+    function callback_position(e, shape, cb_handlers, opt) {
       console.log("callback_position: ", shape.name);
-      var clicked = false;
-      var offset = new Point(0, 0); // Callback to follow mouse
+      var offset;
 
       var cb_position_follow = function cb_position_follow(e) {
-        if (clicked) {
-          var new_pos = _utils.AMES_Utils.get_e_point(e);
+        shape.set_pos(e.point.add(offset));
+      };
 
-          shape.set_pos(new_pos.add(offset));
-        }
-      }; // Callback to toggle follow if clicked
-
-
-      var cb_position_toggle = function cb_position_toggle(e) {
-        clicked = !clicked; // calculate offset to shape
-
+      var cb_position_get_offset = function cb_position_get_offset(e) {
         var pos = new Point(shape.pos.x, shape.pos.y);
-
-        var click_pos = _utils.AMES_Utils.get_e_point(e.event);
-
+        var click_pos = e.point;
         offset = pos.subtract(click_pos);
-      }; // Activate by clicking on shape
+      };
 
+      var drag_event = e.event.type.indexOf('mouse') != -1 ? "mousedrag" : "touchmove";
+      var trigger_event = e.event.type.indexOf('mouse') != -1 ? "mousedown" : "touchstart";
 
       if (opt.activate) {
-        // Clicking on the shape toggles being able to change the property
-        shape.poly.on("click", cb_position_toggle);
-        elisteners['cb_position_toggle'] = cb_position_toggle; // If clicked, the shape follows the mouse
-
-        ames.canvas.addEventListener("mousemove", cb_position_follow);
-        elisteners['cb_position_follow'] = cb_position_follow;
-        console.log(elisteners);
+        shape.poly.on("mousedown", cb_position_get_offset);
+        cb_handlers['cb_position_get_offset'] = cb_position_get_offset;
+        shape.poly.on(drag_event, cb_position_follow);
+        cb_handlers['cb_position_follow'] = cb_position_follow;
       } else {
-        // Remove event listeners
-        if (elisteners.hasOwnProperty('cb_position_toggle')) {
-          shape.poly.off("click", elisteners['cb_position_toggle']);
-          delete elisteners['cb_position_toggle'];
+        // Remove listeners
+        if (cb_handlers.hasOwnProperty('cb_position_follow')) {
+          shape.poly.off(drag_event, cb_handlers['cb_position_follow']);
+          delete cb_handlers['cb_position_follow'];
         }
 
-        if (elisteners.hasOwnProperty('cb_position_follow')) {
-          ames.canvas.removeEventListener("mousemove", elisteners['cb_position_follow']);
-          delete elisteners['cb_position_follow'];
+        if (cb_handlers.hasOwnProperty('cb_position_get_offset')) {
+          shape.poly.off("mousedown", cb_handlers['cb_position_get_offset']);
+          delete cb_handlers['cb_position_get_offset'];
         }
-
-        console.log(elisteners);
       }
-    }
+    } // callback_scale(e, shape, cb_handlers, opt)
+    // Description: Callback to manipulate scale property
+
   }, {
     key: "callback_scale",
-    value: function callback_scale(e, shape, elisteners, opt) {
+    value: function callback_scale(e, shape, cb_handlers, opt) {
       console.log("callback_scale: ", shape.name);
       var cx = shape.pos.x;
       var cy = shape.pos.y;
-      var line;
+      var line; // If the line exists remove it
 
-      if (elisteners.scale_line) {
-        line = elisteners.scale_line;
+      if (cb_handlers.scale_line) {
+        cb_handlers.scale_line.remove();
+        delete cb_handlers['scale_line'];
       } else {
         line = new Path.Line({
           from: [cx, cy],
@@ -412,7 +401,7 @@ var PropertyBox = /*#__PURE__*/function () {
           opacity: 0.5,
           visible: false
         });
-        elisteners.scale_line = line;
+        cb_handlers.scale_line = line;
       }
 
       var activated = false;
@@ -451,6 +440,8 @@ var PropertyBox = /*#__PURE__*/function () {
 
 
       var cb_scale_update = function cb_scale_update(e) {
+        console.log("dragEvent");
+
         if (activated) {
           endp = _utils.AMES_Utils.get_e_point(e);
           line.segments[0].point = new Point(cx, cy);
@@ -462,38 +453,32 @@ var PropertyBox = /*#__PURE__*/function () {
             pf = f;
           }
         }
-      }; // Activate by clicking on shape
+      };
 
+      var move_event = e.event.type.indexOf('mouse') != -1 ? "mousemove" : "touchmove";
+      var trigger_event = e.event.type.indexOf('mouse') != -1 ? "mousedown" : "touchstart"; // Activate by clicking on shape
 
       if (opt.activate) {
         // Add event listener for clicks
-        ames.canvas.addEventListener("click", cb_scale_click);
-        elisteners['cb_scale_click'] = cb_scale_click; // Add event listener to scale line
+        ames.canvas.addEventListener(trigger_event, cb_scale_click);
+        cb_handlers['cb_scale_click'] = cb_scale_click; // Add event listener to scale line
 
-        ames.canvas.addEventListener("mousemove", cb_scale_update);
-        elisteners['cb_scale_update'] = cb_scale_update;
-        console.log(elisteners);
+        ames.canvas.addEventListener(move_event, cb_scale_update);
+        cb_handlers['cb_scale_update'] = cb_scale_update;
+        console.log(cb_handlers);
       } else {
         // Deactivate by removing event listeners
-        console.log(elisteners);
-
-        if (elisteners.hasOwnProperty('cb_scale_click')) {
-          ames.canvas.removeEventListener("click", elisteners['cb_scale_click']);
-          delete elisteners['cb_scale_click'];
+        if (cb_handlers.hasOwnProperty('cb_scale_click')) {
+          ames.canvas.removeEventListener(trigger_event, cb_handlers['cb_scale_click']);
+          delete cb_handlers['cb_scale_click'];
         }
 
-        if (elisteners.hasOwnProperty('cb_scale_update')) {
-          ames.canvas.removeEventListener("mousemove", elisteners['cb_scale_update']);
-          delete elisteners['cb_scale_update'];
-        } // Remove line
-
-
-        if (elisteners.hasOwnProperty('scale_line')) {
-          elisteners['scale_line'].remove();
-          delete elisteners['scale_line'];
+        if (cb_handlers.hasOwnProperty('cb_scale_update')) {
+          ames.canvas.removeEventListener(move_event, cb_handlers['cb_scale_update']);
+          delete cb_handlers['cb_scale_update'];
         }
 
-        console.log(elisteners);
+        console.log(cb_handlers);
       }
     }
   }, {

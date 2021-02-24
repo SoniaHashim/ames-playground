@@ -42,22 +42,22 @@ export class PropertyBox {
 			offset = pos.subtract(click_pos);
 		}
 
-		let move_event = (e.event.type.indexOf('mouse') != -1) ? "mousemove" : "touchmove";
+		let drag_event = (e.event.type.indexOf('mouse') != -1) ? "mousedrag" : "touchmove";
 		let trigger_event = (e.event.type.indexOf('mouse') != -1) ? "mousedown" : "touchstart";
 
 		if (opt.activate) {
-			shape.poly.on(trigger_event, cb_position_get_offset);
+			shape.poly.on("mousedown", cb_position_get_offset);
 			cb_handlers['cb_position_get_offset'] = cb_position_get_offset;
-			shape.poly.on(move_event, cb_position_follow);
+			shape.poly.on(drag_event, cb_position_follow);
 			cb_handlers['cb_position_follow'] = cb_position_follow;
 		} else {
 			// Remove listeners
 			if (cb_handlers.hasOwnProperty('cb_position_follow')) {
-				shape.poly.off(move_event, cb_handlers['cb_position_follow']);
+				shape.poly.off(drag_event, cb_handlers['cb_position_follow']);
 				delete cb_handlers['cb_position_follow'];
 			}
 			if (cb_handlers.hasOwnProperty('cb_position_get_offset')) {
-				shape.poly.off(trigger_event, cb_handlers['cb_position_get_offset']);
+				shape.poly.off("mousedown", cb_handlers['cb_position_get_offset']);
 				delete cb_handlers['cb_position_get_offset'];
 			}
 		}
