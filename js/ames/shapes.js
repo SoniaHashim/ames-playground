@@ -84,7 +84,7 @@ export class Shape {
 			// On 1st click, set the center of the circle
 			let cb_make_circle_on_click = (e) => {
 				this.set_pos( utils.get_e_point(e));
-				this.poly.visible = true; 
+				this.poly.visible = true;
 
 				// Remove crosshair cursor
 				ames.canvas.style.cursor = 'default';
@@ -122,7 +122,7 @@ export class Circle extends Shape {
 		this.poly = new Path.Circle({
 			center: [this.pos.x, this.pos.y],
 			radius: 50,
-			fillColor: 'pink',
+			fillColor: 'cornflowerblue',
 			visible: false
 		});
 		this.poly.fillColor = 'pink';
