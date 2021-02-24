@@ -102,19 +102,7 @@ export class Shape {
 // ---------------------------------------------------------------------------
 // Description: Implementation of a circle
 export class Circle extends Shape {
-	name = "Circle"
-
-	// // Draw the shape
-	// draw_shape() {
-	// 	// Visual properties
-	// 	this.poly.position = new Point(this.pos.x, this.pos.y);
-	// 	// Make visible
-	// 	this.poly.visible = true;
-	// }
-
-	// is_inside(p)
-	// Description: checks if p is within the radius of the circle
-	// TODO implement
+	name = "Circle";
 
 	constructor() {
 		super();
@@ -125,17 +113,25 @@ export class Circle extends Shape {
 			fillColor: 'cornflowerblue',
 			visible: false
 		});
-		this.poly.fillColor = 'pink';
-		this.poly.visible = false;
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
 
 		// On double click launch properties editor
-		this.poly.on('doubleclick', e => {
-			console.log("double click on ", this.name);
-			// Open shape editor
-			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-				this.visual_prop_box.show();
+		this.latest_tap;
+		this.poly.on('click', e => {
+			console.log("tap on ", this.name);
+			let now = new Date().getTime();
+			if (this.latest_tap) {
+				let time_elapsed = now - this.latest_tap;
+				// Double tap
+				if (time_elapsed < 600 && time_elapsed > 0) {
+					console.log("double tap on ", this.name);
+					// In Shape mode, open shape editor
+					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+						this.visual_prop_box.show();
+					}
+				}
 			}
+			this.latest_tap = new Date().getTime();
 		});
 	}
 }
