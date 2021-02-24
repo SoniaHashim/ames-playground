@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "server": "live-server",
-    "build": ""
+    "build": "./node_modules/.bin/babel js/ames --out-dir js/lib --presets=@babel/env && browserify js/lib/ames_index.js -o dist/js/bundle.js"
   },
   "repository": {
     "type": "git",

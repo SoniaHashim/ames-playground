@@ -39,15 +39,17 @@
 
 			#env-animation {
 				width: 100%;
-				height: 595px;
+				height: 550px;
 				border: solid .125rem;
 			}
 		</style>
 	</head>
 	<body>
-		<script src="./scripts/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-		<script src="./scripts/paper/dist/paper-full.min.js"></script>
-		<!-- <script type="module" src="./scripts/lib/ames_index.js"></script> -->
+		<!-- <script src="./js/bootstrap.bundle.min.js"></script>
+		<script src="./js/paper-full.min.js"></script> -->
+		<script src="./js/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+		<script src="./js/paper/dist/paper-full.min.js"></script>
+
 		<div class="container">
 			<nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-lg" style="height:2rem">
 				<div class="container-fluid">
@@ -115,11 +117,12 @@
 
 			<div class="row vertical-block toolbar" style="background-color:limegreen">
 				<div class="col-12" style="background-color:thistle">
-					<svg id="env-sequence" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" height="200" width="100%" ></svg>
+					<svg id="env-sequence" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" height="150" width="100%" ></svg>
 				</div>
 			</div>
 
-			<script src="./scripts/bundle.js"></script>
+			<!-- <script src="./js/bundle.js"></script> -->
+			<script type="module" src="./js/ames/ames_index.js"></script>
 		</div>
 	</body>
 </html>
