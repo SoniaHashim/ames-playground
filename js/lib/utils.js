@@ -37,6 +37,47 @@ var AMES_Utils = /*#__PURE__*/function () {
     value: function lengthsq(x1, y1, x2, y2) {
       return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }
+  }, {
+    key: "is_active",
+    value: function is_active(b) {
+      var btn = this.get_button(b);
+      if (btn) return btn.style.backgroundColor == this.ACTIVE_COLOR;
+    }
+  }, {
+    key: "deactivate",
+    value: function deactivate(b) {
+      var btn = this.get_button(b);
+      if (btn) btn.style.backgroundColor = null;
+    }
+  }, {
+    key: "activate",
+    value: function activate(b) {
+      var btn = this.get_button(b);
+      console.log(btn);
+      if (btn) btn.style.backgroundColor = this.ACTIVE_COLOR;
+    } // get_buttons(b)
+    // Returns the button given the value of the button b if it's defined in a btn list
+
+  }, {
+    key: "get_button",
+    value: function get_button(b) {
+      console.log("get_button: ", b);
+
+      for (var i = 0; i < this.btns.length; i++) {
+        var btn_list = this.btns[i];
+
+        if (btn_list.hasOwnProperty(b)) {
+          return document.getElementById(btn_list[b]);
+        }
+      }
+
+      return null;
+    }
+  }, {
+    key: "cb_canvas_crosshair",
+    value: function cb_canvas_crosshair(e) {
+      ames.canvas.style.cursor = 'crosshair';
+    }
   }]);
 
   return AMES_Utils;
@@ -55,3 +96,9 @@ _defineProperty(AMES_Utils, "mode_btns", {
   'ELEMENT': 'btn-mode-element',
   'LIST': 'btn-mode-list'
 });
+
+_defineProperty(AMES_Utils, "shape_btns", {
+  'Circle': 'btn-shape-circle'
+});
+
+_defineProperty(AMES_Utils, "btns", [AMES_Utils.mode_btns, AMES_Utils.shape_btns]);

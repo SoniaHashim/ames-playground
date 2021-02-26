@@ -11,7 +11,7 @@ var _ames = require("./ames.js");
 // ---------------------------------------------------------------------------
 console.log("Growth mindset & learning opportunities");
 paper.install(window);
-window.AMES = _ames.AMES; // AMES set-up phase 1 before DOM is ready
+window.AMES = new _ames.AMES(); // AMES set-up phase 1 before DOM is ready
 
 _ames.AMES.change_mode('ELEMENT');
 
@@ -41,4 +41,5 @@ window.onload = function () {
 
   window.testpath = path;
   view.draw();
+  console.log("Shape: ", Shape);
 };

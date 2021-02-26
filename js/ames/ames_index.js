@@ -11,7 +11,7 @@ console.log("Growth mindset & learning opportunities")
 paper.install(window);
 import {AMES} from './ames.js'
 
-window.AMES = AMES;
+window.AMES = new AMES();
 
 // AMES set-up phase 1 before DOM is ready
 AMES.change_mode('ELEMENT');
@@ -41,4 +41,6 @@ window.onload = function() {
 	// Draw the view now:
 	window.testpath = path;
 	view.draw();
+
+	console.log("Shape: ", Shape);
 }

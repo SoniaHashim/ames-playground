@@ -29,20 +29,71 @@ var shapes = [];
 var AMES = /*#__PURE__*/function () {
   function AMES() {
     _classCallCheck(this, AMES);
+
+    _defineProperty(this, "shapes", []);
   }
 
-  _createClass(AMES, null, [{
-    key: "make_sphere",
-    value: // changeEditMode(ux_mode)
-    // ------------------------------------------------------------------------
-    // Description: Toggles mode from ELEMENT / LIST using UX buttons.
-    // changeMode(ux_mode)
-    // ------------------------------------------------------------------------
-    // Description: Toggles mode from SHAPE / CONSTRAINT / ANIMATION using UX buttons.
-    function make_sphere(s) {
-      console.log('makeSphere');
-      var c = new _shapes.Circle();
-      c.make_shape();
+  _createClass(AMES, [{
+    key: "make_circle",
+    value: function make_circle(opt) {
+      var _this = this;
+
+      var b = "Circle";
+      opt = opt || {}; // If the button is active, deactivate it
+
+      if (_utils.AMES_Utils.is_active(b) || opt.deactivate) {
+        console.log('makeSphere - deactivate');
+
+        _utils.AMES_Utils.deactivate(b); // Reset cursor
+
+
+        ames.canvas.style.cursor = null;
+        ames.canvas.onclick = null;
+      } else {
+        console.log('makeSphere - activate');
+
+        _utils.AMES_Utils.activate(b);
+
+        ames.canvas.style.cursor = 'crosshair';
+        var c = new _shapes.AMES_Circle(); // Callback to make circle on click
+
+        var cb_make_circle = function cb_make_circle(e) {
+          if (c.poly && !c.is_made) {
+            c.set_pos(_utils.AMES_Utils.get_e_point(e));
+            c.poly.visible = true;
+
+            _this.shapes.push(c); // reset c
+
+
+            c = new _shapes.AMES_Circle();
+          }
+        };
+
+        ames.canvas.onclick = cb_make_circle;
+      }
+    }
+  }, {
+    key: "make_path",
+    value: function make_path(opt) {
+      var b = 'Path';
+      opt = opt || {};
+
+      if (_utils.AMES_Utils.is_active(b) || opt.deactivate) {
+        console.log('make_path - deactivate'); // Reset cursor
+
+        ames.canvas.style.cursor = null;
+        ames.canvas.onclick = null;
+      } else {
+        console.log('make_path - deactivate');
+        ames.canvas.style.cursor = 'crosshair'; // let x = new AMES_Path();
+
+        var cb_make_path = function cb_make_path(e) {
+          // reset on double click
+          console.log(e.detail);
+        };
+
+        ames.canvas.onclick = cb_make_path;
+      }
     }
   }]);
 

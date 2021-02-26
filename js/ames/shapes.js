@@ -15,10 +15,11 @@ let cb_canvas_crosshair = (e) => {
 // Class: Shape
 // ----------------------------------------------------------------------------
 // Description: Basic shape representation with visual & temporal properties
-export class Shape {
+export class AMES_Shape {
 	// Display properties including name, visibility, layer
 	name = "Shape"
 	visible = false;
+	is_made = false;
 	// Visual Properties: position, scale, rotate, stroke w, stroke c, fill
 	pos = {x: ames.canvas_cy, y: ames.canvas_cy};
 	scale = {x: 1, y: 1};
@@ -73,6 +74,52 @@ export class Shape {
 		}
 		return;
 	}
+}
+
+// Class: Circle
+// ---------------------------------------------------------------------------
+// Description: Implementation of a circle
+export class AMES_Circle extends AMES_Shape {
+	name = "Circle";
+
+	constructor() {
+		super();
+		// TODO change to object constructor
+		this.poly = new Shape.Circle({
+			center: [this.pos.x, this.pos.y],
+			radius: 50,
+			fillColor: 'cornflowerblue',
+			visible: false
+		});
+		this.visual_prop_box = new PropertyBox(this, this.visual_props);
+
+		// On double click launch properties editor
+		// this.latest_tap;
+		this.poly.on('click', e => {
+			console.log("tap on ", this.name);
+			console.log(e.event.detail);
+			if (e.event.detail >= 2) {
+				console.log("double tap on ", this.name);
+				// In Shape mode, open shape editor
+				if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+					this.visual_prop_box.show();
+				}
+			}
+			// let now = new Date().getTime();
+			// if (this.latest_tap) {
+			// 	let time_elapsed = now - this.latest_tap;
+			// 	// Double tap
+			// 	if (time_elapsed < 600 && time_elapsed > 0) {
+			// 		console.log("double tap on ", this.name);
+			// 		// In Shape mode, open shape editor
+			// 		if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+			// 			this.visual_prop_box.show();
+			// 		}
+			// 	}
+			// }
+			// this.latest_tap = new Date().getTime();
+		});
+	}
 
 	// make_shape
 	// Description: Creates a new shape
@@ -82,56 +129,36 @@ export class Shape {
 			// Show crosshair cursor
 			ames.canvas.addEventListener('mouseover', cb_canvas_crosshair);
 			// On 1st click, set the center of the circle
-			let cb_make_circle_on_click = (e) => {
+			let cb_make_shape_on_click = (e) => {
 				this.set_pos( utils.get_e_point(e));
 				this.poly.visible = true;
+				this.is_made = true;
+				// Fire a is made signal to reset
 
 				// Remove crosshair cursor
 				ames.canvas.style.cursor = 'default';
 				ames.canvas.removeEventListener('mouseover', cb_canvas_crosshair);
 
 				// Remove make circle listener
-				ames.canvas.removeEventListener('click', cb_make_circle_on_click);
+				ames.canvas.removeEventListener('click', cb_make_shape_on_click);
 			}
-			ames.canvas.addEventListener('click', cb_make_circle_on_click);
+			ames.canvas.addEventListener('click', cb_make_shape_on_click);
 		}
 	}
 }
 
-// Class: Circle
+// Class: Path
 // ---------------------------------------------------------------------------
-// Description: Implementation of a circle
-export class Circle extends Shape {
-	name = "Circle";
+// Description: Implementation of a path
+export class AMES_PATH extends AMES_Shape {
+	name = "Path";
 
 	constructor() {
 		super();
-		// TODO change to object constructor
-		this.poly = new Path.Circle({
-			center: [this.pos.x, this.pos.y],
-			radius: 50,
-			fillColor: 'cornflowerblue',
-			visible: false
-		});
-		this.visual_prop_box = new PropertyBox(this, this.visual_props);
-
-		// On double click launch properties editor
-		this.latest_tap;
-		this.poly.on('click', e => {
-			console.log("tap on ", this.name);
-			let now = new Date().getTime();
-			if (this.latest_tap) {
-				let time_elapsed = now - this.latest_tap;
-				// Double tap
-				if (time_elapsed < 600 && time_elapsed > 0) {
-					console.log("double tap on ", this.name);
-					// In Shape mode, open shape editor
-					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-						this.visual_prop_box.show();
-					}
-				}
-			}
-			this.latest_tap = new Date().getTime();
-		});
 	}
+
+	make_shape() {
+		console.log("override");
+	}
+
 }

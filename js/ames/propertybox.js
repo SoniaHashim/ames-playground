@@ -42,7 +42,7 @@ export class PropertyBox {
 			offset = pos.subtract(click_pos);
 		}
 
-		let drag_event = "mousedrag"; 
+		let drag_event = "mousedrag";
 		let trigger_event = (e.event.type.indexOf('mouse') != -1) ? "mousedown" : "touchstart";
 
 		if (opt.activate) {

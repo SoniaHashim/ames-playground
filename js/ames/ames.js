@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------
 
 import {AMES_Utils as utils} from './utils.js'
-import {Shape, Circle} from './shapes.js'
+import {AMES_Shape, AMES_Circle} from './shapes.js'
 
 // Globals for ames
 window.ames = {};
@@ -19,6 +19,7 @@ ames.canvas_cy;
 let shapes = [];
 
 export class AMES {
+	shapes = [];
 
 	// changeEditMode(ux_mode)
 	// ------------------------------------------------------------------------
@@ -75,9 +76,57 @@ export class AMES {
 		}
 	}
 
-	static make_sphere(s) {
-		console.log('makeSphere');
-		let c = new Circle();
-		c.make_shape();
+
+	make_circle(opt) {
+		let b = "Circle";
+		opt = opt || {};
+		// If the button is active, deactivate it
+		if (utils.is_active(b) || opt.deactivate) {
+			console.log('makeSphere - deactivate');
+			utils.deactivate(b);
+			// Reset cursor
+			ames.canvas.style.cursor = null;
+			ames.canvas.onclick = null;
+		} else {
+			console.log('makeSphere - activate');
+			utils.activate(b);
+			ames.canvas.style.cursor = 'crosshair';
+			let c = new AMES_Circle();
+			// Callback to make circle on click
+			let cb_make_circle = (e) => {
+				if (c.poly && !c.is_made) {
+					c.set_pos(utils.get_e_point(e));
+					c.poly.visible = true;
+					this.shapes.push(c);
+
+					// reset c
+					c = new AMES_Circle;
+				}
+			}
+			ames.canvas.onclick = cb_make_circle;
+		}
 	}
+
+	make_path(opt) {
+		let b = 'Path';
+		opt = opt || {};
+		if (utils.is_active(b) || opt.deactivate) {
+			console.log('make_path - deactivate');
+			// Reset cursor
+			ames.canvas.style.cursor = null;
+			ames.canvas.onclick = null;
+		} else {
+			console.log('make_path - deactivate');
+			ames.canvas.style.cursor = 'crosshair';
+
+			// let x = new AMES_Path();
+			let cb_make_path = (e) => {
+				// reset on double click
+				console.log(e.detail);
+			}
+			ames.canvas.onclick = cb_make_path;
+		}
+
+	}
+
 }

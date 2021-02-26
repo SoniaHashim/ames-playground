@@ -201,7 +201,7 @@ var PropertyBox = /*#__PURE__*/function () {
         offset = pos.subtract(click_pos);
       };
 
-      var drag_event = e.event.type.indexOf('mouse') != -1 ? "mousedrag" : "touchmove";
+      var drag_event = "mousedrag";
       var trigger_event = e.event.type.indexOf('mouse') != -1 ? "mousedown" : "touchstart";
 
       if (opt.activate) {
