@@ -30,20 +30,71 @@ var shapes = [];
 var AMES = /*#__PURE__*/function () {
   function AMES() {
     _classCallCheck(this, AMES);
+
+    _defineProperty(this, "shapes", []);
   }
 
-  _createClass(AMES, null, [{
-    key: "make_sphere",
-    value: // changeEditMode(ux_mode)
-    // ------------------------------------------------------------------------
-    // Description: Toggles mode from ELEMENT / LIST using UX buttons.
-    // changeMode(ux_mode)
-    // ------------------------------------------------------------------------
-    // Description: Toggles mode from SHAPE / CONSTRAINT / ANIMATION using UX buttons.
-    function make_sphere(s) {
-      console.log('makeSphere');
-      var c = new _shapes.Circle();
-      c.make_shape();
+  _createClass(AMES, [{
+    key: "make_circle",
+    value: function make_circle(opt) {
+      var _this = this;
+
+      var b = "Circle";
+      opt = opt || {}; // If the button is active, deactivate it
+
+      if (_utils.AMES_Utils.is_active(b) || opt.deactivate) {
+        console.log('makeSphere - deactivate');
+
+        _utils.AMES_Utils.deactivate(b); // Reset cursor
+
+
+        ames.canvas.style.cursor = null;
+        ames.canvas.onclick = null;
+      } else {
+        console.log('makeSphere - activate');
+
+        _utils.AMES_Utils.activate(b);
+
+        ames.canvas.style.cursor = 'crosshair';
+        var c = new _shapes.AMES_Circle(); // Callback to make circle on click
+
+        var cb_make_circle = function cb_make_circle(e) {
+          if (c.poly && !c.is_made) {
+            c.set_pos(_utils.AMES_Utils.get_e_point(e));
+            c.poly.visible = true;
+
+            _this.shapes.push(c); // reset c
+
+
+            c = new _shapes.AMES_Circle();
+          }
+        };
+
+        ames.canvas.onclick = cb_make_circle;
+      }
+    }
+  }, {
+    key: "make_path",
+    value: function make_path(opt) {
+      var b = 'Path';
+      opt = opt || {};
+
+      if (_utils.AMES_Utils.is_active(b) || opt.deactivate) {
+        console.log('make_path - deactivate'); // Reset cursor
+
+        ames.canvas.style.cursor = null;
+        ames.canvas.onclick = null;
+      } else {
+        console.log('make_path - deactivate');
+        ames.canvas.style.cursor = 'crosshair'; // let x = new AMES_Path();
+
+        var cb_make_path = function cb_make_path(e) {
+          // reset on double click
+          console.log(e.detail);
+        };
+
+        ames.canvas.onclick = cb_make_path;
+      }
     }
   }]);
 
@@ -124,7 +175,7 @@ var _ames = require("./ames.js");
 // ---------------------------------------------------------------------------
 console.log("Growth mindset & learning opportunities");
 paper.install(window);
-window.AMES = _ames.AMES; // AMES set-up phase 1 before DOM is ready
+window.AMES = new _ames.AMES(); // AMES set-up phase 1 before DOM is ready
 
 _ames.AMES.change_mode('ELEMENT');
 
@@ -154,6 +205,7 @@ window.onload = function () {
 
   window.testpath = path;
   view.draw();
+  console.log("Shape: ", Shape);
 };
 },{"./ames.js":1}],3:[function(require,module,exports){
 "use strict";
@@ -359,7 +411,7 @@ var PropertyBox = /*#__PURE__*/function () {
         offset = pos.subtract(click_pos);
       };
 
-      var drag_event = e.event.type.indexOf('mouse') != -1 ? "mousedrag" : "touchmove";
+      var drag_event = "mousedrag";
       var trigger_event = e.event.type.indexOf('mouse') != -1 ? "mousedown" : "touchstart";
 
       if (opt.activate) {
@@ -512,7 +564,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Circle = exports.Shape = void 0;
+exports.AMES_PATH = exports.AMES_Circle = exports.AMES_Shape = void 0;
 
 var _utils = require("./utils.js");
 
@@ -547,13 +599,15 @@ var cb_canvas_crosshair = function cb_canvas_crosshair(e) {
 // Description: Basic shape representation with visual & temporal properties
 
 
-var Shape = /*#__PURE__*/function () {
-  function Shape() {
-    _classCallCheck(this, Shape);
+var AMES_Shape = /*#__PURE__*/function () {
+  function AMES_Shape() {
+    _classCallCheck(this, AMES_Shape);
 
     _defineProperty(this, "name", "Shape");
 
     _defineProperty(this, "visible", false);
+
+    _defineProperty(this, "is_made", false);
 
     _defineProperty(this, "pos", {
       x: ames.canvas_cy,
@@ -579,7 +633,7 @@ var Shape = /*#__PURE__*/function () {
     _defineProperty(this, "poly", void 0);
   }
 
-  _createClass(Shape, [{
+  _createClass(AMES_Shape, [{
     key: "set_pos",
     value: // update_pos(delta)
     // Description: Updates the position of the shape
@@ -625,13 +679,75 @@ var Shape = /*#__PURE__*/function () {
       }
 
       return;
-    } // make_shape
-    // Description: Creates a new shape
+    }
+  }]);
 
-  }, {
+  return AMES_Shape;
+}(); // Class: Circle
+// ---------------------------------------------------------------------------
+// Description: Implementation of a circle
+
+
+exports.AMES_Shape = AMES_Shape;
+
+var AMES_Circle = /*#__PURE__*/function (_AMES_Shape) {
+  _inherits(AMES_Circle, _AMES_Shape);
+
+  var _super = _createSuper(AMES_Circle);
+
+  function AMES_Circle() {
+    var _this;
+
+    _classCallCheck(this, AMES_Circle);
+
+    _this = _super.call(this); // TODO change to object constructor
+
+    _defineProperty(_assertThisInitialized(_this), "name", "Circle");
+
+    _this.poly = new Shape.Circle({
+      center: [_this.pos.x, _this.pos.y],
+      radius: 50,
+      fillColor: 'cornflowerblue',
+      visible: false
+    });
+    _this.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this), _this.visual_props); // On double click launch properties editor
+    // this.latest_tap;
+
+    _this.poly.on('click', function (e) {
+      console.log("tap on ", _this.name);
+      console.log(e.event.detail);
+
+      if (e.event.detail >= 2) {
+        console.log("double tap on ", _this.name); // In Shape mode, open shape editor
+
+        if (ames.edit_mode = 'SHAPE' && !_this.visual_prop_box.visible) {
+          _this.visual_prop_box.show();
+        }
+      } // let now = new Date().getTime();
+      // if (this.latest_tap) {
+      // 	let time_elapsed = now - this.latest_tap;
+      // 	// Double tap
+      // 	if (time_elapsed < 600 && time_elapsed > 0) {
+      // 		console.log("double tap on ", this.name);
+      // 		// In Shape mode, open shape editor
+      // 		if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+      // 			this.visual_prop_box.show();
+      // 		}
+      // 	}
+      // }
+      // this.latest_tap = new Date().getTime();
+
+    });
+
+    return _this;
+  } // make_shape
+  // Description: Creates a new shape
+
+
+  _createClass(AMES_Circle, [{
     key: "make_shape",
     value: function make_shape() {
-      var _this = this;
+      var _this2 = this;
 
       console.log('makeShape');
 
@@ -639,79 +755,60 @@ var Shape = /*#__PURE__*/function () {
         // Show crosshair cursor
         ames.canvas.addEventListener('mouseover', cb_canvas_crosshair); // On 1st click, set the center of the circle
 
-        var cb_make_circle_on_click = function cb_make_circle_on_click(e) {
-          _this.set_pos(_utils.AMES_Utils.get_e_point(e));
+        var cb_make_shape_on_click = function cb_make_shape_on_click(e) {
+          _this2.set_pos(_utils.AMES_Utils.get_e_point(e));
 
-          _this.poly.visible = true; // Remove crosshair cursor
+          _this2.poly.visible = true;
+          _this2.is_made = true; // Fire a is made signal to reset
+          // Remove crosshair cursor
 
           ames.canvas.style.cursor = 'default';
           ames.canvas.removeEventListener('mouseover', cb_canvas_crosshair); // Remove make circle listener
 
-          ames.canvas.removeEventListener('click', cb_make_circle_on_click);
+          ames.canvas.removeEventListener('click', cb_make_shape_on_click);
         };
 
-        ames.canvas.addEventListener('click', cb_make_circle_on_click);
+        ames.canvas.addEventListener('click', cb_make_shape_on_click);
       }
     }
   }]);
 
-  return Shape;
-}(); // Class: Circle
+  return AMES_Circle;
+}(AMES_Shape); // Class: Path
 // ---------------------------------------------------------------------------
-// Description: Implementation of a circle
+// Description: Implementation of a path
 
 
-exports.Shape = Shape;
+exports.AMES_Circle = AMES_Circle;
 
-var Circle = /*#__PURE__*/function (_Shape) {
-  _inherits(Circle, _Shape);
+var AMES_PATH = /*#__PURE__*/function (_AMES_Shape2) {
+  _inherits(AMES_PATH, _AMES_Shape2);
 
-  var _super = _createSuper(Circle);
+  var _super2 = _createSuper(AMES_PATH);
 
-  // // Draw the shape
-  // draw_shape() {
-  // 	// Visual properties
-  // 	this.poly.position = new Point(this.pos.x, this.pos.y);
-  // 	// Make visible
-  // 	this.poly.visible = true;
-  // }
-  // is_inside(p)
-  // Description: checks if p is within the radius of the circle
-  // TODO implement
-  function Circle() {
-    var _this2;
+  function AMES_PATH() {
+    var _this3;
 
-    _classCallCheck(this, Circle);
+    _classCallCheck(this, AMES_PATH);
 
-    _this2 = _super.call(this); // TODO change to object constructor
+    _this3 = _super2.call(this);
 
-    _defineProperty(_assertThisInitialized(_this2), "name", "Circle");
+    _defineProperty(_assertThisInitialized(_this3), "name", "Path");
 
-    _this2.poly = new Path.Circle({
-      center: [_this2.pos.x, _this2.pos.y],
-      radius: 50,
-      fillColor: 'pink',
-      visible: false
-    });
-    _this2.poly.fillColor = 'pink';
-    _this2.poly.visible = false;
-    _this2.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this2), _this2.visual_props); // On double click launch properties editor
-
-    _this2.poly.on('doubleclick', function (e) {
-      console.log("double click on ", _this2.name); // Open shape editor
-
-      if (ames.edit_mode = 'SHAPE' && !_this2.visual_prop_box.visible) {
-        _this2.visual_prop_box.show();
-      }
-    });
-
-    return _this2;
+    return _this3;
   }
 
-  return Circle;
-}(Shape);
+  _createClass(AMES_PATH, [{
+    key: "make_shape",
+    value: function make_shape() {
+      console.log("override");
+    }
+  }]);
 
-exports.Circle = Circle;
+  return AMES_PATH;
+}(AMES_Shape);
+
+exports.AMES_PATH = AMES_PATH;
 },{"./propertybox.js":3,"./utils.js":5}],5:[function(require,module,exports){
 "use strict";
 
@@ -752,6 +849,47 @@ var AMES_Utils = /*#__PURE__*/function () {
     value: function lengthsq(x1, y1, x2, y2) {
       return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }
+  }, {
+    key: "is_active",
+    value: function is_active(b) {
+      var btn = this.get_button(b);
+      if (btn) return btn.style.backgroundColor == this.ACTIVE_COLOR;
+    }
+  }, {
+    key: "deactivate",
+    value: function deactivate(b) {
+      var btn = this.get_button(b);
+      if (btn) btn.style.backgroundColor = null;
+    }
+  }, {
+    key: "activate",
+    value: function activate(b) {
+      var btn = this.get_button(b);
+      console.log(btn);
+      if (btn) btn.style.backgroundColor = this.ACTIVE_COLOR;
+    } // get_buttons(b)
+    // Returns the button given the value of the button b if it's defined in a btn list
+
+  }, {
+    key: "get_button",
+    value: function get_button(b) {
+      console.log("get_button: ", b);
+
+      for (var i = 0; i < this.btns.length; i++) {
+        var btn_list = this.btns[i];
+
+        if (btn_list.hasOwnProperty(b)) {
+          return document.getElementById(btn_list[b]);
+        }
+      }
+
+      return null;
+    }
+  }, {
+    key: "cb_canvas_crosshair",
+    value: function cb_canvas_crosshair(e) {
+      ames.canvas.style.cursor = 'crosshair';
+    }
   }]);
 
   return AMES_Utils;
@@ -770,4 +908,10 @@ _defineProperty(AMES_Utils, "mode_btns", {
   'ELEMENT': 'btn-mode-element',
   'LIST': 'btn-mode-list'
 });
+
+_defineProperty(AMES_Utils, "shape_btns", {
+  'Circle': 'btn-shape-circle'
+});
+
+_defineProperty(AMES_Utils, "btns", [AMES_Utils.mode_btns, AMES_Utils.shape_btns]);
 },{}]},{},[2]);

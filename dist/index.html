@@ -2,9 +2,14 @@
 <html lang="en" dir="ltr">
 	<head>
 		<meta charset="utf-8">
+		<!-- Trying to fix re-sizing in chrome -->
+		<meta name="viewport" content="initial-scale=1.0,width=device-width" />
 		<title>AMES Playground</title>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
 		<style>
+
+			/* Added for sizing issue on chrome... to test  */
+			html * { -webkit-text-size-adjust: none; }
 
 			.nav-vertical-block {
 				padding-top: 3rem;
@@ -66,8 +71,8 @@
 					<div class="row horiontal-distribute">
 						<div class="col-11 btn-group" id="toolbar-tools" style="background-color:gray">
 							<button type="button" class="btn btn-outline-dark btn-tool">Square</button>
-							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" onclick="AMES.make_sphere()">Sphere</button>
-							<button type="button" class="btn btn-outline-dark btn-tool btn-shape">Rectangle</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-circle" onclick="AMES.make_circle()">Circle</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-path" onclick="AMES.make_path()">Path</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Line</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
@@ -122,7 +127,8 @@
 			</div>
 
 			<script src="./js/bundle.js"></script>
-			<!-- <script type="module" src="./scripts/lib/ames_index.js"></script> -->
+			<!-- <script type="module" src="./js/ames/ames_index.js"></script> -->
+			<!-- <script src="./dist/js/bundle.js"></script> -->
 		</div>
 	</body>
 </html>
