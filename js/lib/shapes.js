@@ -148,36 +148,30 @@ var AMES_Circle = /*#__PURE__*/function (_AMES_Shape) {
     _this.poly = new Shape.Circle({
       center: [_this.pos.x, _this.pos.y],
       radius: 50,
-      fillColor: 'cornflowerblue',
+      fillColor: 'pink',
       visible: false
     });
     _this.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this), _this.visual_props); // On double click launch properties editor
-    // this.latest_tap;
+
+    _this.latest_tap;
 
     _this.poly.on('click', function (e) {
       console.log("tap on ", _this.name);
-      console.log(e.event.detail);
+      var now = new Date().getTime();
 
-      if (e.event.detail >= 2) {
-        console.log("double tap on ", _this.name); // In Shape mode, open shape editor
+      if (_this.latest_tap) {
+        var time_elapsed = now - _this.latest_tap; // Double tap
 
-        if (ames.edit_mode = 'SHAPE' && !_this.visual_prop_box.visible) {
-          _this.visual_prop_box.show();
+        if (time_elapsed < 600 && time_elapsed > 0) {
+          console.log("double tap on ", _this.name); // In Shape mode, open shape editor
+
+          if (ames.edit_mode = 'SHAPE' && !_this.visual_prop_box.visible) {
+            _this.visual_prop_box.show();
+          }
         }
-      } // let now = new Date().getTime();
-      // if (this.latest_tap) {
-      // 	let time_elapsed = now - this.latest_tap;
-      // 	// Double tap
-      // 	if (time_elapsed < 600 && time_elapsed > 0) {
-      // 		console.log("double tap on ", this.name);
-      // 		// In Shape mode, open shape editor
-      // 		if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-      // 			this.visual_prop_box.show();
-      // 		}
-      // 	}
-      // }
-      // this.latest_tap = new Date().getTime();
+      }
 
+      _this.latest_tap = new Date().getTime();
     });
 
     return _this;
