@@ -154,26 +154,16 @@ export class AMES {
 			let x;
 			let cb_start_path = (e) => {
 				console.log("cb_start_path");
-				if (x) {
-					x.poly.selected = false;
-				}
 				x = new AMES_Path();
-				x.poly.visible = true;
-				x.poly.fullySelected = true;
 				ames.tool.onMouseDrag = cb_draw_path;
 			}
 			let cb_draw_path = (e) => {
-				console.log("cb_draw_path");
-				console.log(x.poly);
 				x.poly.add(e.point);
 			}
 			let cb_simplify_path = (e) => {
-				console.log("cb_show_path_segments")
-				x.poly.strokeColor = 'lavender';
-				x.poly.simplify();
-				x.poly.smooth();
-				x.poly.fullySelected = false;
+				console.log("cb_show_path_segments");
 				ames.tool.onMouseDrag = null;
+				x.make_shape_helper();
 				if (this.seq.shapes.hasOwnProperty(x.name)) {
 					x.name = x.name + " " + AMES_Path.count;
 					AMES_Path.count = AMES_Path.count + 1;

@@ -114,28 +114,28 @@ export class AMES_Circle extends AMES_Shape {
 
 	// make_shape
 	// Description: Creates a new shape
-	make_shape() {
-		console.log('makeShape');
-		if (this.poly && !this.poly.visible) {
-			// Show crosshair cursor
-			ames.canvas.addEventListener('mouseover', cb_canvas_crosshair);
-			// On 1st click, set the center of the circle
-			let cb_make_shape_on_click = (e) => {
-				this.set_pos( utils.get_e_point(e));
-				this.poly.visible = true;
-				this.is_made = true;
-				// Fire a is made signal to reset
-
-				// Remove crosshair cursor
-				ames.canvas.style.cursor = 'default';
-				ames.canvas.removeEventListener('mouseover', cb_canvas_crosshair);
-
-				// Remove make circle listener
-				ames.canvas.removeEventListener('click', cb_make_shape_on_click);
-			}
-			ames.canvas.addEventListener('click', cb_make_shape_on_click);
-		}
-	}
+	// make_shape() {
+	// 	console.log('makeShape');
+	// 	if (this.poly && !this.poly.visible) {
+	// 		// Show crosshair cursor
+	// 		ames.canvas.addEventListener('mouseover', cb_canvas_crosshair);
+	// 		// On 1st click, set the center of the circle
+	// 		let cb_make_shape_on_click = (e) => {
+	// 			this.set_pos( utils.get_e_point(e));
+	// 			this.poly.visible = true;
+	// 			this.is_made = true;
+	// 			// Fire a is made signal to reset
+	//
+	// 			// Remove crosshair cursor
+	// 			ames.canvas.style.cursor = 'default';
+	// 			ames.canvas.removeEventListener('mouseover', cb_canvas_crosshair);
+	//
+	// 			// Remove make circle listener
+	// 			ames.canvas.removeEventListener('click', cb_make_shape_on_click);
+	// 		}
+	// 		ames.canvas.addEventListener('click', cb_make_shape_on_click);
+	// 	}
+	// }
 }
 
 // Class: Path
@@ -143,20 +143,30 @@ export class AMES_Circle extends AMES_Shape {
 // Description: Implementation of a path
 export class AMES_Path extends AMES_Shape {
 	name = "Path";
+	bbox;
 
 	constructor() {
 		super();
 		this.poly = new Path({
-			strokeColor: 'black',
-			strokeWidth: 1.5,
+			strokeColor: 'darkgray',
+			strokeWidth: 2,
 			visible: true,
+			fullySelected: true
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
+	}
 
+	update_bbox() {
+		this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+		this.bbox.visible = true;
+		this.bbox.sendToBack();
+		this.bbox.fillColor = "lavender";
+		this.bbox.opacity = 0;
 		// On double click launch properties editor
 		this.latest_tap;
-		this.poly.on('click', e => {
-			console.log("tap on ", this.name);
+		this.bbox.on('click', e => {
+			let nearpoint = this.poly.getNearestPoint(e.point);
+			if (nearpoint.getDistance(e.point, true) > 25 ) return;
 			let now = new Date().getTime();
 			if (this.latest_tap) {
 				let time_elapsed = now - this.latest_tap;
@@ -173,8 +183,24 @@ export class AMES_Path extends AMES_Shape {
 		});
 	}
 
-	make_shape() {
-		console.log("override");
+	make_shape_helper() {
+		this.poly.simplify();
+		this.poly.smooth();
+		this.poly.fullySelected = false;
+		this.pos = {'x': this.poly.position.x, 'y': this.poly.position.y};
+		console.log(this.poly.strokeBounds)
+		// on double tap open visual props
+		this.update_bbox();
+	}
+
+	set_pos(p) {
+		super.set_pos(p);
+		this.update_bbox();
+	}
+
+	set_scale(f) {
+		super.set_scale(f);
+		this.update_bbox();
 	}
 
 }
