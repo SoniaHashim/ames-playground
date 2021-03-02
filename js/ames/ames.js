@@ -7,6 +7,7 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Circle} from './shapes.js'
+import {AMES_Sequence} from './sequences.js'
 
 // Globals for ames
 window.ames = {};
