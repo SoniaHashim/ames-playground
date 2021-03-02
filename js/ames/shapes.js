@@ -19,7 +19,7 @@ export class AMES_Shape {
 	// Display properties including name, visibility, layer
 	name = "Shape"
 	visible = false;
-	is_made = false;
+	static count = 1;
 	// Visual Properties: position, scale, rotate, stroke w, stroke c, fill
 	pos = {x: ames.canvas_cy, y: ames.canvas_cy};
 	scale = {x: 1, y: 1};
@@ -84,11 +84,10 @@ export class AMES_Circle extends AMES_Shape {
 
 	constructor() {
 		super();
-		// TODO change to object constructor
 		this.poly = new Shape.Circle({
 			center: [this.pos.x, this.pos.y],
 			radius: 50,
-			fillColor: 'pink',
+			fillColor: 'lavender',
 			visible: false
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
@@ -142,11 +141,36 @@ export class AMES_Circle extends AMES_Shape {
 // Class: Path
 // ---------------------------------------------------------------------------
 // Description: Implementation of a path
-export class AMES_PATH extends AMES_Shape {
+export class AMES_Path extends AMES_Shape {
 	name = "Path";
 
 	constructor() {
 		super();
+		this.poly = new Path({
+			strokeColor: 'black',
+			strokeWidth: 1.5,
+			visible: true,
+		});
+		this.visual_prop_box = new PropertyBox(this, this.visual_props);
+
+		// On double click launch properties editor
+		this.latest_tap;
+		this.poly.on('click', e => {
+			console.log("tap on ", this.name);
+			let now = new Date().getTime();
+			if (this.latest_tap) {
+				let time_elapsed = now - this.latest_tap;
+				// Double tap
+				if (time_elapsed < 600 && time_elapsed > 0) {
+					console.log("double tap on ", this.name);
+					// In Shape mode, open shape editor
+					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+						this.visual_prop_box.show();
+					}
+				}
+			}
+			this.latest_tap = new Date().getTime();
+		});
 	}
 
 	make_shape() {

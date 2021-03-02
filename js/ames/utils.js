@@ -18,6 +18,7 @@ export class AMES_Utils {
 
 	static shape_btns = {
 		'Circle' : 'btn-shape-circle',
+		'Path' : 'btn-shape-path'
 	}
 
 	static btns = [this.mode_btns, this.shape_btns];

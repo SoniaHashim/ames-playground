@@ -24,7 +24,7 @@ export class PropertyBox {
 	property_callbacks = {
 		'Position': this.callback_position,
 		'Scale': this.callback_scale,
-	}
+	};
 
 	// callback_position(e, shape, cb_handlers, opt)
 	// Description: Callback to manipulate position property
@@ -121,7 +121,6 @@ export class PropertyBox {
 
 		// Update line & transform shape if shape has been clicked
 		let cb_scale_update = function(e) {
-			console.log("dragEvent")
 			if (activated) {
 				endp = utils.get_e_point(e);
 				line.segments[0].point = new Point(cx, cy);
@@ -260,6 +259,7 @@ export class PropertyBox {
 				this.property_callbacks[this.active_prop](e, this.parent, this.elisteners, {'activate': false});
 				// ux feedback: show inactive color to indicate property is deactivated
 				this.props_text[this.active_prop].fillColor = utils.INACTIVE_COLOR;
+				this.active_prop = null;
 			}
 		});
 		this.close_text.on('mouseenter', (e) => {
