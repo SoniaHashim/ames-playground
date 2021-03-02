@@ -37,7 +37,7 @@ window.onload = function() {
 	path.moveTo(start);
 	// Note that the plus operator on Point objects does not work
 	// in JavaScript. Instead, we need to call the add() function:
-	path.lineTo(start.add([ 200, -50 ]));
+	path.lineTo(start.add([ 10, 10 ]));
 	// Draw the view now:
 	window.testpath = path;
 	view.draw();

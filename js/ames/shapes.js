@@ -161,7 +161,7 @@ export class AMES_Path extends AMES_Shape {
 		this.bbox.visible = true;
 		this.bbox.sendToBack();
 		this.bbox.fillColor = "lavender";
-		this.bbox.opacity = .25;
+		this.bbox.opacity = 0;
 		// On double click launch properties editor
 		this.latest_tap;
 		this.bbox.on('click', e => {
