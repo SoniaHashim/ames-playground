@@ -163,7 +163,7 @@ export class PropertyBox {
 	update_position() {
 		// Use parent bounding box to displace property box away from center
 		let parent_bbox = this.parent.get_bbox();
-		this.offset = parent_bbox.width/2;
+		this.offset = parent_bbox.width/4;
 		// Set property box position
 		this.pos.x = this.parent.pos.x + 2.25*this.offset;
 		this.pos.y = this.parent.pos.y - .25*this.offset;
@@ -199,7 +199,6 @@ export class PropertyBox {
 				fillColor: utils.INACTIVE_COLOR,
 				fontSize: '.75rem'
 			});
-			// this.box.text(p).attr({x: 5, y: i*this.offset/2})
 			this.props_text[p] = p_text;
 			this.box.addChild(p_text);
 			i = i + 1;

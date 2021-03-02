@@ -166,7 +166,7 @@ export class AMES_Path extends AMES_Shape {
 		this.latest_tap;
 		this.bbox.on('click', e => {
 			let nearpoint = this.poly.getNearestPoint(e.point);
-			if (nearpoint.getDistance(e.point, true) > 25 ) return;
+			if (nearpoint.getDistance(e.point, true) > 50 ) return;
 			let now = new Date().getTime();
 			if (this.latest_tap) {
 				let time_elapsed = now - this.latest_tap;
