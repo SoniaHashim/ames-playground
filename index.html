@@ -4,8 +4,8 @@
 		<meta charset="utf-8">
 		<!-- Trying to fix re-sizing in chrome -->
 		<meta name="viewport" content="initial-scale=1.0,width=device-width" />
-		<title>AMES Playground</title>
-		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+		<title>ames playground</title>
+		<link rel="stylesheet" href="./css/bootstrap.min.css">
 		<style>
 
 			/* Added for sizing issue on chrome... to test  */
@@ -42,24 +42,36 @@
 				border: solid .125rem;
 			}
 
-			#env-animation {
+			canvas {
 				width: 100%;
+				border: solid lightgray .125rem;
+			}
+
+			#control-canvas {
+				height: 25px;
+			}
+
+			#animation-canvas {
+				height: 750px;
+			}
+
+			#layers-canvas {
 				height: 550px;
-				border: solid .125rem;
 			}
 		</style>
 	</head>
 	<body>
 		<!-- <script src="./js/bootstrap.min.js"></script>
 		<script src="./js/paper-full.min.js"></script> -->
-		<script src="./js/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script src="./js/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 		<script src="./js/paper/dist/paper-full.min.js"></script>
+		<script type="module" src="./js/ames/ames_index.js"></script>
 
 		<div class="container">
 			<nav class="navbar fixed-top navbar-dark bg-dark navbar-expand-lg" style="height:2rem">
 				<div class="container-fluid">
-					<span class="ames-text">AMES</span>
-					<span class="ames-text">Animating Multiple Elements Simultaneously</span>
+					<span class="ames-text">ames</span>
+					<span class="ames-text">animating multiple elements simultaneously</span>
 				</div>
 			</nav>
 		</div>
@@ -69,33 +81,25 @@
 			<div class="row nav-vertical-block" >
 				<div class="col-12" id="toolbars" style="background-color:orange">
 					<div class="row horiontal-distribute">
-						<div class="col-11 btn-group" id="toolbar-tools" style="background-color:gray">
+						<div class="col-10 btn-group" id="toolbar-tools" style="background-color:gray">
 							<button type="button" class="btn btn-outline-dark btn-tool">Square</button>
-							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-circle" onclick="AMES.make_circle()">Circle</button>
-							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-path" onclick="AMES.make_path()">Path</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-circle" onclick="ames.make_circle()">Circle</button>
+							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-path" onclick="ames.make_path()">Path</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Line</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 							<button type="button" class="btn btn-outline-dark btn-tool">Dark</button>
 						</div>
-						<div class="col-1 btn-group" id="toolbar-tools" style="background-color:lightpink">
+						<div class="col-2 btn-group" id="toolbar-tools" style="background-color:lightpink">
 							<button type="button" class="btn btn-outline-dark btn-tool">Log</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Undo</button>
 						</div>
 					</div>
 					<div class="row toolbar">
-						<div class="col-11" id="toolbar-fx" style="background-color:gray">
-							<div class="btn-group" id="toolbar-mode-element" style="background-color:gray">
-								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-element" onclick="AMES.change_mode('ELEMENT')">Element</button>
-								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-list" onclick="AMES.change_mode('LIST')">List</button>
-							</div>
-							<div class="btn-group" id="toolbar-mode-edit" style="background-color:gray">
-								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-shape" onclick="AMES.change_edit_mode('SHAPE')">Shape</button>
-								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-constraint" onclick="AMES.change_edit_mode('CONSTRAINT')">Constraint</button>
-								<button type="button" class="btn btn-outline-dark btn-tool" id="btn-mode-animate" onclick="AMES.change_edit_mode('ANIMATE')">Animation</button>
-							</div>
+						<div class="col-10" id="toolbar-fx" style="background-color:gray">
+							<canvas id="control-canvas" style="background-color:white" ></canvas>
 						</div>
-						<div class="col-1 btn-group" id="toolbar-tools" style="background-color:lightpink">
-							<button type="button" class="btn btn-outline-dark btn-tool">Help</button>
+						<div class="col-2 btn-group" id="toolbar-tools" style="background-color:lightpink">
 						</div>
 					</div>
 				</div>
@@ -103,32 +107,24 @@
 
 
 			<div class="row vertical-block" style="background-color:green;">
-				<div class="col-9" style="background-color:beige">
-					<canvas id="env-animation" style="background-color:white" ></canvas>
+				<div class="col-10" style="background-color:beige">
+					<canvas id="animation-canvas" style="background-color:white" ></canvas>
 					<!-- <svg id="env-animation" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" width="980" height="595"></svg> -->
 				</div>
-				<div class="col-3" id="sidebar" style="background-color:gray">
-					<div class="row horizontal-distribute"><div class="col-12" style="background-color:thistle">
-						player preview
-					</div></div>
-					<div class="row vertical-block"><div class="col-12" style="background-color:beige">
-						player controls
-					</div></div>
-					<div class="row vertical-block"><div class="col-12" style="background-color:steelblue">
-						sequence editor
-					</div></div>
+				<div class="col-2" id="sidebar" style="background-color:gray">
+					<div class="row horizontal-distribute">
+						<div class="col-12" style="background-color:thistle">
+							<canvas id="layers-canvas" style="background-color:white"></canvas>
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<div class="row vertical-block toolbar" style="background-color:limegreen">
-				<div class="col-12" style="background-color:thistle">
-					<svg id="env-sequence" style="background-color:white" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" height="150" width="100%" ></svg>
-				</div>
-			</div>
 
-			<!-- <script src=".ow /js/bundle.js"></script> -->
-			<script type="module" src="./js/ames/ames_index.js"></script>
-			<!-- <script src="./dist/js/bundle.js"></script> -->
 		</div>
+
+		<!-- <script src=".ow /js/bundle.js"></script> -->
+
+		<!-- <script src="./dist/js/bundle.js"></script> -->
 	</body>
 </html>
