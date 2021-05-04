@@ -9,7 +9,7 @@ export class AMES_Animation {
 	static count = 0;
 	key;
 	name;
-	keyframes = [0, 1, 2, 3];
+	keyframes = [0, 60, 300, 550, 680];
 	frames = 600;
 	paths = [];
 	states = [];
@@ -18,6 +18,7 @@ export class AMES_Animation {
 		// Set key & add to ames animations
 		this.key = AMES_Animation.count.toString();
 		ames.animations[this.key] = this;
+		console.log(ames.animations);
 		AMES_Animation.count += 1;
 		// Update name & add to layers view
 		this.update_name('animation ' + this.key);
@@ -48,20 +49,32 @@ export class AMES_Animation {
 		    insert: false,
 		});
 
-		// Path properties goe in path
+		// Loop / extend can be done with deep copies
+		let pathFive = path.clone({ insert: false });
+
+		// Path properties goe in path (includes scale / rotation / position)
 		this.paths[0] = path;
 		this.paths[1] = pathTwo;
 		this.paths[2] = pathThree;
 		this.paths[3] = pathFour;
+		this.paths[4] = pathFive;
 
 		// Style properties go in state
-		this.states[0] = {fillColor: 'blue'},
+		this.states[0] = {fillColor: 'blue'};
 		this.states[1] = {fillColor: 'pink'};
 		this.states[2] = {fillColor: 'green'};
 		this.states[3] = {fillColor: 'orange'}
+		this.states[4] = {fillColor: 'lightblue'};
+
+		// inserting a keyframe requires...
+		// keyframe, path, state
 	}
 
-	animate() {
+	animate(t) {
+		// Calculate animation state given system time
+		// Fast-forward through tweens (not visible) to reach desired start state
+		// Start animating from desired start state
+		// First call to recursive async function to generate tweens
 		this.animate_helper(this.paths[0], 0);
 	}
 
@@ -73,9 +86,12 @@ export class AMES_Animation {
 		let pathFrom = path.clone({ insert: false });
 
 		let state = this.states[flipbook_idx + 1];
-		let duration = 2000;
+		let duration = (this.keyframes[flipbook_idx + 1] - this.keyframes[flipbook_idx])/ames.fps * 1000;
+		pathTo.visible = false;
+		// state.opacity = 0;
 
 		let tw = path.tween(state, duration);
+		this.add_pause_handling(tw, flipbook_idx);
 		tw.onUpdate = function(event) {
 		    path.interpolate(pathFrom, pathTo, event.factor)
 		};
@@ -86,8 +102,15 @@ export class AMES_Animation {
 
 	}
 
+
+	add_pause_handling(tw, flipbook_idx) {
+		// On pause event capture current tween & store next flipbook_idx
+		this.nxt_flipbook_idx = flipbook_idx;
+		this.curr_tw = tw;
+	}
+
 	update_name(new_name) {
 		this.name = new_name;
-		// Add / update layers_view
+		// Add / update layers_view display
 	}
 }

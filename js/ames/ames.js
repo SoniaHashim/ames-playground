@@ -25,9 +25,18 @@ export class AMES {
 	canvas_view;
 	controls_view;
 	layers_view;
+	// Scrubber
 	scrubber;
+	// State & Timing
+	fps = 60;
+	time = 0;			// time in system
+	t_delta = 0; 		// time between elapsed frames
+	dur = 10; 			// in seconds
 	// State
-	animations; 
+	animations;
+	is_playing = false;
+	is_looping = false;
+	reset_time = false;
 
 	// Iniitalize AMES app properties after window loads
 	init() {
@@ -37,6 +46,7 @@ export class AMES {
 		let layers = document.getElementById('layers-canvas');
 
 		// Store animation canvas properties
+		window.ames.canvas = canvas;
 		window.ames.canvas_cx = canvas.width/2;
 		window.ames.canvas_cy = canvas.height/2;
 		window.ames.animations = {};
@@ -51,13 +61,15 @@ export class AMES {
 
 		// Set up project & view for animation canvas
 		paper.setup(canvas);
-		this.canvas_view = view;
+		this.init_canvas(canvas);
 	}
 
 	init_controls(controls) {
 		// Import & set-up control over play, pause & loop buttons
 		// nb: loading 24 x 24 px icons
 		let i_off = 12;
+		let w = view.size._width;
+
 		project.importSVG('../svg/ames-i-play.svg', function(i, s) {
 			let play_btn = i._children[1];
 			play_btn.onClick = function(e) {
@@ -80,22 +92,31 @@ export class AMES {
 		});
 
 		// Create scrubber
-		let timeline = new Path.Line(new Point(6*i_off + i_off/2, i_off), new Point(controls.width - i_off/2, i_off));
+		let timeline = new Path.Line(new Point(6*i_off + i_off/2, i_off), new Point(w - i_off/2, i_off));
 		timeline.strokeColor = 'grey';
-		let min_scrub = 6*i_off + i_off/2 + 4; let max_scrub = controls.width - i_off/2 - 4;
+		let min_scrub = 6*i_off + i_off/2 + 4; let max_scrub = w - i_off/2 - 4;
 		let scrubber = new Path.Circle(new Point(min_scrub, 12), 4);
 		scrubber.fillColor = 'lightgrey';
 		scrubber.strokeColor = 'grey'
+		// Allow the user to change the system time by moving the scrubber
 		scrubber.onMouseDrag = function(e) {
 			let new_x = scrubber.position.x + e.delta.x;
 			if ( new_x > min_scrub && new_x < max_scrub) {
 				scrubber.position.x = new_x;
-				ames.set_time( (new_x - min_scrub) / (max_scrub - min_scrub) );
+				ames.set_time(ames.get_time_from_scrubber());
 			}
+		}
+		scrubber.onMouseUp = function(e) {
+			ames.set_time(ames.get_time_from_scrubber());
+		}
+		// Update the position of the scrubber as the animation progresses
+		scrubber.onFrame = function(e) {
+			scrubber.position.x = ames.update_scrubber_to_time();
 		}
 		this.scrubber = scrubber;
 
 		this.controls_view = view;
+		this.min_sc = min_scrub; this.max_sc = max_scrub;
 		this.controls_view.onClick = function(e) {
 			console.log("Clicked on controls_view");
 			// this._project.activate();
@@ -111,20 +132,112 @@ export class AMES {
 		}
 	}
 
+	init_canvas(canvas) {
+		this.canvas_view = view;
+
+		let frame_trigger_dur = 1/ames.fps;
+		let eps = frame_trigger_dur/10;
+		console.log("trigger_dur", frame_trigger_dur);
+		let trigger_frame = true;
+		ames.t_delta = 0;
+
+		this.canvas_view.onFrame = function(e) {
+			// If playing...
+			if (ames.is_playing) {
+				// If reset time is true, time should be set to 0
+				if (ames.reset_time) {
+					ames.time = 0;
+					trigger_frame = true;
+					ames.reset_time = false;
+				}
+
+				// Calculate progression based on elapsed time and duration
+				ames.t_delta += e.delta;
+				// console.log(ames.time);
+
+				// If complete, complete the animation and either stop or loop
+				if (ames.time + (ames.t_delta - eps)/ames.dur >= 1) {
+					console.log("completing animation");
+					console.log(ames.time);
+					ames.t_delta = (1 - ames.time)*ames.dur;
+					console.log(ames.t_delta);
+					ames.time = 1;
+					// If not looping, stop the animation
+					if (!ames.is_looping)  {
+						ames.is_playing = false;
+					} else {
+						ames.reset_time = true;
+					}
+				}
+
+				// If sufficient time has elapsed to trigger a frame, update time
+				if (ames.t_delta >= (frame_trigger_dur - eps)) {
+					ames.time += ames.t_delta/ames.dur;
+					trigger_frame = true;
+				}
+
+				if (trigger_frame) {
+					ames.update_animations();
+					trigger_frame = false;
+					ames.t_delta = 0;
+				}
+			}
+		}
+	}
+
+	adjust_t_delta() {
+		let x = this.time * this.dur * this.fps;
+		this.t_delta = (x - Math.floor(x)) * 1/this.fps;
+	}
+
+	update_animations() {
+		// Takes this.time and updates the animations accordingly
+	}
+
 	play() {
 		console.log("play animations");
+		// Start playing and reset system time
+		if (!this.is_playing) {
+			if (ames.time != 0) this.adjust_t_delta();
+			this.is_playing = true;
+		}
 	}
 
 	pause() {
 		console.log("pause animations");
+		this.is_playing = false;
+		// Pause animations
+		console.log(this.animations);
+		for (let k in this.animations) {
+			let a = this.animations[k];
+			console.log(a.curr_tw);
+			a.curr_tw.stop();
+			setTimeout(() => {a.curr_tw.start(); a.curr_tw.update(.2);}, 500);
+
+			// a.curr_tw.object.opacity = 1;
+		}
 	}
 
 	loop() {
-		console.log("loop animations");
+		this.is_looping = !this.is_looping;
+		console.log("loop animations: ", this.is_looping);
 	}
 
-	set_time(x) {
-		// console.log(x);
+	get_time_from_scrubber() {
+		let sc_x = this.scrubber.position.x;
+		let t = (sc_x - this.min_sc) / (this.max_sc - this.min_sc);
+		return t;
+	}
+
+	update_scrubber_to_time() {
+		let sc_x = (this.time * (this.max_sc - this.min_sc)) + this.min_sc;
+		return sc_x;
+	}
+
+	set_time(t) {
+		this.time = t;
+		this.adjust_t_delta;
+		console.log("update time to: ", t);
 	}
 
 	get_duration(x) {
