@@ -5,28 +5,50 @@
 // Description: AMES utilities
 // ---------------------------------------------------------------------------
 export class AMES_Utils {
+	// General ui format elements
 	static ACTIVE_COLOR = 'lavender';
-	static INACTIVE_COLOR = 'black';
+	static INACTIVE_COLOR = 'white';
+	static INACTIVE_DARK_COLOR = 'whitesmoke';
+	static INACTIVE_S_COLOR = 'darkgray';
+	static ACTIVE_S_COLOR = 'black';
+	static SHAPE_HIGHLIGHT_COLOR = 'dodgerblue';
+	static LAYER_HEIGHT = 25;
+	static ICON_OFFSET = 4;
+	static FONT = 'Times';
+	static FONT_SIZE = 10; 
 
-	static mode_btns = {
-		'SHAPE' : 'btn-mode-shape',
-		'CONSTRAINT': 'btn-mode-constraint',
-		'ANIMATE': 'btn-mode-animate',
-		'ELEMENT': 'btn-mode-element',
-		'LIST': 'btn-mode-list'
-	};
+	// Layer box ui elements
+	static L_CONTROLS = ["Shapes", "Lists", "Animations"];
+	static L_IDX_BOX = 0;
+	static L_IDX_NAME = 1;
+	static L_IDX_TRASH = 2;
+	static L_IDX_EYE = 3;
+	static L_IDX_EYE_SLASH = 4;
+	static L_IDX_ICONS = [2,3,4];
+	static L_EXPAND_IDX = 2;
+	static L_CONTRACT_IDX = 3;
+
+	// Editor properties
+	static VIS_PROPS = ["position", "scale", "rotation", "fill", "strokewidth", "strokecolor"];
+	static SUB_PROPS = {
+		"position" : [ "x", "y"],
+		"scale": ["x", "y"],
+		"rotation": ["theta"],
+		"fillcolor": ["h", "s", "v"],
+		"strokeWidth": ["w"],
+		"strokecolor": ["h", "s", "v"]
+	}
+	static E_IDX_ICONS = [2, 3, 4, 5, 6, 7];
 
 	static shape_btns = {
+		'Square' : 'btn-shape-square',
 		'Circle' : 'btn-shape-circle',
-		'Path' : 'btn-shape-path'
+		'Path' : 'btn-shape-path',
 	}
 
-	static btns = [this.mode_btns, this.shape_btns];
+	static btns = [this.shape_btns];
 
 	static get_e_point(e) {
-		// console.log('utils.get_e_point', e);
-		// let p = view.viewToProject(DomEvent.getOffset(e, ames.canvas));
-		// console.log('utils.get_e_point', p);
 		return view.viewToProject(DomEvent.getOffset(e, ames.canvas));
 	}
 
@@ -65,5 +87,17 @@ export class AMES_Utils {
 
 	static cb_canvas_crosshair(e) {
 		ames.canvas.style.cursor = 'crosshair';
+	}
+
+	static make_dot(p) {
+		let d = new Path.Circle(p, 2);
+		d.fillColor = this.SHAPE_HIGHLIGHT_COLOR;
+		return d;
+	}
+
+	static make_line(p1, p2) {
+		let p = new Path.Line(p1, p2);
+		p.strokeColor = this.SHAPE_HIGHLIGHT_COLOR;
+		return p;
 	}
 }

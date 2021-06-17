@@ -17,5 +17,5 @@ window.ames = new AMES();
 // Execute main function once DOM is ready
 window.onload = function() {
 	ames.init();
-	ames.test();
+	// ames.test();
 }
