@@ -11,11 +11,14 @@ export class AMES_Utils {
 	static INACTIVE_DARK_COLOR = 'whitesmoke';
 	static INACTIVE_S_COLOR = 'darkgray';
 	static ACTIVE_S_COLOR = 'black';
-	static SHAPE_HIGHLIGHT_COLOR = 'dodgerblue';
+	static SHAPE_PATH_COLOR = 'dodgerblue';
+	static SHAPE_HIGHLIGHT_COLOR = 'aqua';
+	static C_REFERENCE_HIGHLIGHT = 'orange';
+	static C_RELATIVE_COLOR = 'mediumorchid';
 	static LAYER_HEIGHT = 25;
 	static ICON_OFFSET = 4;
 	static FONT = 'Times';
-	static FONT_SIZE = 10; 
+	static FONT_SIZE = 10;
 
 	// Layer box ui elements
 	static L_CONTROLS = ["Shapes", "Lists", "Animations"];
@@ -29,21 +32,22 @@ export class AMES_Utils {
 	static L_CONTRACT_IDX = 3;
 
 	// Editor properties
-	static VIS_PROPS = ["position", "scale", "rotation", "fill", "strokewidth", "strokecolor"];
+	static VIS_PROPS = ["position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "path"];
 	static SUB_PROPS = {
 		"position" : [ "x", "y"],
 		"scale": ["x", "y"],
-		"rotation": ["theta"],
-		"fillcolor": ["h", "s", "v"],
+		"rotation": ["t"],
+		"fillColor": ["h", "s", "v"],
 		"strokeWidth": ["w"],
-		"strokecolor": ["h", "s", "v"]
+		"strokeColor": ["h", "s", "v"],
+		"path" : []
 	}
-	static E_IDX_ICONS = [2, 3, 4, 5, 6, 7];
 
 	static shape_btns = {
 		'Square' : 'btn-shape-square',
 		'Circle' : 'btn-shape-circle',
 		'Path' : 'btn-shape-path',
+		'List': 'btn-list',
 	}
 
 	static btns = [this.shape_btns];
@@ -52,7 +56,9 @@ export class AMES_Utils {
 		return view.viewToProject(DomEvent.getOffset(e, ames.canvas));
 	}
 
-	static lengthsq(x1, y1, x2, y2) {
+	static lengthsq(p1, p2) {
+		let x1 = p1.x; let x2 = p2.x;
+		let y1 = p1.y; let y2 = p2.y
 		return (x1-x2)*(x1-x2)+(y1-y2)*(y1-y2);
 	}
 
@@ -75,7 +81,6 @@ export class AMES_Utils {
 	// get_buttons(b)
 	// Returns the button given the value of the button b if it's defined in a btn list
 	static get_button(b) {
-		console.log("get_button: ", b);
 		for (let i = 0; i < this.btns.length; i++) {
 			let btn_list = this.btns[i];
 			if (btn_list.hasOwnProperty(b)) {
@@ -90,14 +95,22 @@ export class AMES_Utils {
 	}
 
 	static make_dot(p) {
-		let d = new Path.Circle(p, 2);
-		d.fillColor = this.SHAPE_HIGHLIGHT_COLOR;
+		let d = new Path.Circle(p, 2.5);
+		d.fillColor = this.SHAPE_PATH_COLOR;
 		return d;
 	}
 
 	static make_line(p1, p2) {
 		let p = new Path.Line(p1, p2);
-		p.strokeColor = this.SHAPE_HIGHLIGHT_COLOR;
+		p.strokeColor = this.SHAPE_PATH_COLOR;
+		return p;
+	}
+
+	static make_rect(r, color) {
+		if (!color) color = this.SHAPE_HIGHLIGHT_COLOR;
+		let p = new Path.Rectangle(r);
+		p.strokeColor = color;
+		p.strokeWidth = 0.5;
 		return p;
 	}
 }

@@ -16,13 +16,11 @@
 			}
 
 			.navbar {
-				background-color: white;
-				opacity: .5;
 				height: 1.8rem;
 			}
 
 			.ames-text {
-				color: black;
+				color: darkgray;
 				font-family: serif;
 				padding-left: .25rem;
 				padding-right: .25rem;
@@ -53,12 +51,18 @@
 				height: 94vh;
 				margin-top: .125rem;
 				border: solid black .075rem;
+				/* position: absolute;  */
 			}
 
 			#animation-canvas {
+			 /* position: absolute */
 			}
 
 			#layers-canvas {
+			}
+
+			#colorwheel {
+				display: none
 			}
 		</style>
 	</head>
@@ -90,7 +94,8 @@
 							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-shape-square" onclick="ames.switch_tool({b: 'Square'})">Square</button>
 							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-circle" onclick="ames.switch_tool({b: 'Circle'})">Circle</button>
 							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-path" onclick="ames.switch_tool({b: 'Path'})">Path</button>
-							<button type="button" class="btn btn-outline-dark btn-tool">Undo</button>
+							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-list" onclick="ames.switch_tool({b: 'List'})">List</button>
+							<button type="button" class="btn btn-outline-dark btn-tool">Animation</button>
 						</div>
 						<div class="col-2 btn-group" id="toolbar-tools">
 							<button type="button" class="btn btn-outline-dark btn-tool">Save</button>
@@ -113,6 +118,9 @@
 					</div>
 				</div>
 			</div>
+
+			<img id="colorwheel" src='svg/colorwheel.png'>
+
 
 		</div>
 	</body>
