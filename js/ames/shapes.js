@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------
 
 import {AMES_Utils as utils} from './utils.js'
-import {AMES_Constraint as constraint} from './constraints.js'
+import {AMES_Constraint as constraints} from './constraints.js'
 import {PropertyBox} from './propertybox.js'
 
 // let cb_canvas_crosshair = (e) => {
@@ -25,6 +25,7 @@ export class AMES_Shape {
 	// Visual Properties: position, scale, rotate, stroke w, stroke c, fill
 	pos = {x: ames.canvas_cy, y: ames.canvas_cy};
 	scale = {x: 1, y: 1};
+	rotation = 0;
 	visual_props = {'Position': this.pos, 'Scale': this.scale};
 	// Shape geoemtry
 	poly;
@@ -45,18 +46,18 @@ export class AMES_Shape {
 		"position" : {"all": null, "x": null, "y": null},
 		"scale": {"all": null, "x": null, "y": null},
 		"rotation": {"all": null, "t": null},
-		"fillColor": {"all": null, "h": null, "s": null, "v": null},
+		"fillColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
 		"strokeWidth": {"all": null, "w": null},
-		"strokeColor": {"all": null, "h": null, "s": null, "v": null},
+		"strokeColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
 		"path" : {}
 	}
 	c_outbound = {
 		"position" : {"all": [], "x": [], "y": []},
 		"scale": {"all": [], "x": [], "y": []},
 		"rotation": {"all": [], "t": []},
-		"fillColor": {"all": [], "h": [], "s": [], "v": []},
+		"fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
 		"strokeWidth": {"all": [], "w": []},
-		"strokeColor": {"all": [], "h": [], "s": [], "v": []},
+		"strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
 		"path" : {}
 	}
 
@@ -70,14 +71,30 @@ export class AMES_Shape {
 			this.poly.position = new Point(this.pos.x, this.pos.y);
 	}
 
-	// update_scale(f)
+	// set_scale(f)
 	// Description: Updates the scale of the shape by the given amount
 	set_scale(fx, fy) {
-		this.scale.x = fx*this.scale.x;
-		this.scale.y = fy*this.scale.y;
+		// this.scale.x = fx*this.scale.x;
+		// this.scale.y = fy*this.scale.y;
+		let sx = 1; let sy = 1;
+		if (fx) {
+			sx = fx/this.scale.x;
+			this.scale.x = fx;
+		}
+		if (fy) {
+			sy = fy/this.scale.y;
+			this.scale.y = fy;
+		}
 		if (this.poly)
-			this.poly.scale(fx, fy);
+			this.poly.scale(sx, sy);
+	}
 
+	set_rotation(theta, anchor) {
+		this.rotation += theta;
+		if (this.poly) {
+			if (anchor) this.poly.rotate(theta, anchor);
+			else this.poly.rotate(theta);
+		}
 	}
 
 	// draw_shape()
@@ -113,7 +130,7 @@ export class AMES_Shape {
 			// Remove subproperty buttons
 			this.editor.show_subprops(this.active_prop, false);
 			this.editor.select_prop(this.active_prop, false);
-			if (p != 'path') this.editor.show_constraint(false);
+			this.editor.show_constraint(false);
 		}
 		// If the new propety is not the property just turned off, turn it on
 		if (this.active_prop != p) {
@@ -126,7 +143,7 @@ export class AMES_Shape {
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
 			let sub_p = 'all'
-			if (p != 'path') this.editor.show_constraint(true, p, sub_p);
+			this.editor.show_constraint(true, p, sub_p);
 			this.active_prop = p;
 			this.active_sub_p = sub_p;
 		} else {
@@ -146,27 +163,12 @@ export class AMES_Shape {
 	}
 
 	update_constraints() {
-		// console.log("shape updating constraint")
 		let p = this.active_prop;
-		let sub_p = this.active_sub_p;
-		if (!sub_p) sub_p = 'all';
-		console.log("update constraints for ", this.name,  p, sub_p);
-
-		// Inbound: update offset
-		console.log('updating inbound constraint - offset', this.c_inbound[p][sub_p]);
-		let c_in = this.c_inbound[p][sub_p];
-		if (c_in) c_in.calculate_offset();
-
-		// Outbound: update values
-		console.log("updating outbound constraint - values", this.c_outbound[p][sub_p]);
-		let c_outbounds = this.c_outbound[p][sub_p];
-		for (let idx in c_outbounds) {
-			let c_out = c_outbounds[idx];
-			c_out.update_value();
-		}
-
-		this.editor.update_constraint(p, sub_p);
+		let s = this.active_sub_p;
+		if (!s) s = 'all';
+		constraints.update_constraints(p, s, this);
 	}
+
 
 	_clear_cb_helpers() {
 		let shapes = this.cb_helpers['shapes'];
@@ -225,14 +227,19 @@ export class AMES_Shape {
 				scale_dots.push(d.clone());
 				d.remove();
 			}
-			console.log(scale_dots);
+			// console.log(scale_dots);
 			// Attach handlers to dots - calculate scale factor using distance to corners
 			let bf = 1; let pf = 1;
 			for (let d_idx = 0; d_idx < 4; d_idx++) {
 				let d = scale_dots[d_idx];
 				d.replaceWith(d.insertBelow(scale_box));
 				let d_pair = scale_dots[dot_pairs[d_idx]];
+				let scale_start_x = 1; let scale_start_y = 1;
 				d.onMouseDown = (e) => {
+					pf = 1;
+					scale_start_x = shape.scale.x;
+					scale_start_y = shape.scale.y;
+					// Set relative scale to 1 (current size is scale 1)
 					let b = shape.poly.position.subtract(d.position);
 					bf = b.length;
 					if (sub == 'x') bf = b.x;
@@ -241,22 +248,29 @@ export class AMES_Shape {
 				d.onMouseDrag = (e) => {
 					let p = shape.poly.position.subtract(e.point);
 					let f = p.length/bf;
+					let fx = scale_start_x * p.x/bf;
+					let fy = scale_start_y * p.y/bf;
 
 					// Scale shape and box
 					if (sub == 'x') {
 						f = p.x/bf;
-						shape.set_scale((1/pf)*f, 1);
+						// shape.set_scale((1/pf)*f, 1);
+						shape.set_scale(fx, null);
 						scale_box.scale((1/pf)*f, 1);
 					} else if (sub == 'y') {
 						f = p.y/bf;
-						shape.set_scale(1, (1/pf)*f);
+						// shape.set_scale(1, (1/pf)*f);
+						shape.set_scale(null, fy);
 						scale_box.scale(1, (1/pf)*f);
 					} else {
-						shape.set_scale((1/pf)*f, (1/pf)*f);
+						// shape.set_scale((1/pf)*f, (1/pf)*f);
+						shape.set_scale(scale_start_x*f, scale_start_y*f);
+						// console.log(f);
 						scale_box.scale((1/pf)*f, (1/pf)*f);
 					}
-					console.log(f);
+					// console.log(f);
 					pf = f;
+					console.log(shape.poly.scaling);
 
 					// Update dot position and scale_box
 					d.position = scale_box.segments[d_idx].point;
@@ -314,19 +328,22 @@ export class AMES_Shape {
 			// Rotate based on angle between subsequent rays created by dragging
 			let ro;
 			let ao;
+			let asum = 0;
 			dt.onMouseDown = (e) => {
 				ro = dt.position;
 				ao = shape.poly.rotation;
-				console.log(ao);
 			}
 			// Update rotation
 			dt.onMouseDrag = (e) => {
 				anchor = da.position;
 				let a = get_rotation_a(e.point, anchor);
-				shape.poly.rotate(a, anchor);
+				shape.set_rotation(a, anchor);
+				// shape.poly.rotate(a, anchor);
 
 				// Rotate line
 				line.rotate(a, anchor);
+				// asum += a;
+				// console.log(asum);
 				// Update line segment to match dt
 				dt.position = e.point
 				line.lastSegment.point = dt.position;
@@ -369,6 +386,12 @@ export class AMES_Shape {
 				};
 			}
 
+			if (sub == 'a') {
+				color_function = (c) => {
+					shape.poly.fillColor.alpha = c.alpha;
+				};
+			}
+
 			ames.colorpicker.color_target = (c) => {
 				color_function(c);
 				// Update constraints
@@ -387,7 +410,7 @@ export class AMES_Shape {
 				w = shape.poly.strokeWidth;
 			}
 			shape.poly.onMouseDrag = (e) => {
-				console.log(.1*(yo - e.point.y));
+				// console.log(.1*(yo - e.point.y));
 				let nw = w + .1*(yo - e.point.y);
 				if (nw <= 0) {
 					shape.poly.strokeWidth = 0;
@@ -426,6 +449,12 @@ export class AMES_Shape {
 			if (sub == 'v') {
 				color_function = (c) => {
 					shape.poly.fillColor.brightness = c.brightness;
+				};
+			}
+
+			if (sub == 'a') {
+				color_function = (c) => {
+					shape.poly.fillColor.alpha = c.alpha;
 				};
 			}
 

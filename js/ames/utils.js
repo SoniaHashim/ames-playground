@@ -37,9 +37,9 @@ export class AMES_Utils {
 		"position" : [ "x", "y"],
 		"scale": ["x", "y"],
 		"rotation": ["t"],
-		"fillColor": ["h", "s", "v"],
+		"fillColor": ["h", "s", "v", "a"],
 		"strokeWidth": ["w"],
-		"strokeColor": ["h", "s", "v"],
+		"strokeColor": ["h", "s", "v", "a"],
 		"path" : []
 	}
 

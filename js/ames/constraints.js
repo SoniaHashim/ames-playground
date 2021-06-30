@@ -30,10 +30,10 @@ export class AMES_Constraint {
 
 		if (sub_p != 'all') this.calculate_offset();
 
-		console.log("making constraint for sub_p", sub_p);
+		// console.log("making constraint for sub_p", sub_p);
 		this.relative.c_inbound[p][sub_p] = this;
 		this.reference.c_outbound[p][sub_p].push(this);
-		console.log('reference constraints', this.reference.c_outbound);
+		// console.log('reference constraints', this.reference.c_outbound);
 
 		// Handle constraint overwrites
 		if (sub_p == 'all') {
@@ -69,6 +69,7 @@ export class AMES_Constraint {
 		if (s == 'h') return 'hue';
 		if (s == 's') return 'saturation';
 		if (s == 'v') return 'brightness';
+		if (s == 'a') return 'alpha';
 		return s;
 	}
 
@@ -77,61 +78,72 @@ export class AMES_Constraint {
 		let p = this.property;
 		let s = this._lookup(this.sub_prop);
 
-		console.log("calculating offset for ", p, s);
-		
-		let ol = this.relative.poly[p][s];
-		let of = this.reference.poly[p][s];
-		if (p == "rotation") {
-			ol = this.relative.poly.rotation;
-			of = this.reference.poly.rotation;
-		}
-		if (p == "scale") {
-			ol = this.relative.scale[s];
-			of = this.reference.scale[s];
-			console.log('scale ol and of', ol, of, ol - of);
-		}
-		if (p == "strokeWidth") {
-			ol = this.relative.poly.strokeWidth;
-			of = this.relative.poly.strokeWidth;
-		}
-		// console.log("calculate offset for ", p, s);
-		// // console.log(this.relative.poly.p);
-		// console.log('rel', this.relative.poly[p]);
-		// console.log('rel', this.relative.poly[p][s]);
-		// console.log('ref', this.reference.poly[p]);
-		// console.log('ref', this.reference.poly[p][s]);
-		// console.log(this.relative.poly);
+		if (this.sub_prop == "all") {
+			let s_list = utils.SUB_PROPS[p];
+			for (let i in s_list) {
+				s = s_list[i];
+				let c = this.relative.c_inbound[p][s];
+				c.update_value();
+			}
+		} else {
+			let ol = this.relative.poly[p][s];
+			let of = this.reference.poly[p][s];
 
-		this.offset = ol - of;
+			if (p == "rotation") {
+				ol = this.relative.rotation;
+				of = this.reference.rotation;
+			}
+			if (p == "scale") {
+				ol = this.relative.scale[s];
+				of = this.reference.scale[s];
+			}
+			if (p == "strokeWidth") {
+				ol = this.relative.poly.strokeWidth;
+				of = this.relative.poly.strokeWidth;
+			}
+
+			this.offset = ol - of;
+
+			if (p == 'scale') {
+				this.offset = ol / of;
+			}
+		}
 	}
 
 	update_value() {
 		let p = this.property;
 		let s;
+
+		// console.log("updating constraint between rel / ref", this.relative.name, this.reference.name, this.property, this.sub_prop);
+
 		// Update all subproperty values if necessary
 		if (this.sub_prop == "all") {
 			let s_list = utils.SUB_PROPS[p];
 			for (let i in s_list) {
 				s = s_list[i];
-				let c = this.relative.c_inbound[p][s]
+				let c = this.relative.c_inbound[p][s];
 				c.update_value();
 			}
 		} else {
 			// Or just update value for given subproperty
 			s = this._lookup(this.sub_prop);
 			if (p == "rotation") {
-				this.relative.poly.rotation = this.reference.poly.rotation + this.offset;
+				let r0 = this.relative.rotation;
+				this.relative.set_rotation(-r0 + this.reference.rotation + this.offset);
 			} else if (p == "scale") {
-				if (s == 'x') this.relative.set_scale(this.reference.scale.x + this.offset, 1);
-				if (s == 'y') this.relative.set_scale(1, this.reference.scale.y + this.offset);
+				let fx = this.reference.scale.x;
+				let fy = this.reference.scale.y;
+				if (s == 'x') this.relative.set_scale(fx*this.offset, null);
+				if (s == 'y') this.relative.set_scale(null, fy*this.offset);
 			} else if (p == "strokeWidth") {
 				this.relative.poly.strokeWidth = this.reference.poly.strokeWidth + this.offset;
-			}
-			else {
+			} else {
 				this.relative.poly[p][s] = this.reference.poly[p][s] + this.offset;
 			}
 
 		}
+
+		// this.relative.editor.update_constraint(p, this.sub_prop);
 	}
 
 	get_constraint_ref_label() {
@@ -145,6 +157,25 @@ export class AMES_Constraint {
 	// preview() {
 	// 	// Show reference and relative boxes
 	// }
+
+	static update_constraints(p, s, obj) {
+		// Inbound: update offset
+		let c_in = obj.c_inbound[p][s];
+		if (c_in) c_in.calculate_offset();
+
+		// Outbound: update values
+		let c_outbounds = obj.c_outbound[p][s];
+		for (let idx in c_outbounds) {
+			let c_out = c_outbounds[idx];
+			c_out.update_value();
+			// Recurse
+			this.update_constraints(p, s, c_out.relative);
+		}
+
+		obj.editor.update_constraint();
+	}
+
+
 
 
 

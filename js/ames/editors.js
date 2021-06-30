@@ -242,7 +242,7 @@ export class AMES_Shape_Editor {
 			});
 			this.constraint_info.offset_val = offset_val;
 			let ox = offset_val.position.x; let oy = offset_val.position.y + offset_val.bounds.height/2;
-			let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 3*utils.ICON_OFFSET, oy));
+			let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 6*utils.ICON_OFFSET, oy));
 			offset_line.strokeColor = utils.INACTIVE_S_COLOR;
 			offset_line.strokeWidth = 1;
 			offset_line.opacity = 0.5;
@@ -267,9 +267,7 @@ export class AMES_Shape_Editor {
 
 	// _show_constraint
 	show_constraint(bool, p, sub_p) {
-		// console.log("show constraint for ", p, sub_p);
-
-		if (p == 'path') bool  = false;
+		if (p == 'path') { console.log("here"); bool = false;}
 
 		for (let k in this.constraint_info) {
 			this.constraint_info[k].visible = bool;
@@ -283,20 +281,27 @@ export class AMES_Shape_Editor {
 
 		// Update property value
 		if (bool) this.update_constraint(p, sub_p);
-
 	}
 
-	update_constraint(p, sub_p) {
+	update_constraint(p, s) {
+
+		if (!p) p = this.obj.active_prop;
+		if (!s) s = this.obj.active_sub_p;
+		if (!s) s = "all"
+
+		console.log(p, s);
+
 		let link_name = 'Unconstrained';
 		let offset_val = 0;
 
-		// console.log(this.obj.c_inbound[p]);
-		let c = this.obj.c_inbound[p][sub_p];
-		// console.log(c);
+		let c = this.obj.c_inbound[p][s];
 
 		if (c) {
 			link_name = c.reference.name;
-			offset_val = c.offset.toFixed(2);
+
+			if (s != "all") {
+				offset_val = c.offset.toFixed(2);
+			}
 		}
 
 		this.constraint_info.link_name.content = link_name;
