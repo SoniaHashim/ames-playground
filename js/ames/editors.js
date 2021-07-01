@@ -206,6 +206,11 @@ export class AMES_Shape_Editor {
 			link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.5);
 			link.visible = true;
 			link.strokeWidth = .25;
+			let link_remove = ames.icons['link-remove'].clone();
+			link_remove.scaling = 1.25;
+			link_remove.position = link.position;
+			link_remove.visible = false;
+			link_remove.strokeWidth = .25;
 			// When the link button is clicked activate constraint tool
 			link.onMouseDown = (e) => {
 				ames.c_relative = this.obj;
@@ -215,7 +220,18 @@ export class AMES_Shape_Editor {
 				ames.tools['Constraint'].onMouseDrag(e);
 				link.strokeColor = utils.ACTIVE_S_COLOR;
 			}
+			link_remove.onMouseDown = (e) => {
+				console.log("link remove constraint");
+				let p = this.obj.active_prop;
+				let s = this.obj.active_sub_p;
+				if (!s) s = "all";
+				let c = this.obj.c_inbound[p][s];
+				if (c) {
+					c.remove();
+				}
+			}
 			this.constraint_info.link = link;
+			this.constraint_info.link_remove = link_remove;
 			// Name of relative that defines the constraint
 			let link_name = new PointText({
 				point: [link.position.x + 3*utils.ICON_OFFSET, link.position.y + link.bounds.height/4],
@@ -247,7 +263,7 @@ export class AMES_Shape_Editor {
 			offset_line.strokeWidth = 1;
 			offset_line.opacity = 0.5;
 			this.constraint_info.offset_line = offset_line;
-			box.addChildren([link, link_name, offset_label, offset_val, offset_line]);
+			box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
 			this.show_constraint(false);
 
 		}
@@ -272,6 +288,18 @@ export class AMES_Shape_Editor {
 		for (let k in this.constraint_info) {
 			this.constraint_info[k].visible = bool;
 		}
+		// Hide link remove button
+		this.constraint_info.link_remove.visible = false;
+		// Show link remove button if there is an active constraint
+		if (bool && this.obj) {
+			let s = sub_p;
+			if (!s) s = "all";
+			let c = this.obj.c_inbound[p][s];
+			if (c) {
+				this.constraint_info.link_remove.visible = true;
+				this.constraint_info.link.visible = false
+			}
+		}
 
 		if (sub_p == 'all') {
 			this.constraint_info['offset_label'].visible = false;
@@ -284,25 +312,32 @@ export class AMES_Shape_Editor {
 	}
 
 	update_constraint(p, s) {
-
 		if (!p) p = this.obj.active_prop;
 		if (!s) s = this.obj.active_sub_p;
 		if (!s) s = "all"
 
-		console.log(p, s);
-
 		let link_name = 'Unconstrained';
 		let offset_val = 0;
 
-		let c = this.obj.c_inbound[p][s];
+		let c = null;
+		if (p) {
+			c = this.obj.c_inbound[p][s];
+			if (c) {
+				link_name = c.reference.name;
 
-		if (c) {
-			link_name = c.reference.name;
-
-			if (s != "all") {
-				offset_val = c.offset.toFixed(2);
+				if (s != "all") {
+					offset_val = c.offset.toFixed(2);
+				}
+				// Show unlink button
+				this.constraint_info.link.visible = false;
+				this.constraint_info.link_remove.visible = true;
+			} else {
+				// Show link button
+				this.constraint_info.link.visible = true;
+				this.constraint_info.link_remove.visible = false;
 			}
 		}
+
 
 		this.constraint_info.link_name.content = link_name;
 		this.constraint_info.offset_val.content = offset_val;

@@ -57,6 +57,7 @@ export class AMES_Constraint {
 	}
 
 	_remove_all_constraint() {
+		console.log("here???");
 		let p = this.property;
 		// Remove the relative's inbound all constraint on property
 		this.relative.c_inbound[p]['all'] = null;
@@ -78,42 +79,32 @@ export class AMES_Constraint {
 		let p = this.property;
 		let s = this._lookup(this.sub_prop);
 
-		if (this.sub_prop == "all") {
-			let s_list = utils.SUB_PROPS[p];
-			for (let i in s_list) {
-				s = s_list[i];
-				let c = this.relative.c_inbound[p][s];
-				c.update_value();
-			}
-		} else {
-			let ol = this.relative.poly[p][s];
-			let of = this.reference.poly[p][s];
+		let ol = this.relative.poly[p][s];
+		let of = this.reference.poly[p][s];
 
-			if (p == "rotation") {
-				ol = this.relative.rotation;
-				of = this.reference.rotation;
-			}
-			if (p == "scale") {
-				ol = this.relative.scale[s];
-				of = this.reference.scale[s];
-			}
-			if (p == "strokeWidth") {
-				ol = this.relative.poly.strokeWidth;
-				of = this.relative.poly.strokeWidth;
-			}
+		if (p == "rotation") {
+			ol = this.relative.rotation;
+			of = this.reference.rotation;
+		}
+		if (p == "scale") {
+			ol = this.relative.scale[s];
+			of = this.reference.scale[s];
+		}
+		if (p == "strokeWidth") {
+			ol = this.relative.poly.strokeWidth;
+			of = this.relative.poly.strokeWidth;
+		}
 
-			this.offset = ol - of;
+		this.offset = ol - of;
 
-			if (p == 'scale') {
-				this.offset = ol / of;
-			}
+		if (p == 'scale') {
+			this.offset = ol / of;
 		}
 	}
 
 	update_value() {
 		let p = this.property;
 		let s;
-
 		// console.log("updating constraint between rel / ref", this.relative.name, this.reference.name, this.property, this.sub_prop);
 
 		// Update all subproperty values if necessary
@@ -142,8 +133,6 @@ export class AMES_Constraint {
 			}
 
 		}
-
-		// this.relative.editor.update_constraint(p, this.sub_prop);
 	}
 
 	get_constraint_ref_label() {
@@ -154,21 +143,74 @@ export class AMES_Constraint {
 		return this.offset;
 	}
 
-	// preview() {
-	// 	// Show reference and relative boxes
-	// }
+	remove() {
+		console.log("to do -- remove constraint", this);
+
+		let p = this.property;
+		let s = this.sub_prop;
+
+		// Remove inbound constraint
+		this.relative.c_inbound[p][s] = null;
+
+		// Remove outbound constraint
+		let ref_list = this.reference.c_outbound[p][s];
+		this.reference.c_outbound[p][s].splice(ref_list.indexOf(this.relative.name), 1);
+
+		// If constraint removed applies to all subprops, remove corresponding
+		// constraints
+		if (s == "all") {
+			let s_list = utils.SUB_PROPS[p];
+			for (let i in s_list) {
+				let sub = s_list[i];
+
+				// Remove inbound constraint
+				this.relative.c_inbound[p][sub] = null;
+
+				// Remove outbound constraint
+				ref_list = this.reference.c_outbound[p][sub];
+				this.reference.c_outbound[p][sub].splice(ref_list.indexOf(this.relative.name), 1);
+
+			}
+		}
+
+		this.relative.editor.update_constraint();
+		this.reference.editor.update_constraint();
+	}
 
 	static update_constraints(p, s, obj) {
 		// Inbound: update offset
 		let c_in = obj.c_inbound[p][s];
-		if (c_in) c_in.calculate_offset();
+		if (c_in) {
+			// Update offsets for child properties
+			if (s == "all") {
+				let s_list = utils.SUB_PROPS[p];
+				for (let i in s_list) {
+					let sub = s_list[i];
+					c_in = obj.c_inbound[p][sub];
+					if (c_in) c_in.calculate_offset();
+				}
+			} else {
+				c_in.calculate_offset();
+			}
+		}
 
 		// Outbound: update values
 		let c_outbounds = obj.c_outbound[p][s];
+
+		// Include outbound constraints for child properties
+		if (s == "all") {
+			let s_list = utils.SUB_PROPS[p];
+			for (let i in s_list) {
+				let sub = s_list[i];
+				c_outbounds = c_outbounds.concat(obj.c_outbound[p][sub]);
+			}
+		}
+
+		// Update outbound constraint values
 		for (let idx in c_outbounds) {
 			let c_out = c_outbounds[idx];
 			c_out.update_value();
-			// Recurse
+			// And recurse to handle constraint chains
 			this.update_constraints(p, s, c_out.relative);
 		}
 

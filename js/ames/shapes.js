@@ -820,14 +820,4 @@ export class AMES_Path extends AMES_Shape {
 		this.update_bbox();
 	}
 
-	// set_pos(p) {
-	// 	super.set_pos(p);
-	// 	this.update_bbox();
-	// }
-	//
-	// set_scale(f) {
-	// 	super.set_scale(f);
-	// 	this.update_bbox();
-	// }
-
 }

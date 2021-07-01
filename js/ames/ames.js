@@ -103,7 +103,7 @@ export class AMES {
 	import_icons() {
 		let icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right",
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
-			"close", "link", "exclude", "path"];
+			"close", "link", "link-remove", "path"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -779,6 +779,8 @@ export class AMES {
 			eye.visible = false;
 			eye_slash.visible = true;
 			x.show(false);
+			// Remove from active objs until visible
+			delete this.active_objs[x.name];
 		}
 		eye_slash.onClick = (e) => {
 			// Box has to be active to toggle visibility
@@ -786,6 +788,9 @@ export class AMES {
 			eye_slash.visible = false;
 			eye.visible = true;
 			x.show(true);
+			// Add back to active objs
+			// Remove from active objects
+			this.active_objs[x.name] = x;
 		}
 
 		// Re-activate main project
@@ -1074,6 +1079,8 @@ export class AMES {
 
 		let cb_enable_constraint = (e) => {
 			// Create & preview constraint
+			let link = ames.c_relative.editor.constraint_info.link;
+			let link_remove = ames.c_relative.editor.constraint_info.link_remove;
 			if (curr_obj) {
 				let rel = ames.c_relative;
 				let p = ames.c_relative.active_prop;
@@ -1084,13 +1091,17 @@ export class AMES {
 					'c_ref_box': c_reference_box
 				});
 				console.log("made constraint", constraint);
-				console.log('p + sub_p', p, sub_p);
+				// console.log('p + sub_p', p, sub_p);
 				ames.c_relative.update_constraints();
+				link.visible = false;
+				link_remove.visible = true;
 			}
 			// Turn off constraint tool
 			ames.tools['inactive_tool'].activate();
-			let link = ames.c_relative.editor.constraint_info.link;
 			link.strokeColor = utils.INACTIVE_S_COLOR;
+
+
+
 			clean_constraint_tool();
 		}
 
