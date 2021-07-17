@@ -7,7 +7,7 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
-import {AMES_Shape_Editor} from './editors.js'
+import {AMES_Shape_Editor, AMES_List_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_List} from './lists.js'
 import {AMES_Animation} from './animations.js'
@@ -411,7 +411,7 @@ export class AMES {
 				return colorpicker.position.subtract(cpicker_origin);
 			};
 
-			// Create color sqatch
+			// Create color swatch
 			let r_dim = 100;
 			let r = new Path.Rectangle(colorpicker.position, new Size(r_dim, r_dim));
 			r.position = colorpicker.position.add(new Point(140, -12));
@@ -474,6 +474,10 @@ export class AMES {
 				let range_s = get_bound(true);
 				return (p.x - range_s) / r.bounds.width
 			}
+			let update_dot_x = (v, dot) => {
+				let range_s = get_bound(true);
+				dot.position.x = (v*r.bounds.width) + (range_s);
+			}
 			let set_alpha = (p) => {
 				r.fillColor.alpha = get_slider_value(p);
 				cname.content = r.fillColor.toCSS(true);
@@ -532,6 +536,23 @@ export class AMES {
 						ames.colorpicker.color_target(color);
 					}
 				}
+			}
+
+			colorpicker.load_color = (c) => {
+				if (!c) c = utils.INACTIVE_COLOR;
+				// update swatch
+				r.fillColor = c;
+				// update color label
+				cname.content = r.fillColor.toCSS(true);
+				// update alpha slider dot
+				console.log(c.alpha);
+				update_dot_x(c.alpha, alpha_dot);
+				// match colorwheel brightness
+				let v = c.brightness;
+				gwheel.fillColor.opacity = 1-v;
+				gwheel.opacity = 1-v;
+				// update lightness slider dot
+				update_dot_x(v, lightness_dot);
 			}
 
 			colorpicker.addChildren([r, cwheel, cname, gwheel]);
@@ -633,21 +654,41 @@ export class AMES {
 	}
 
 	test() {
-		let animation = new AMES_Animation();
-		animation.animate();
+		// let animation = new AMES_Animation();
+		// animation.animate();
+
+		let d = [[0, 2], [1, 3], [2, 12], [5, 147]];
+		console.log(utils.interpolate(d, 3));
+
 	}
 
 	// add_shape: adds given object as a shape
 	add_shape(x) {
-		x.create_path_control_shapes();
+		x.create_control_shapes();
+		x.poly.fillColor = new Color({
+			hue: 90,
+			brightness: 1,
+			saturation: 0,
+		});
+		if (x.poly.fillColor) x.poly.fillColor.brightness = 1;
 		this.expand_layers(utils.L_CONTROLS[0], true);
-
 		this.n_shapes += 1;
 		let n_shape = this.n_shapes - 1;
-		x.name = "Shape " + n_shape + " (" + x.get_name() + ") ";
+		x.name = "Shape " + n_shape + " (" + x.get_name() + ")";
 		x.editor = new AMES_Shape_Editor(x);
 		x.editor.show(false);
 		this.add_obj(x, utils.L_CONTROLS[0]);
+	}
+
+	// add_list: adds given object as a list
+	add_list(x) {
+		this.n_lists += 1;
+		let n_list = this.n_lists - 1;
+		x.name = "List " + n_list;
+		x.editor = new AMES_List_Editor(x);
+		x.editor.show(false);
+		this.add_obj(x, utils.L_CONTROLS[1]);
+		x.show(true);
 	}
 
 	add_obj(x, t_obj) {
@@ -659,22 +700,20 @@ export class AMES {
 			this.l_shape_idx += 1;
 		}
 		if (t_obj == utils.L_CONTROLS[1]) {
-			this.n_lists += 1;
-			let n_list = this.n_lists - 1;
-			n = "List " + n_list + " (" + x.get_name() + ") ";
+			// this.n_lists += 1;
+			// let n_list = this.n_lists - 1;
+			// n = "List " + n_list + " (" + x.get_name() + ") ";
 			box_idx = this.l_shape_idx + this.l_list_idx;
 			this.l_list_idx += 1;
 		}
 		if (t_obj == utils.L_CONTROLS[2]) {
 			this.n_aobjs += 1;
 			let n_aboj = this.n_aobjs - 1;
-			n = "Animation Obj " + n_aboj + " (" + x.get_name() + ") ";
+			n = "Animation Obj " + n_aboj + " (" + x.get_name() + ")";
 			box_idx = this.l_shape_idx + this.l_list_idx + this.l_aobj_idx;
 			this.l_aobj_idx += 1;
 		}
 
-		// Rename obj
-		x.name = n;
 		// Add obj
 		this.objs[n] = x;
 
@@ -755,11 +794,11 @@ export class AMES {
 			if (box.is_active_box) {
 				// deactivate object
 				this.deactivate_obj(n);
-				delete this.active_objs[x.name];
+				delete this.active_objs[n];
 			} else {
 				// activate object
 				this.activate_obj(n);
-				this.active_objs[x.name] = x;
+				this.active_objs[n] = x;
 			}
 			box.is_active_box = !box.is_active_box;
 		};
@@ -795,6 +834,10 @@ export class AMES {
 
 		// Re-activate main project
 		this.canvas_view._project.activate();
+
+		// start objects as active
+		this.activate_obj(n);
+		this.active_objs[n] = x;
 	}
 
 	// active_obj: Activates layers box and enables object selection
@@ -812,7 +855,6 @@ export class AMES {
 			box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
 		}
 	}
-
 
 	// deactivate_obj: Deactivates layers box and disables object selection
 	deactivate_obj(n) {
@@ -833,7 +875,14 @@ export class AMES {
 	remove_obj(n, t_obj) {
 		// Remove from objs in ames
 		this.objs[n].show(false);
+		this.objs[n].remove();
 		delete this.objs[n];
+
+		// Remove from active objs if necessary
+		if (this.active_objs[n]) {
+			this.active_objs[n].remove();
+			delete this.active_objs[n];
+		}
 
 		// Update length of entries for appropriate type of obj
 		if (t_obj == utils.L_CONTROLS[0]) this.l_shape_idx -= 1;
@@ -859,17 +908,15 @@ export class AMES {
 		}
 	}
 
-
-	// select_obj: Enables path editing on the object and editing using layers box
-	select_obj(n) {
-		// TO IMPLEMENT
-	}
-
 	// switch_shape_tool: toggles shape tool to enable drawing new shapes
 	switch_tool(opt) {
 		opt = opt || {};
 		let b = opt.b;
 		if (utils.is_active(b) || opt.deactivate) {
+			if (b == 'Path') {
+				console.log("here");
+				this.tools[b].clean_tool(true);
+			}
 			utils.deactivate(b);
 			ames.canvas.style.cursor = null;
 			this.active_shape_btn = null;
@@ -956,48 +1003,203 @@ export class AMES {
 	init_path_tool() {
 		let path_tool = new Tool();
 		let x;
+		let spt;
+		let seg;
+		let d_h1; let d_h2; let p1; let p2;
+		let helper_shapes = [];
+
+		let make_segment_controls = (s, e) => {
+			console.log('make seg controls?', s);
+			let h1 = s.handleIn.add(s.point);
+			let h2 = s.handleOut.add(s.point);
+			p1 = utils.make_line(h1, s.point);
+			p2 = utils.make_line(s.point, h2);
+			d_h1 = utils.make_dot(h1);
+			d_h2 = utils.make_dot(h2);
+			let d = utils.make_square_dot(s.point);
+
+			// Edit the path by dragging the anchor point
+			d.onMouseDrag = (e) => {
+				s.point = e.point;
+				// update the manipulable dots and visual aids
+				d.position = e.point;
+				let n_h1 = s.handleIn.add(e.point);
+				let n_h2 = s.handleOut.add(e.point);
+				d_h1.position = n_h1;
+				d_h2.position = n_h2;
+				p1.firstSegment.point = n_h1;
+				p1.lastSegment.point = e.point;
+				p2.firstSegment.point = e.point;
+				p2.lastSegment.point = n_h2;
+			}
+
+			// create handles with manipulable dots at endpoints to manipulate the path
+			d_h1.onMouseDrag = (e) => {
+				s.handleIn = e.point.subtract(s.point);
+				p1.firstSegment.point = e.point;
+				d_h1.position = e.point;
+			}
+			d_h2.onMouseDrag = (e) => {
+				s.handleOut = e.point.subtract(s.point);
+				p2.lastSegment.point = e.point;
+				d_h2.position = e.point;
+			}
+
+			helper_shapes.push(d_h1, d_h2, d, p1, p2);
+		}
+
+		path_tool.clean_tool = (remove_path) => {
+			if (remove_path && x) x.poly.remove();
+			x = null; seg = null; d_h1 = null; d_h2 = null; p1 = null; p2 = null;
+			for (let i in helper_shapes) {
+				helper_shapes[i].remove();
+			}
+			helper_shapes = [];
+			path_tool.onMouseDown = cb_start_path;
+			path_tool.onMouseDrag = null;
+		}
+
 		// Initialize a new path
 		let cb_start_path = (e) => {
 			if (!this.on_canvas(e)) return;
 			x = new AMES_Path();
-			path_tool.onMouseDrag = cb_draw_path;
+			path_tool.onMouseDown = cb_add_point;
+			path_tool.onMouseDrag = cb_adjust_handle;
+			cb_add_point(e);
 		}
+
+		let thresh = 144; // within 12px
+		// Add point to line
+		let cb_add_point = (e) => {
+			// If point is close enough to previous point or first point
+			// finish path and reset tool
+			if (x.poly.segments.length >= 2) {
+				// Make closed path and reset
+				if (utils.lengthsq(x.poly.firstSegment.point, e.point) < thresh) {
+					console.log("closed path")
+					x.poly.closed = true;
+					this.add_shape(x);
+					path_tool.clean_tool();
+					return;
+				}
+				// Make open-ended path
+				if (utils.lengthsq(x.poly.lastSegment.point, e.point) < thresh) {
+					console.log("open path");
+					this.add_shape(x);
+					path_tool.clean_tool();
+					return;
+				}
+			}
+			x.poly.add(e.point);
+			seg = x.poly.lastSegment;
+			make_segment_controls(seg, e);
+		}
+
+		// Drag to manipulate handle
+		let cb_adjust_handle = (e) => {
+			// Adjust handle of last point drawn
+			if (seg != x.poly.firstSegment) {
+				seg.handleIn = seg.point.subtract(e.point);
+				p1.firstSegment.point = seg.handleIn.add(seg.point);
+				d_h1.position = seg.handleIn.add(seg.point);
+
+				seg.handleOut = e.point.subtract(seg.point);
+				p2.firstSegment.point = seg.handleOut.add(seg.point);
+				d_h2.position = seg.handleOut.add(seg.point);
+			}
+		}
+
 		// Add points to the path
 		let cb_draw_path = (e) => {
 			if (!x) return;
-			x.poly.add(e.point);
+			dist += (e.event.movementX*e.event.movementX + e.event.movementY*e.event.movementY);
+			console.log(dist);
+			if (dist > 100) {
+				x.poly.add(e.point);
+				dist = 0;
+			}
+
 		}
-		// Simplify the path and reveal it
-		let cb_simplify_path = (e) => {
-			if (!x) return;
-			path_tool.onMouseDrag = null;
-			x.make_path_helper();
-			this.add_shape(x);
-			x = null;
-		}
+
 		path_tool.onMouseDown = cb_start_path;
-		path_tool.onMouseUp = cb_simplify_path;
 		return path_tool;
 	}
 
 	// init_list_tool: creates a list using underlying active shapes
 	init_list_tool() {
 		let list_tool = new Tool();
+		let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+		let lbox; let s_dot; let e_dot;
+		let selected_shapes = {};
+		let select_helpers = {};
 
 		// Start rectangle to make list
 		let cb_start_list = (e) => {
 			console.log("start list");
+
+			lbox = new Path.Rectangle(e.point, 10);
+			lbox.strokeColor = utils.ACTIVE_COLOR;
+			lbox.strokeWidth = 1;
+			lbox.dashArray = [3,1];
+
+			// Create boundary dots
+			s_dot = utils.make_dot(lbox.segments[TL].point, utils.ACTIVE_COLOR);
+			e_dot = utils.make_dot(lbox.segments[BR].point, utils.ACTIVE_COLOR);
 		}
 
 		// Increase rectangle size and highlight activated shapes that the
 		// selection rectangle to make a list contains
 		let cb_select_shapes = (e) => {
 			console.log("select shapes");
+			lbox.segments[BR].point = e.point;
+			lbox.segments[TR].point.x = e.point.x;
+			lbox.segments[BL].point.y = e.point.y;
+			e_dot.position = e.point;
+
+			// From active shapes select shapes
+			let lbox_bbox = lbox.strokeBounds;
+			for (let i in this.active_objs) {
+				let s = this.active_objs[i];
+				if (s.is_shape) {
+					let s_bbox = s.get_bbox();
+					// If bbox contains shape...
+					if (lbox_bbox.contains(s_bbox)) {
+						// If shape is not in selected shape...
+						if (!selected_shapes[s.name]) {
+							// Add it to the selected shapes and highlight it
+							selected_shapes[s.name] = s;
+							select_helpers[s.name] = utils.make_rect(s_bbox, utils.ACTIVE_COLOR);
+						}
+					} else {
+						// Otherwise if it was selected...
+						if (selected_shapes[s.name]) {
+							// Remove it from the selected shapes
+							delete selected_shapes[s.name];
+							delete select_helpers[s.name];
+						}
+					}
+				}
+			}
 		}
 
 		// If active shapes are selected, make a list using those forms
 		let cb_make_list = (e) => {
 			console.log("make list");
+			let shapes = [];
+			for (let k in selected_shapes) shapes.push(selected_shapes[k]);
+			if (shapes.length !=0 ) {
+				let list = new AMES_List(shapes);
+				this.add_list(list);
+			}
+
+			// clean tool shapes
+			for (let i in select_helpers) {
+				let s = select_helpers[i];
+				s.remove();
+			}
+			lbox.remove(); s_dot.remove(); e_dot.remove();
+			lbox = null; s_dot = null; e_dot = null;
+			selected_shapes = {}; select_helpers = [];
 		}
 
 		list_tool.onMouseDown = cb_start_list;

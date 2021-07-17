@@ -19,6 +19,7 @@ import {PropertyBox} from './propertybox.js'
 export class AMES_Shape {
 	// Display properties including name, visibility, layer
 	name = "Shape";
+	is_shape = true;
 	obj_type = "shape";
 	visible = false;
 	static count = 1;
@@ -32,6 +33,11 @@ export class AMES_Shape {
 	// State
 	is_selected = false;
 	path_control_shapes = [];
+	scale_control_shapes = {'scale_box': null, 'scale_dots': null};
+	rotation_control_shapes = {}
+	vis_control_shapes = {
+		'path': false
+	}
 	cbs = {
 		'position': this._position_cb,
 		'scale': this._scale_cb,
@@ -62,13 +68,25 @@ export class AMES_Shape {
 	}
 
 
-	// update_pos(delta)
-	// Description: Updates the position of the shape
-	set_pos(p) {
-		this.pos.x = p.x;
-		this.pos.y = p.y;
-		if (this.poly)
-			this.poly.position = new Point(this.pos.x, this.pos.y);
+	// set_pos(pt, is_delta)
+	// Description: Updates the position of the shape to the pt specified or by
+	// the vector specified if is_delta is true
+	set_pos(p, is_delta) {
+		if (is_delta) {
+			this.pos.x += p.x;
+			this.pos.y += p.y;
+			if (this.poly)
+				this.poly.position.add(p);
+			if (this.rotation_control_shapes.line) {
+				this.rotation_control_shapes.line.position = this.rotation_control_shapes.line.position.add(p);
+				this.rotation_control_shapes.da.position = this.rotation_control_shapes.da.position.add(p);
+			}
+		} else {
+			this.pos.x = p.x;
+			this.pos.y = p.y;
+			if (this.poly)
+				this.poly.position = new Point(this.pos.x, this.pos.y);
+		}
 	}
 
 	// set_scale(f)
@@ -92,8 +110,16 @@ export class AMES_Shape {
 	set_rotation(theta, anchor) {
 		this.rotation += theta;
 		if (this.poly) {
-			if (anchor) this.poly.rotate(theta, anchor);
-			else this.poly.rotate(theta);
+			if (this.rotation_control_shapes.da) {
+				anchor = this.rotation_control_shapes.da.position;
+			}
+			if (anchor) {
+				this.poly.rotate(theta, anchor);
+				if (this.rotation_control_shapes.line)
+					this.rotation_control_shapes.line.rotate(theta, anchor);
+			} else {
+				this.poly.rotate(theta);
+			}
 		}
 	}
 
@@ -109,6 +135,11 @@ export class AMES_Shape {
 			else return this.poly.bounds;
 		}
 		return;
+	}
+
+	// get_pos: returns the position of this shape
+	get_pos() {
+		return this.poly.position;
 	}
 
 	// is_inside(p)
@@ -181,9 +212,9 @@ export class AMES_Shape {
 			let f = this.cb_helpers['color_target'];
 			ames.colorpicker.color_target = null;
 		}
-		if (this.cb_helpers['path']) {
-			this.show_path_control_shapes(false);
-		}
+		if (this.cb_helpers['path']) this.show_path_control_shapes(false);
+		if (this.cb_helpers['scale']) this.show_scale_control_shapes(false);
+		if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
 		this.cb_helpers = {};
 		this.cb_helpers['shapes'] = [];
 	}
@@ -216,19 +247,17 @@ export class AMES_Shape {
 
 	_scale_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
+			shape.update_scale_control_shapes();
+			shape.show_scale_control_shapes(true);
+			cb_helpers['scale'] = true;
+
+			let scale_box = shape.scale_control_shapes.scale_box;
+			let scale_dots = shape.scale_control_shapes.scale_dots;
+
 			let bbox = shape.get_bbox();
-			let scale_box = utils.make_rect(bbox, utils.SHAPE_PATH_COLOR);
-			cb_helpers['shapes'].push(scale_box)
 			let corners = [bbox.bottomLeft, bbox.topLeft, bbox.topRight, bbox.bottomRight];
-			let dot_pairs = [2, 3, 0, 1];
-			let scale_dots = [];
-			for (let c in corners) {
-				let d = utils.make_dot(corners[c]);
-				scale_dots.push(d.clone());
-				d.remove();
-			}
-			// console.log(scale_dots);
-			// Attach handlers to dots - calculate scale factor using distance to corners
+			let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+			let dot_pairs = [TR, BR, BL, TL];
 			let bf = 1; let pf = 1;
 			for (let d_idx = 0; d_idx < 4; d_idx++) {
 				let d = scale_dots[d_idx];
@@ -270,7 +299,6 @@ export class AMES_Shape {
 					}
 					// console.log(f);
 					pf = f;
-					console.log(shape.poly.scaling);
 
 					// Update dot position and scale_box
 					d.position = scale_box.segments[d_idx].point;
@@ -281,7 +309,6 @@ export class AMES_Shape {
 					// Update constraints
 					shape.update_constraints();
 				}
-				cb_helpers['shapes'].push(d);
 			}
 		}
 	}
@@ -289,20 +316,21 @@ export class AMES_Shape {
 	_rotation_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
 			// Draw rotation guide
-			let tc = shape.poly.bounds.topCenter;
-			if (shape.strokeBounds) tc = shape.poly.strokeBounds.topCenter
-			let line = utils.make_line(shape.poly.position, tc);
-			let da = utils.make_dot(shape.poly.position);
-			let dt = utils.make_dot(tc);
-			da.scaling = 1.5;
-			da.fillColor = utils.INACTIVE_COLOR;
-			da.strokeColor = utils.SHAPE_PATH_COLOR;
-			da.strokeWidth = 2;
+			shape.update_rotation_control_shapes();
+			// Set dt to be at the top of the current bounding box of the shape
+			let bbox = shape.get_bbox();
+			shape.rotation_control_shapes.line.segments[1].point = bbox.topCenter;
+			shape.rotation_control_shapes.dt.position = bbox.topCenter;
 
+			shape.show_rotation_control_shapes(true);
+			cb_helpers['rotation'] = true;
 
-			let anchor = shape.poly.position;
+			let line = shape.rotation_control_shapes.line;
+			let da = shape.rotation_control_shapes.da;
+			let dt = shape.rotation_control_shapes.dt;
+
+			let anchor = da.position;
 			let x_base = shape.poly.bounds.topCenter.subtract(anchor);
-
 
 			let prev_ro = 0;
 			let get_rotation_a = function(p, anchor) {
@@ -351,9 +379,6 @@ export class AMES_Shape {
 				// Update constraints
 				shape.update_constraints();
 			}
-
-			cb_helpers['shapes'].push(line, dt, da);
-
 		}
 
 	}
@@ -363,6 +388,7 @@ export class AMES_Shape {
 			let p = ames.colorpicker.get_position();
 			ames.colorpicker.position = p;
 			ames.colorpicker.visible = true;
+			if (shape.poly) ames.colorpicker.load_color(shape.poly.fillColor);
 
 			let color_function = (c) => {
 				shape.poly.fillColor = c;
@@ -429,6 +455,7 @@ export class AMES_Shape {
 			let p = ames.colorpicker.get_position();
 			ames.colorpicker.position = p;
 			ames.colorpicker.visible = true;
+			if (shape.poly) ames.colorpicker.load_color(shape.poly.strokeColor);
 
 			let color_function = (c) => {
 				shape.poly.strokeColor = c;
@@ -477,9 +504,66 @@ export class AMES_Shape {
 	}
 
 
+	// create_control_shapes: create all control shapes
+	create_control_shapes() {
+		this._create_path_control_shapes();
+		this._create_scale_box();
+		this._create_rotation_shapes();
+	}
+
+	// create_rotation_shapes: create rotation control shapes
+	_create_rotation_shapes() {
+		let shape = this;
+		if (shape.poly) {
+			let tc = shape.poly.bounds.topCenter;
+			if (shape.strokeBounds) tc = shape.poly.strokeBounds.topCenter
+			let line = utils.make_line(shape.poly.position, tc);
+			let da = utils.make_dot(shape.poly.position);
+			let dt = utils.make_dot(tc);
+			da.scaling = 1.5;
+			da.fillColor = utils.INACTIVE_COLOR;
+			da.strokeColor = utils.SHAPE_PATH_COLOR;
+			da.strokeWidth = 2;
+
+			line.visible = false;
+			da.visible = false;
+			dt.visible = false;
+
+			this.rotation_control_shapes.line = line;
+			this.rotation_control_shapes.da = da;
+			this.rotation_control_shapes.dt = dt;
+		}
+
+	}
+
+	// create_scale_box: scale control shapes
+	_create_scale_box() {
+		let shape = this;
+		if (shape.poly) {
+			let bbox = shape.get_bbox();
+			let scale_box = utils.make_rect(bbox, utils.SHAPE_PATH_COLOR);
+			// cb_helpers['shapes'].push(scale_box)
+			let corners = [bbox.bottomLeft, bbox.topLeft, bbox.topRight, bbox.bottomRight];
+			let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+			let dot_pairs = [TR, BR, BL, TL];
+			let scale_dots = [];
+			for (let c in corners) {
+				let d = utils.make_dot(corners[c]);
+				scale_dots.push(d.clone());
+				d.remove();
+			}
+			scale_box.visible = false;
+			for (let i = 0; i < 4; i++) {
+				scale_dots[i].visible = false;
+			}
+
+			this.scale_control_shapes.scale_box = scale_box;
+			this.scale_control_shapes.scale_dots = scale_dots;
+		}
+	}
 
 	// create_path_control_shapes: create path control objects
-	create_path_control_shapes() {
+	_create_path_control_shapes() {
 		// for every segment in the path
 		for (let i in this.poly.segments) {
 			let s = this.poly.segments[i];
@@ -490,7 +574,8 @@ export class AMES_Shape {
 			let h2 = s.handleOut.add(s.point);
 			let p1 = utils.make_line(h1, s.point);
 			let p2 = utils.make_line(s.point, h2);
-			let d = utils.make_dot(s.point);
+
+			let d = utils.make_square_dot(s.point);
 			let d_h1 = utils.make_dot(h1);
 			let d_h2 = utils.make_dot(h2);
 
@@ -548,6 +633,60 @@ export class AMES_Shape {
 		}
 	}
 
+	update_control_shapes() {
+		if (this.vis_control_shapes.path) this.update_path_control_shapes();
+		if (this.vis_control_shapes.scale) this.update_scale_control_shapes();
+		if (this.vis_control_shapes.rotation) this.update_rotation_control_shapes();
+	}
+
+	update_rotation_control_shapes() {
+		this.rotation_control_shapes.dt.position = this.rotation_control_shapes.line.segments[1].point;
+		this.rotation_control_shapes.da.position = this.rotation_control_shapes.line.segments[0].point;
+	}
+
+	update_scale_control_shapes() {
+		let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+
+		// update scale dot positions and corners of scale box
+		let bbox = this.get_bbox();
+		let sbox_tl = this.scale_control_shapes.scale_box.segments[TL].point;
+		let sbox_tr = this.scale_control_shapes.scale_box.segments[TR].point;
+		let sbox_bl = this.scale_control_shapes.scale_box.segments[BL].point;
+		let sbox_br = this.scale_control_shapes.scale_box.segments[BR].point;
+
+		// If not flipped in x...
+		let l; let r; let t; let b;
+		if (sbox_tl.x <= sbox_tr.x) {
+			// Set left and right coord to bbox left and right
+			l = bbox.topLeft.x;
+			r = bbox.topRight.x;
+		} else {
+			// Otherwise flip in x
+			l = bbox.topRight.x;
+			r = bbox.topLeft.x;
+		}
+
+		// If not flipped in y...
+		if (sbox_tl.y <= sbox_bl.y) {
+			// Set top and bottom coord to bbox top and bottom
+			t = bbox.topLeft.y;
+			b = bbox.bottomLeft.y;
+		} else {
+			// Otherwise flip
+			t = bbox.bottomLeft.y;
+			b = bbox.topLeft.y;
+		}
+
+		this.scale_control_shapes.scale_box.segments[TL].point = new Point(l, t);
+		this.scale_control_shapes.scale_box.segments[TR].point = new Point(r, t);
+		this.scale_control_shapes.scale_box.segments[BL].point = new Point(l, b);
+		this.scale_control_shapes.scale_box.segments[BR].point = new Point(r, b);
+
+		for (let n = 0; n < 4; n++) {
+			this.scale_control_shapes.scale_dots[n].position = this.scale_control_shapes.scale_box.segments[n].point;
+		}
+	}
+
 	update_path_control_shapes() {
 		for (let i in this.path_control_shapes) {
 			let controls = this.path_control_shapes[i];
@@ -574,8 +713,24 @@ export class AMES_Shape {
 		}
 	}
 
+	show_rotation_control_shapes(bool) {
+		this.vis_control_shapes['rotation'] = bool;
+		this.rotation_control_shapes.line.visible = bool;
+		this.rotation_control_shapes.da.visible = bool;
+		this.rotation_control_shapes.dt.visible = bool;
+	}
+
+	show_scale_control_shapes(bool) {
+		this.vis_control_shapes['scale'] = bool;
+		this.scale_control_shapes.scale_box.visible = bool;
+		for (let d in this.scale_control_shapes.scale_dots) {
+			this.scale_control_shapes.scale_dots[d].visible = bool;
+		}
+	}
+
 	// show_path_control_shapes: if true show shapes; otherwise hide
 	show_path_control_shapes(bool) {
+		this.vis_control_shapes['path'] = bool;
 		for (let i in this.path_control_shapes) {
 			let controls = this.path_control_shapes[i];
 			if (controls) {
@@ -637,7 +792,6 @@ export class AMES_Shape {
 		this.name = n;
 	}
 
-
 	// show: if true, show; otherwise hide
 	show(bool) {
 		this.show_editor(bool);
@@ -648,6 +802,10 @@ export class AMES_Shape {
 		// 	this.show_path_control_shapes(bool);
 		// }
 
+	}
+
+	remove() {
+		console.log("To do -- Shape.remove()");
 	}
 
 	// make_interactive: if true, enable interacitivty & open editor; otherwise disable and close
@@ -694,24 +852,24 @@ export class AMES_Square extends AMES_Shape {
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
 
-		// On double click launch properties editor
-		this.latest_tap;
-		this.poly.on('click', e => {
-			console.log("tap on ", this.name);
-			let now = new Date().getTime();
-			if (this.latest_tap) {
-				let time_elapsed = now - this.latest_tap;
-				// Double tap
-				if (time_elapsed < 600 && time_elapsed > 0) {
-					console.log("double tap on ", this.name);
-					// In Shape mode, open shape editor
-					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-						this.visual_prop_box.show();
-					}
-				}
-			}
-			this.latest_tap = new Date().getTime();
-		});
+		// // On double click launch properties editor
+		// this.latest_tap;
+		// this.poly.on('click', e => {
+		// 	console.log("tap on ", this.name);
+		// 	let now = new Date().getTime();
+		// 	if (this.latest_tap) {
+		// 		let time_elapsed = now - this.latest_tap;
+		// 		// Double tap
+		// 		if (time_elapsed < 600 && time_elapsed > 0) {
+		// 			console.log("double tap on ", this.name);
+		// 			// In Shape mode, open shape editor
+		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+		// 				this.visual_prop_box.show();
+		// 			}
+		// 		}
+		// 	}
+		// 	this.latest_tap = new Date().getTime();
+		// });
 	}
 }
 
@@ -734,24 +892,24 @@ export class AMES_Circle extends AMES_Shape {
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
 
-		// On double click launch properties editor
-		this.latest_tap;
-		this.poly.on('click', e => {
-			console.log("tap on ", this.name);
-			let now = new Date().getTime();
-			if (this.latest_tap) {
-				let time_elapsed = now - this.latest_tap;
-				// Double tap
-				if (time_elapsed < 600 && time_elapsed > 0) {
-					console.log("double tap on ", this.name);
-					// In Shape mode, open shape editor
-					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-						this.visual_prop_box.show();
-					}
-				}
-			}
-			this.latest_tap = new Date().getTime();
-		});
+		// // On double click launch properties editor
+		// this.latest_tap;
+		// this.poly.on('click', e => {
+		// 	console.log("tap on ", this.name);
+		// 	let now = new Date().getTime();
+		// 	if (this.latest_tap) {
+		// 		let time_elapsed = now - this.latest_tap;
+		// 		// Double tap
+		// 		if (time_elapsed < 600 && time_elapsed > 0) {
+		// 			console.log("double tap on ", this.name);
+		// 			// In Shape mode, open shape editor
+		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+		// 				this.visual_prop_box.show();
+		// 			}
+		// 		}
+		// 	}
+		// 	this.latest_tap = new Date().getTime();
+		// });
 	}
 }
 
@@ -768,7 +926,7 @@ export class AMES_Path extends AMES_Shape {
 			strokeColor: 'darkgray',
 			strokeWidth: 1,
 			visible: true,
-			fullySelected: true
+			// fullySelected: true
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);
 	}
@@ -779,25 +937,25 @@ export class AMES_Path extends AMES_Shape {
 		this.bbox.sendToBack();
 		this.bbox.fillColor = "lavender";
 		this.bbox.opacity = 0;
-		// On double click launch properties editor
-		this.latest_tap;
-		this.bbox.on('click', e => {
-			let nearpoint = this.poly.getNearestPoint(e.point);
-			if (nearpoint.getDistance(e.point, true) > 50 ) return;
-			let now = new Date().getTime();
-			if (this.latest_tap) {
-				let time_elapsed = now - this.latest_tap;
-				// Double tap
-				if (time_elapsed < 600 && time_elapsed > 0) {
-					console.log("double tap on ", this.name);
-					// In Shape mode, open shape editor
-					if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-						this.visual_prop_box.show();
-					}
-				}
-			}
-			this.latest_tap = new Date().getTime();
-		});
+		// // On double click launch properties editor
+		// this.latest_tap;
+		// this.bbox.on('click', e => {
+		// 	let nearpoint = this.poly.getNearestPoint(e.point);
+		// 	if (nearpoint.getDistance(e.point, true) > 50 ) return;
+		// 	let now = new Date().getTime();
+		// 	if (this.latest_tap) {
+		// 		let time_elapsed = now - this.latest_tap;
+		// 		// Double tap
+		// 		if (time_elapsed < 600 && time_elapsed > 0) {
+		// 			console.log("double tap on ", this.name);
+		// 			// In Shape mode, open shape editor
+		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
+		// 				this.visual_prop_box.show();
+		// 			}
+		// 		}
+		// 	}
+		// 	this.latest_tap = new Date().getTime();
+		// });
 	}
 
 	make_path_helper() {

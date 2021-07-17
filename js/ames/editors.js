@@ -6,6 +6,7 @@
 // ----------------------------------------------------------------------------
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
+import {AMES_List} from './lists.js'
 
 
 export class AMES_Shape_Editor {
@@ -19,6 +20,10 @@ export class AMES_Shape_Editor {
 	selected_subprop;
 	selected_prop;
 
+	get_height() {
+		return 125;
+	}
+
 
 	constructor(obj) {
 		let props = utils.VIS_PROPS;
@@ -28,7 +33,7 @@ export class AMES_Shape_Editor {
 		// background rectangle
 		let e_width = 150;
 		this.box_width = e_width;
-		let e_height = 125;
+		let e_height = this.get_height();
 		let rect = new Shape.Rectangle({
 			point: [0, 0],
 			size: [e_width, e_height],
@@ -269,10 +274,12 @@ export class AMES_Shape_Editor {
 		}
 		// When the subproperty is clicked enable editing on it
 		subprop_box.onClick = (e) => {
+			if (!this.obj.active_prop) return;
 			this.select_subprop(s, true);
 			this.obj.manipulate_helper(s);
 		}
 		subprop_text.onClick = (e) => {
+			if (!this.obj.active_prop) return;
 			this.select_subprop(s, true);
 			this.obj.manipulate_helper(s);
 		}
@@ -297,7 +304,7 @@ export class AMES_Shape_Editor {
 			let c = this.obj.c_inbound[p][s];
 			if (c) {
 				this.constraint_info.link_remove.visible = true;
-				this.constraint_info.link.visible = false
+				this.constraint_info.link.visible = false;
 			}
 		}
 
@@ -403,12 +410,12 @@ export class AMES_Shape_Editor {
 	}
 
 	set_editor_pos() {
-		let b = this.obj.poly.bounds;
+		let b = this.obj.get_bbox();
 		b.strokeColor = 'green';
 		b.strokeWidth = 2;
 		b.visible - true;
 		let c = ames.canvas_view.bounds.center;
-		let pos = this.obj.poly.position;
+		let pos = this.obj.get_pos();
 		let x = b.width/2 + this.box.bounds.width/2 + 3*utils.ICON_OFFSET;
 
 		// Adjust horizontal posiiton
@@ -419,33 +426,33 @@ export class AMES_Shape_Editor {
 		}
 
 		// Adjust position;
-		this.box.position = this.obj.poly.position.add(new Point(x, 20));
+		this.box.position = pos.add(new Point(x, -20));
 	}
 }
 
 
 
-export class AMES_List_Editor {
-
-	constructor() {
-
-	}
-}
-
-class AMES_Property_Button {
-	name;
-	button;
-
-	constructor(shape, name) {
-		this.name = name;
-		button = ames.icons[name].clone();
-
-		button.onClick = (e) => {
-			this.manipulate(shape)
-		}
+export class AMES_List_Editor extends AMES_Shape_Editor {
+	constructor(obj) {
+		super(obj);
 	}
 
-	manipulate() {
-		// void button
+	get_height() {
+		return 175; 
+	}
+
+	set_editor_pos() {
+		super.set_editor_pos();
+		// Adjust to be beneath shape editor
+		let px = this.obj.list_box.position.x + this.box.bounds.width/2 + this.obj.list_box.bounds.width/2 + 3*utils.ICON_OFFSET;
+		let py = this.obj.list_box.position.y + this.obj.list_box.bounds.height/2 + 40;
+
+		this.box.position = new Point(px, py);
+	}
+
+	show(bool) {
+		// Show / hide list highlight box
+		this.obj.show_box(bool);
+		super.show(bool);
 	}
 }

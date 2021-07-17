@@ -16,6 +16,7 @@ export class AMES_Constraint {
 	// Visual aids
 	c_rel_box;
 	c_ref_box;
+	cycle = 1;
 
 	constructor(rel, ref, p, sub_p, opt) {
 		this.relative = rel;
@@ -24,8 +25,9 @@ export class AMES_Constraint {
 		if (!sub_p) sub_p = 'all'
 		this.sub_prop = sub_p;
 
-		if (opt.c_rel_box) this.c_rel_box = opt.c_rel_box;
-		if (opt.c_ref_box) this.c_ref_box = opt.c_ref_box;
+		opt = opt || {};
+		if (opt.c_rel_box) this.c_rel_box = opt.c_rel_box.clone(false);
+		if (opt.c_ref_box) this.c_ref_box = opt.c_ref_box.clone(false);
 		let root = !opt.overwrite;
 
 		if (sub_p != 'all') this.calculate_offset();
@@ -57,7 +59,6 @@ export class AMES_Constraint {
 	}
 
 	_remove_all_constraint() {
-		console.log("here???");
 		let p = this.property;
 		// Remove the relative's inbound all constraint on property
 		this.relative.c_inbound[p]['all'] = null;
@@ -96,6 +97,7 @@ export class AMES_Constraint {
 		}
 
 		this.offset = ol - of;
+		if (!this.offset) this.offset = 0;
 
 		if (p == 'scale') {
 			this.offset = ol / of;
@@ -118,6 +120,12 @@ export class AMES_Constraint {
 		} else {
 			// Or just update value for given subproperty
 			s = this._lookup(this.sub_prop);
+			if (p == 'position') {
+				let pt;
+				if (s == 'x') pt = new Point(this.reference.poly[p][s] + this.offset - this.relative.poly.position.x, 0);
+				if (s == 'y') pt = new Point(0, this.reference.poly[p][s] + this.offset - this.relative.poly.position.y);
+				if (pt) this.relative.set_pos(pt, true);
+			}
 			if (p == "rotation") {
 				let r0 = this.relative.rotation;
 				this.relative.set_rotation(-r0 + this.reference.rotation + this.offset);
@@ -130,9 +138,11 @@ export class AMES_Constraint {
 				this.relative.poly.strokeWidth = this.reference.poly.strokeWidth + this.offset;
 			} else {
 				this.relative.poly[p][s] = this.reference.poly[p][s] + this.offset;
+				console.log(p, s, this.reference.poly[p][s], this.offset, this.relative.poly[p][s]);
 			}
-
 		}
+
+		this.relative.update_control_shapes();
 	}
 
 	get_constraint_ref_label() {
@@ -144,8 +154,6 @@ export class AMES_Constraint {
 	}
 
 	remove() {
-		console.log("to do -- remove constraint", this);
-
 		let p = this.property;
 		let s = this.sub_prop;
 
@@ -177,9 +185,28 @@ export class AMES_Constraint {
 		this.reference.editor.update_constraint();
 	}
 
-	static update_constraints(p, s, obj) {
-		// Inbound: update offset
+	static update_constraints(p, s, obj, cycle) {
+		// Get inbound and outbound constraints
 		let c_in = obj.c_inbound[p][s];
+		let c_outbounds = obj.c_outbound[p][s];
+
+
+		// Cycle detection...
+		// If this is the original update
+		if (!cycle) {
+			// Get a unique identifier to prevent cycle propagation
+			let prev_cycles = [];
+			if (c_in) prev_cycles.push(c_in.cycle);
+			for (let i in c_outbounds) {
+				prev_cycles.push(c_outbounds[i].cycle);
+			}
+			cycle = Math.floor(Math.random() * 1000 + 1);
+			while (cycle in prev_cycles) cycle = Math.floor(Math.random() * 1000 + 1);
+
+		}
+		console.log(obj.name, p, s, cycle, c_outbounds);
+
+		// Inbound: update offset
 		if (c_in) {
 			// Update offsets for child properties
 			if (s == "all") {
@@ -187,16 +214,15 @@ export class AMES_Constraint {
 				for (let i in s_list) {
 					let sub = s_list[i];
 					c_in = obj.c_inbound[p][sub];
-					if (c_in) c_in.calculate_offset();
+					c_in.cycle = cycle;
 				}
 			} else {
 				c_in.calculate_offset();
+
 			}
 		}
 
 		// Outbound: update values
-		let c_outbounds = obj.c_outbound[p][s];
-
 		// Include outbound constraints for child properties
 		if (s == "all") {
 			let s_list = utils.SUB_PROPS[p];
@@ -209,9 +235,13 @@ export class AMES_Constraint {
 		// Update outbound constraint values
 		for (let idx in c_outbounds) {
 			let c_out = c_outbounds[idx];
-			c_out.update_value();
-			// And recurse to handle constraint chains
-			this.update_constraints(p, s, c_out.relative);
+			if (c_out.cycle != cycle) {
+				c_out.cycle = cycle;
+				c_out.update_value();
+
+				// And recurse to handle constraint chains
+				this.update_constraints(p, s, c_out.relative, cycle);
+			}
 		}
 
 		obj.editor.update_constraint();

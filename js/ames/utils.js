@@ -13,6 +13,7 @@ export class AMES_Utils {
 	static ACTIVE_S_COLOR = 'black';
 	static SHAPE_PATH_COLOR = 'dodgerblue';
 	static SHAPE_HIGHLIGHT_COLOR = 'aqua';
+	static LIST_HIGHLIGHT_COLOR = 'chartreuse';
 	static C_REFERENCE_HIGHLIGHT = 'orange';
 	static C_RELATIVE_COLOR = 'mediumorchid';
 	static LAYER_HEIGHT = 25;
@@ -94,9 +95,19 @@ export class AMES_Utils {
 		ames.canvas.style.cursor = 'crosshair';
 	}
 
-	static make_dot(p) {
+	static make_dot(p, color) {
 		let d = new Path.Circle(p, 2.5);
-		d.fillColor = this.SHAPE_PATH_COLOR;
+		if (!color) color = this.SHAPE_PATH_COLOR;
+		d.fillColor = color;
+		return d;
+	}
+
+	static make_square_dot(p, color) {
+		let d = new Path.Rectangle(p, new Size(3, 3));
+		d.position = p;
+		if (!color) color = this.SHAPE_PATH_COLOR;
+		d.fillColor = 'white';
+		d.strokeColor = color;
 		return d;
 	}
 
@@ -112,5 +123,29 @@ export class AMES_Utils {
 		p.strokeColor = color;
 		p.strokeWidth = 0.5;
 		return p;
+	}
+
+	// interpolate: Lagrange interpolation over polynomial given by y = f(x),
+	// where data = {1:(x,y), 2:(x,y), ...} and idx is the relative idx of the
+	// desired queried result
+	// ref: https://www.geeksforgeeks.org/lagranges-interpolation/
+	static interpolate(data, idx) {
+		let n = Object.keys(data).length;
+		let X = 0; let Y = 1;
+		let r = 0;
+
+		// console.log(data[1][1]);
+		for (let i = 0; i < n; i++) {
+			let t = data[i][Y];
+			let x_i = data[i][X];
+
+			for (let j = 0; j < n; j++) {
+				if (j != i ) t = t*(idx - data[j][X])/(x_i - data[j][X]);
+			}
+
+			r += t;
+		}
+
+		return r;
 	}
 }
