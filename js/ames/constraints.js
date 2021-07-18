@@ -223,13 +223,15 @@ export class AMES_Constraint {
 		}
 
 		// Outbound: update values
-		// Include outbound constraints for child properties
+		// For 'all' update outbound constraints for child properties
 		if (s == "all") {
 			let s_list = utils.SUB_PROPS[p];
 			for (let i in s_list) {
 				let sub = s_list[i];
 				c_outbounds = c_outbounds.concat(obj.c_outbound[p][sub]);
 			}
+		} else {
+			c_outbounds = obj.c_outbound[p][s];
 		}
 
 		// Update outbound constraint values

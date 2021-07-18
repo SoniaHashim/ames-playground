@@ -65,7 +65,6 @@ export class AMES_List {
 	add_to_list(s) {
 		console.log('add_to_list', s)
 		if (this.shapes.length > 0) {
-			console.log('here');
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs
@@ -75,7 +74,10 @@ export class AMES_List {
 				if (p != 'path') {
 					if (this.shapes.length > 1) {
 						let ref_list = ls.c_outbound[p]['all'];
+						let oc_idx = ref_list.indexOf(fs.name);
+						let oc = ref_list[oc_idx];
 						ls.c_outbound[p]['all'].splice(ref_list.indexOf(fs.name), 1);
+						oc_idx.remove();
 					}
 					let c1 = new AMES_Constraint(ls, s, p, 'all');
 					let c2 = new AMES_Constraint(s, fs, p, 'all');
