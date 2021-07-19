@@ -545,7 +545,6 @@ export class AMES {
 				// update color label
 				cname.content = r.fillColor.toCSS(true);
 				// update alpha slider dot
-				console.log(c.alpha);
 				update_dot_x(c.alpha, alpha_dot);
 				// match colorwheel brightness
 				let v = c.brightness;
@@ -1290,9 +1289,10 @@ export class AMES {
 				// console.log("p and sub_p", p, sub_p);
 				let constraint = new AMES_Constraint(rel, curr_obj, p, sub_p, {
 					'c_rel_box': c_relative_box,
-					'c_ref_box': c_reference_box
+					'c_ref_box': c_reference_box,
+					'is_manual_constraint': true
 				});
-				console.log("made constraint", constraint);
+				// console.log("made constraint", constraint);
 				// console.log('p + sub_p', p, sub_p);
 				ames.c_relative.update_constraints();
 				link.visible = false;

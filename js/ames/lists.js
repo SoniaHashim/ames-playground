@@ -11,6 +11,7 @@ import {AMES_Shape} from './shapes.js'
 export class AMES_List {
 	name = "List";
 	is_list = true;
+	is_shape = false;
 	shapes = [];
 	count = 1;
 	box;
@@ -44,9 +45,13 @@ export class AMES_List {
 		"path" : {}
 	}
 	first_last = [];
+	list_constraints;
 
 	constructor(shapes) {
 		this.count = shapes.length;
+		// Sort shapes by x_position
+		shapes.sort((a, b) => a.pos.x - b.pos.x);
+		console.log(shapes);
 
 		this.first_last.push(shapes[0]);
 		if (shapes.length > 1) this.first_last.push(shapes[shapes.length-1]);
@@ -57,9 +62,9 @@ export class AMES_List {
 			this.add_to_list(s);
 		}
 
-		// constrain shapes to the list (one to many constraint)
-
 		this._make_show_box();
+
+		this.poly = this.box;
 	}
 
 	add_to_list(s) {
@@ -68,25 +73,25 @@ export class AMES_List {
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs
+			console.log("linking", ls.name, s.name);
+			console.log("linking", s.name, fs.name);
 			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
 				let p = utils.VIS_PROPS[i];
 				console.log(p);
 				if (p != 'path') {
 					if (this.shapes.length > 1) {
-						let ref_list = ls.c_outbound[p]['all'];
-						let oc_idx = ref_list.indexOf(fs.name);
-						let oc = ref_list[oc_idx];
-						ls.c_outbound[p]['all'].splice(ref_list.indexOf(fs.name), 1);
-						oc_idx.remove();
+						let oc = fs.c_outbound[p]['all'][ls.name];
+						oc.remove();
 					}
-					let c1 = new AMES_Constraint(ls, s, p, 'all');
-					let c2 = new AMES_Constraint(s, fs, p, 'all');
-					console.log(p, c1.reference.name, c1.relative.name);
-					console.log(p, c2.reference.name, c2.relative.name);
+					let c_append = new AMES_Constraint(ls, s, p, 'all');
+					let c_loop = new AMES_Constraint(s, fs, p, 'all');
 				}
 			}
+			console.log("first inbound constraint", fs.c_inbound['position']['all']);
 		}
 		this.shapes.push(s);
+		s.add_list(this);
+		console.log('shapes: ', this.shapes);
 		this.box.addChild(s.poly)
 	}
 
@@ -212,6 +217,76 @@ export class AMES_List {
 
 	manipulate() {
 		console.log("To do -- manipulate()");
+
+		this._clear_cb_helpers();
+		// Turn off the active property
+		if (this.active_prop) {
+			// Remove subproperty buttons
+			this.editor.show_subprops(this.active_prop, false);
+			this.editor.select_prop(this.active_prop, false);
+			this.editor.show_constraint(false);
+		}
+		// If the new propety is not the property just turned off, turn it on
+		if (this.active_prop != p) {
+			// Turn off selection toggle and hide path control shapes
+			this.attach_interactivity(false);
+			this.show_path_control_shapes(false);
+			// Activate new propety callback
+			this.cbs[p](this, this.cb_helpers);
+			// Indicate active property and show subproperty buttons
+			this.editor.show_subprops(p, true);
+			this.editor.select_prop(p, true);
+			let sub_p = 'all'
+			this.editor.show_constraint(true, p, sub_p);
+			this.active_prop = p;
+			this.active_sub_p = sub_p;
+		} else {
+			// Turn selection toggle back on
+			this.attach_interactivity(true);
+			// Deactivate property and subproperty
+			this.active_prop = null;
+			this.active_sub_p = null;
+		}
+	}
+
+	_clear_cb_helpers() {
+		let shapes = this.cb_helpers['shapes'];
+		let n_shapes = this.cb_helpers['shapes'].length;
+		for (let idx = 0; idx < n_shapes; idx++) {
+			let s = shapes[idx];
+			s.remove();
+		}
+		if (this.cb_helpers['color_target']) {
+			let f = this.cb_helpers['color_target'];
+			ames.colorpicker.color_target = null;
+		}
+		if (this.cb_helpers['path']) this.show_path_control_shapes(false);
+		if (this.cb_helpers['scale']) this.show_scale_control_shapes(false);
+		if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
+		this.cb_helpers = {};
+		this.cb_helpers['shapes'] = [];
+	}
+
+	// attach_interactivity: if true, enable interactivity; otherwise disable
+	attach_interactivity(bool) {
+		for (let i in shapes) {
+			if (shapes[i].poly) {
+				if (bool) {
+					shapes[i].poly.onClick = (e) => {
+						let toggle = !this.is_selected;
+						this.select(toggle);
+					}
+				} else {
+					shapes[i].poly.onClick = null;
+				}
+			}
+			// Make all other handlers void
+			shapes[i].poly.onMouseDrag = null;
+		}
+	}
+
+	manipulate_helper(sub) {
+		console.log("To do -- List.manipulate_helper()")
 	}
 
 	contains() {

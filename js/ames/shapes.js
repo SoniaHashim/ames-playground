@@ -48,23 +48,39 @@ export class AMES_Shape {
 		'path': this._path_cb,
 	}
 	cb_helpers = {'shapes': []};
+	lists = {};
+	// c_inbound = {
+	// 	"position" : {"all": null, "x": null, "y": null},
+	// 	"scale": {"all": null, "x": null, "y": null},
+	// 	"rotation": {"all": null, "t": null},
+	// 	"fillColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
+	// 	"strokeWidth": {"all": null, "w": null},
+	// 	"strokeColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
+	// 	"path" : {}
+	// }
 	c_inbound = {
-		"position" : {"all": null, "x": null, "y": null},
-		"scale": {"all": null, "x": null, "y": null},
-		"rotation": {"all": null, "t": null},
-		"fillColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
-		"strokeWidth": {"all": null, "w": null},
-		"strokeColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
+		"position" : {"all": {}, "x": {}, "y": {}},
+		"scale": {"all": {}, "x": {}, "y": {}},
+		"rotation": {"all": {}, "t": {}},
+		"fillColor": {"all": {}, "h": {}, "s": {}, "v": {}, "a": {}},
+		"strokeWidth": {"all": {}, "w": {}},
+		"strokeColor": {"all": {}, "h": {}, "s": {}, "v": {}, "a": {}},
 		"path" : {}
 	}
 	c_outbound = {
-		"position" : {"all": [], "x": [], "y": []},
-		"scale": {"all": [], "x": [], "y": []},
-		"rotation": {"all": [], "t": []},
-		"fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
-		"strokeWidth": {"all": [], "w": []},
-		"strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		"position" : {"all": {}, "x": {}, "y": {}},
+		"scale": {"all": {}, "x": {}, "y": {}},
+		"rotation": {"all": {}, "t": {}},
+		"fillColor": {"all": {}, "h": {}, "s": {}, "v": {}, "a": {}},
+		"strokeWidth": {"all": {}, "w": {}},
+		"strokeColor": {"all": {}, "h": {}, "s": {}, "v": {}, "a": {}},
 		"path" : {}
+	}
+
+	// add_list: adds list to track which lists the shape is in so updates to the shape
+	// can update the list helper shapes
+	add_list(list) {
+		this.lists[list.name] = list;
 	}
 
 
@@ -79,13 +95,17 @@ export class AMES_Shape {
 				this.poly.position.add(p);
 			if (this.rotation_control_shapes.line) {
 				this.rotation_control_shapes.line.position = this.rotation_control_shapes.line.position.add(p);
-				this.rotation_control_shapes.da.position = this.rotation_control_shapes.da.position.add(p);
 			}
 		} else {
 			this.pos.x = p.x;
 			this.pos.y = p.y;
+			let npos = new Point(p.x, p.y);
 			if (this.poly)
 				this.poly.position = new Point(this.pos.x, this.pos.y);
+			if (this.rotation_control_shapes.line) {
+				this.rotation_control_shapes.line.segments[0].point = this.poly.position.add(this.rotation_control_shapes.a_offset);
+			}
+
 		}
 	}
 
@@ -105,6 +125,9 @@ export class AMES_Shape {
 		}
 		if (this.poly)
 			this.poly.scale(sx, sy);
+		if (this.rotation_control_shapes.line) {
+			this.rotation_control_shapes.a_offset = this.rotation_control_shapes.a_offset.multiply(sx, sy);
+		}
 	}
 
 	set_rotation(theta, anchor) {
@@ -333,6 +356,7 @@ export class AMES_Shape {
 			let x_base = shape.poly.bounds.topCenter.subtract(anchor);
 
 			let prev_ro = 0;
+
 			let get_rotation_a = function(p, anchor) {
 				let r_vec = p.subtract(anchor);
 				let total_ro = x_base.getDirectedAngle(r_vec);
@@ -351,6 +375,9 @@ export class AMES_Shape {
 				anchor = da.position;
 				x_base = dt.position.subtract(anchor);
 				prev_ro = 0;
+				shape.rotation_control_shapes.a_offset = e.point.subtract(shape.poly.position);
+				console.log(shape.rotation_control_shapes.a_offset);
+				console.log(da.position);
 			}
 
 			// Rotate based on angle between subsequent rays created by dragging
@@ -363,7 +390,7 @@ export class AMES_Shape {
 			}
 			// Update rotation
 			dt.onMouseDrag = (e) => {
-				anchor = da.position;
+				anchor = shape.rotation_control_shapes.da.position;
 				let a = get_rotation_a(e.point, anchor);
 				shape.set_rotation(a, anchor);
 				// shape.poly.rotate(a, anchor);
@@ -396,6 +423,7 @@ export class AMES_Shape {
 
 			if (sub == 'h') {
 				color_function = (c) => {
+					if (shape.poly.fillColor.saturation == 0) shape.poly.fillColor.saturation = 1;
 					shape.poly.fillColor.hue = c.hue;
 				};
 			}
@@ -463,6 +491,7 @@ export class AMES_Shape {
 
 			if (sub == 'h') {
 				color_function = (c) => {
+					if (shape.poly.fillColor.saturation == 0) shape.poly.fillColor.saturation = 1;
 					shape.poly.strokeColor.hue = c.hue;
 				};
 			}
@@ -531,6 +560,7 @@ export class AMES_Shape {
 
 			this.rotation_control_shapes.line = line;
 			this.rotation_control_shapes.da = da;
+			this.rotation_control_shapes.a_offset = 0;
 			this.rotation_control_shapes.dt = dt;
 		}
 
@@ -641,6 +671,7 @@ export class AMES_Shape {
 
 	update_rotation_control_shapes() {
 		this.rotation_control_shapes.dt.position = this.rotation_control_shapes.line.segments[1].point;
+		this.rotation_control_shapes.line.segments[0].point = this.poly.position.add(this.rotation_control_shapes.a_offset);
 		this.rotation_control_shapes.da.position = this.rotation_control_shapes.line.segments[0].point;
 	}
 

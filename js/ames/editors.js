@@ -81,7 +81,7 @@ export class AMES_Shape_Editor {
 			let p = properties[idx];
 			let button = ames.icons[p].clone();
 			let b_w = button.bounds.width;
-			button.position = new Point(2*utils.ICON_OFFSET + idx*(utils.ICON_OFFSET + b_w) + b_w/2, by*1.75);
+			button.position = new Point(2*utils.ICON_OFFSET + idx*(utils.ICON_OFFSET + b_w) + b_w/2, by*2);
 			button.visible = true;
 
 			// create subproperty boxes
@@ -171,7 +171,7 @@ export class AMES_Shape_Editor {
 
 		}
 		let subprop_text = new PointText({
-			point: [2.25*utils.ICON_OFFSET + offset, utils.LAYER_HEIGHT*2.75],
+			point: [2.25*utils.ICON_OFFSET + offset, utils.LAYER_HEIGHT*3],
 			content: s,
 			fillColor: utils.INACTIVE_S_COLOR,
 			fontFamily: utils.FONT,
@@ -199,6 +199,7 @@ export class AMES_Shape_Editor {
 			// Make subproperty line after making first subproperty box
 			let subline_start = subprop_box.bounds.bottomLeft;
 			let subline_end = subline_start.add(new Point(this.box_width-2*subline_start.x,0))
+			this.underline_width = subline_end - subline_start;
 			let subprop_line = new Path.Line(subline_start, subline_end);
 			subprop_line.strokeColor = utils.INACTIVE_S_COLOR;
 			subprop_line.strokeWidth = 1;
@@ -208,7 +209,7 @@ export class AMES_Shape_Editor {
 			// Make and hide link and unlink buttons
 			let link = ames.icons['link'].clone();
 			link.scaling = 1.25;
-			link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.5);
+			link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.75);
 			link.visible = true;
 			link.strokeWidth = .25;
 			let link_remove = ames.icons['link-remove'].clone();
@@ -226,12 +227,18 @@ export class AMES_Shape_Editor {
 				link.strokeColor = utils.ACTIVE_S_COLOR;
 			}
 			link_remove.onMouseDown = (e) => {
-				console.log("link remove constraint");
 				let p = this.obj.active_prop;
 				let s = this.obj.active_sub_p;
+				console.log("link remove constraint", p, s);
 				if (!s) s = "all";
-				let c = this.obj.c_inbound[p][s];
+				let c_ins = this.obj.c_inbound[p][s];
+				let c = null;
+				for (let i in c_ins) {
+					if (c_ins[i].is_manual_constraint)
+						c = c_ins[i];
+				}
 				if (c) {
+					console.log(c);
 					c.remove();
 				}
 			}
@@ -301,7 +308,12 @@ export class AMES_Shape_Editor {
 		if (bool && this.obj) {
 			let s = sub_p;
 			if (!s) s = "all";
-			let c = this.obj.c_inbound[p][s];
+			let c_ins = this.obj.c_inbound[p][s];
+			let c = null;
+			for (let i in c_ins) {
+				if (c_ins[i].is_manual_constraint)
+					c = c_ins[i];
+			}
 			if (c) {
 				this.constraint_info.link_remove.visible = true;
 				this.constraint_info.link.visible = false;
@@ -328,7 +340,12 @@ export class AMES_Shape_Editor {
 
 		let c = null;
 		if (p) {
-			c = this.obj.c_inbound[p][s];
+			let c_ins = this.obj.c_inbound[p][s];
+			// console.log(c_ins);
+			for (let i in c_ins) {
+				if (c_ins[i].is_manual_constraint)
+					c = c_ins[i];
+			}
 			if (c) {
 				link_name = c.reference.name;
 
@@ -433,12 +450,72 @@ export class AMES_Shape_Editor {
 
 
 export class AMES_List_Editor extends AMES_Shape_Editor {
+	rel_idx_val;
+
 	constructor(obj) {
 		super(obj);
+		this.add_relative_index_to_constraint_info();
+	}
+
+	add_relative_index_to_constraint_info() {
+		// Group relative coords
+		let bx = this.constraint_info.offset_label.position.x - this.constraint_info.offset_label.bounds.width/2;
+		let by = this.constraint_info.offset_label.position.y;
+
+		// Add obj name
+		let uy = utils.LAYER_HEIGHT;
+		let rel_idx_label = new PointText({
+			point: [bx, by + 5*utils.ICON_OFFSET],
+			content: 'relative index',
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+		let rel_idx_val = new PointText({
+			point: [this.constraint_info.offset_val.position.x - this.constraint_info.offset_val.bounds.width/2, rel_idx_label.position.y + 3],
+			content: '0',
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+		let ox = this.constraint_info.offset_line.position.x - this.constraint_info.offset_line.bounds.width/2;
+		let oy = rel_idx_val.position.y + rel_idx_val.bounds.height/2;
+		let rel_idx_line = new Path.Line(new Point(ox, oy), new Point(this.constraint_info.offset_val.position.x+ 6*utils.ICON_OFFSET, oy));
+		rel_idx_line.strokeColor = utils.INACTIVE_S_COLOR;
+		rel_idx_line.strokeWidth = 1;
+		rel_idx_line.opacity = 0.5;
+		rel_idx_line.visible = true;
+
+		this.show_constraint(true, 'position', 'x');
+
+		// switch y position
+		let y1_label = rel_idx_label.position.y;
+		let y1_val = rel_idx_val.position.y;
+		let y1_line = rel_idx_line.position.y;
+
+		let y2_label = this.constraint_info.offset_label.position.y;
+		let y2_val = this.constraint_info.offset_val.position.y;
+		let y2_line = this.constraint_info.offset_line.position.y;
+
+		this.constraint_info.offset_label.position.y = y1_label;
+		this.constraint_info.offset_val.position.y = y1_val;
+		this.constraint_info.offset_line.position.y = y1_line;
+
+		rel_idx_label.position.y = y2_label;
+		rel_idx_val.position.y = y2_val;
+		rel_idx_line.position.y = y2_line;
+
+		// Add to constraint info
+		this.constraint_info.rel_idx_label = rel_idx_label;
+		this.constraint_info.rel_idx_val = rel_idx_val;
+		this.constraint_info.rel_idx_line = rel_idx_line;
+
+		// Add to editor box
+		this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]);
 	}
 
 	get_height() {
-		return 175; 
+		return 175;
 	}
 
 	set_editor_pos() {
@@ -448,6 +525,20 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 		let py = this.obj.list_box.position.y + this.obj.list_box.bounds.height/2 + 40;
 
 		this.box.position = new Point(px, py);
+	}
+
+	// show_constraint: also include relative index information
+	show_constraint(bool, p, sub_p) {
+		super(bool, p, sub_p);
+
+		if (sub_p == 'all') {
+			this.constraint_info['rel_idx_label'].visible = false;
+			this.constraint_info['rel_idx_val'].visible = false;
+			this.constraint_info['rel_idx_line'].visible = false;
+		}
+
+		// Update property value
+		if (bool) this.update_constraint(p, sub_p);
 	}
 
 	show(bool) {
