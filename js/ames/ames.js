@@ -65,6 +65,7 @@ export class AMES {
 		window.ames.canvas_cy = canvas.height/2;
 		window.ames.animations = {};
 
+
 		// // Set up project & view for controls - DELETE OLD CODE w/ SCRUBBER
 		// paper.setup(controls);
 		// this.init_controls(controls);

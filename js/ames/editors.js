@@ -277,7 +277,6 @@ export class AMES_Shape_Editor {
 			this.constraint_info.offset_line = offset_line;
 			box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
 			this.show_constraint(false);
-
 		}
 		// When the subproperty is clicked enable editing on it
 		subprop_box.onClick = (e) => {
@@ -379,6 +378,7 @@ export class AMES_Shape_Editor {
 			}
 			// Indicate that the selected subproperty box is active
 			sub = this.subprops[s];
+			console.log(s, this.subprops);
 			s_text = sub[0];
 			s_box = sub[1];
 			s_box.fillColor = utils.ACTIVE_COLOR;
@@ -529,7 +529,7 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 
 	// show_constraint: also include relative index information
 	show_constraint(bool, p, sub_p) {
-		super(bool, p, sub_p);
+		super.show_constraint(bool, p, sub_p);
 
 		if (sub_p == 'all') {
 			this.constraint_info['rel_idx_label'].visible = false;

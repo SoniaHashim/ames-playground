@@ -49,15 +49,6 @@ export class AMES_Shape {
 	}
 	cb_helpers = {'shapes': []};
 	lists = {};
-	// c_inbound = {
-	// 	"position" : {"all": null, "x": null, "y": null},
-	// 	"scale": {"all": null, "x": null, "y": null},
-	// 	"rotation": {"all": null, "t": null},
-	// 	"fillColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
-	// 	"strokeWidth": {"all": null, "w": null},
-	// 	"strokeColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
-	// 	"path" : {}
-	// }
 	c_inbound = {
 		"position" : {"all": {}, "x": {}, "y": {}},
 		"scale": {"all": {}, "x": {}, "y": {}},
@@ -82,7 +73,6 @@ export class AMES_Shape {
 	add_list(list) {
 		this.lists[list.name] = list;
 	}
-
 
 	// set_pos(pt, is_delta)
 	// Description: Updates the position of the shape to the pt specified or by
@@ -133,9 +123,11 @@ export class AMES_Shape {
 	set_rotation(theta, anchor) {
 		this.rotation += theta;
 		if (this.poly) {
-			if (this.rotation_control_shapes.da) {
-				anchor = this.rotation_control_shapes.da.position;
-			}
+			// if (this.rotation_control_shapes.da) {
+			// 	anchor = this.rotation_control_shapes.da.position;
+			// }
+			if (!anchor) anchor = this.rotation_control_shapes.line.segments[0].point;
+			console.log(anchor);
 			if (anchor) {
 				this.poly.rotate(theta, anchor);
 				if (this.rotation_control_shapes.line)
@@ -143,6 +135,7 @@ export class AMES_Shape {
 			} else {
 				this.poly.rotate(theta);
 			}
+
 		}
 	}
 
@@ -212,6 +205,7 @@ export class AMES_Shape {
 	manipulate_helper(sub) {
 		this._clear_cb_helpers();
 		this.active_sub_p = sub;
+		this.editor.select_subprop(sub, true);
 		this.editor.show_constraint(true, this.active_prop, sub);
 		this.cbs[this.active_prop](this, this.cb_helpers, sub);
 	}
@@ -223,6 +217,12 @@ export class AMES_Shape {
 		constraints.update_constraints(p, s, this);
 	}
 
+	notify_lists_shape_is_active() {
+		console.log("here");
+		for (let i in this.lists) {
+			this.lists[i].set_active_obj(this);
+		}
+	}
 
 	_clear_cb_helpers() {
 		let shapes = this.cb_helpers['shapes'];
@@ -245,6 +245,7 @@ export class AMES_Shape {
 	_position_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
 			shape.poly.onMouseDown = (e) => {
+				shape.notify_lists_shape_is_active();
 				let pos = shape.poly.position;
 				let offset = pos.subtract(e.point);
 
@@ -252,6 +253,7 @@ export class AMES_Shape {
 				if (sub && sub == 'y') cb_helpers['x'] = pos.x;
 
 				cb_helpers['offset'] = offset;
+
 			}
 			shape.poly.onMouseDrag = (e) => {
 				let offset = cb_helpers['offset'];
@@ -288,6 +290,7 @@ export class AMES_Shape {
 				let d_pair = scale_dots[dot_pairs[d_idx]];
 				let scale_start_x = 1; let scale_start_y = 1;
 				d.onMouseDown = (e) => {
+					shape.notify_lists_shape_is_active();
 					pf = 1;
 					scale_start_x = shape.scale.x;
 					scale_start_y = shape.scale.y;
@@ -353,7 +356,7 @@ export class AMES_Shape {
 			let dt = shape.rotation_control_shapes.dt;
 
 			let anchor = da.position;
-			let x_base = shape.poly.bounds.topCenter.subtract(anchor);
+			let x_base = dt.position.subtract(da.position);
 
 			let prev_ro = 0;
 
@@ -382,11 +385,12 @@ export class AMES_Shape {
 
 			// Rotate based on angle between subsequent rays created by dragging
 			let ro;
-			let ao;
 			let asum = 0;
 			dt.onMouseDown = (e) => {
+				shape.notify_lists_shape_is_active();
 				ro = dt.position;
-				ao = shape.poly.rotation;
+				prev_ro = shape.poly.rotation;
+				x_base = dt.position.subtract(da.position);
 			}
 			// Update rotation
 			dt.onMouseDrag = (e) => {
@@ -396,7 +400,7 @@ export class AMES_Shape {
 				// shape.poly.rotate(a, anchor);
 
 				// Rotate line
-				line.rotate(a, anchor);
+				// line.rotate(a, anchor);
 				// asum += a;
 				// console.log(asum);
 				// Update line segment to match dt
@@ -446,11 +450,18 @@ export class AMES_Shape {
 				};
 			}
 
-			ames.colorpicker.color_target = (c) => {
+			let shape_color_target = (c) => {
 				color_function(c);
-				// Update constraints
 				shape.update_constraints();
 			}
+
+			ames.colorpicker.color_target = shape_color_target;
+
+			shape.poly.onMouseDown = (e) => {
+				shape.notify_lists_shape_is_active();
+				ames.colorpicker.color_target = shape_color_target;
+			}
+
 			cb_helpers['color_target'] = ames.colorpicker.color_target;
 		}
 	}
@@ -460,6 +471,7 @@ export class AMES_Shape {
 			let yo;
 			let w;
 			shape.poly.onMouseDown = (e) => {
+				shape.notify_lists_shape_is_active();
 				yo = e.point.y;
 				w = shape.poly.strokeWidth;
 			}
@@ -514,12 +526,18 @@ export class AMES_Shape {
 				};
 			}
 
-			ames.colorpicker.color_target = (c) => {
+			let shape_color_target = (c) => {
 				color_function(c);
-
-				// Update constraints
 				shape.update_constraints();
 			}
+
+			ames.colorpicker.color_target = shape_color_target;
+
+			shape.poly.onMouseDown = (e) => {
+				shape.notify_lists_shape_is_active();
+				ames.colorpicker.color_target = shape_color_target;
+			}
+
 			cb_helpers['color_target'] = ames.colorpicker.color_target;
 		}
 	}
@@ -560,7 +578,7 @@ export class AMES_Shape {
 
 			this.rotation_control_shapes.line = line;
 			this.rotation_control_shapes.da = da;
-			this.rotation_control_shapes.a_offset = 0;
+			this.rotation_control_shapes.a_offset = new Point(0, 0);
 			this.rotation_control_shapes.dt = dt;
 		}
 
@@ -669,10 +687,17 @@ export class AMES_Shape {
 		if (this.vis_control_shapes.rotation) this.update_rotation_control_shapes();
 	}
 
+	_redraw_above_poly(s) {
+		s = s.insertAbove(this.poly);
+	}
+
 	update_rotation_control_shapes() {
 		this.rotation_control_shapes.dt.position = this.rotation_control_shapes.line.segments[1].point;
-		this.rotation_control_shapes.line.segments[0].point = this.poly.position.add(this.rotation_control_shapes.a_offset);
 		this.rotation_control_shapes.da.position = this.rotation_control_shapes.line.segments[0].point;
+
+		this._redraw_above_poly(this.rotation_control_shapes.line);
+		this._redraw_above_poly(this.rotation_control_shapes.dt);
+		this._redraw_above_poly(this.rotation_control_shapes.da);
 	}
 
 	update_scale_control_shapes() {
@@ -713,8 +738,11 @@ export class AMES_Shape {
 		this.scale_control_shapes.scale_box.segments[BL].point = new Point(l, b);
 		this.scale_control_shapes.scale_box.segments[BR].point = new Point(r, b);
 
+		this._redraw_above_poly(this.scale_control_shapes.scale_box);
+
 		for (let n = 0; n < 4; n++) {
 			this.scale_control_shapes.scale_dots[n].position = this.scale_control_shapes.scale_box.segments[n].point;
+			this._redraw_above_poly(this.scale_control_shapes.scale_dots[n]);
 		}
 	}
 
@@ -740,6 +768,11 @@ export class AMES_Shape {
 				p1.lastSegment.point = s.point;
 				p2.firstSegment.point = s.point;
 				p2.lastSegment.point = n_h2;
+
+				for(let i in controls) {
+					this._redraw_above_poly(controls[i]);
+				}
+
 			}
 		}
 	}

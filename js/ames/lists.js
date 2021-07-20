@@ -11,7 +11,6 @@ import {AMES_Shape} from './shapes.js'
 export class AMES_List {
 	name = "List";
 	is_list = true;
-	is_shape = false;
 	shapes = [];
 	count = 1;
 	box;
@@ -45,7 +44,8 @@ export class AMES_List {
 		"path" : {}
 	}
 	first_last = [];
-	list_constraints;
+	list_constraints = [];
+	offset_mode = false;
 
 	constructor(shapes) {
 		this.count = shapes.length;
@@ -64,8 +64,23 @@ export class AMES_List {
 
 		this._make_show_box();
 
-		this.poly = this.box;
+		if (!ames.mode) ames.mode = 'list';
+
+		// TO DO: Make this touch screen friendly
+		this.box.on("doubleclick", (e) => {
+			this.offset_mode = !this.offset_mode;
+			console.log(this.offset_mode);
+			this.update_offset_mode();
+		})
+
 	}
+
+	update_offset_mode(mode) {
+		for (let i in this.list_constraints) {
+			this.list_constraints[i].offset_mode = this.offset_mode;
+		}
+	}
+
 
 	add_to_list(s) {
 		console.log('add_to_list', s)
@@ -73,21 +88,39 @@ export class AMES_List {
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs
-			console.log("linking", ls.name, s.name);
-			console.log("linking", s.name, fs.name);
 			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
 				let p = utils.VIS_PROPS[i];
 				console.log(p);
 				if (p != 'path') {
 					if (this.shapes.length > 1) {
-						let oc = fs.c_outbound[p]['all'][ls.name];
+
+						let oc;
+						for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+							let sub = utils.SUB_PROPS[p][sub_idx];
+							// console.log(sub);
+							oc = ls.c_outbound[p][sub][fs.name];
+							this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+							oc.remove();
+						}
+						oc = ls.c_outbound[p]['all'][fs.name];
+						this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
 						oc.remove();
 					}
-					let c_append = new AMES_Constraint(ls, s, p, 'all');
-					let c_loop = new AMES_Constraint(s, fs, p, 'all');
+
+					let c_append = new AMES_Constraint(s, ls, p, 'all');
+					let c_loop = new AMES_Constraint(fs, s, p, 'all');
+
+					this.list_constraints.push(c_append);
+					console.log(c_append);
+					this.list_constraints.push(c_loop);
+					console.log(c_loop);
+					for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+						let sub = utils.SUB_PROPS[p][sub_idx];
+						this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+						this.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+					}
 				}
 			}
-			console.log("first inbound constraint", fs.c_inbound['position']['all']);
 		}
 		this.shapes.push(s);
 		s.add_list(this);
@@ -215,7 +248,7 @@ export class AMES_List {
 		console.log("To do -- List.make_interactive()");
 	}
 
-	manipulate() {
+	manipulate(p, sub) {
 		console.log("To do -- manipulate()");
 
 		this._clear_cb_helpers();
@@ -225,14 +258,23 @@ export class AMES_List {
 			this.editor.show_subprops(this.active_prop, false);
 			this.editor.select_prop(this.active_prop, false);
 			this.editor.show_constraint(false);
+			for (let i in this.shapes) {
+				if (this.shapes[i].active_prop == p)
+					this.shapes[i].manipulate(p);
+			}
 		}
 		// If the new propety is not the property just turned off, turn it on
 		if (this.active_prop != p) {
 			// Turn off selection toggle and hide path control shapes
 			this.attach_interactivity(false);
-			this.show_path_control_shapes(false);
+			// this.show_path_control_shapes(false);
 			// Activate new propety callback
-			this.cbs[p](this, this.cb_helpers);
+			for (let i in this.shapes) {
+				if (this.shapes[i].active_prop == p) {
+					this.shapes[i].manipulate_helper('all');
+				} else { this.shapes[i].manipulate(p, sub); };
+			}
+			// this.cbs[p](this, this.cb_helpers);
 			// Indicate active property and show subproperty buttons
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
@@ -246,6 +288,19 @@ export class AMES_List {
 			// Deactivate property and subproperty
 			this.active_prop = null;
 			this.active_sub_p = null;
+		}
+	}
+
+	set_active_obj(obj) {
+		console.log(obj.name);
+	}
+
+	manipulate_helper(sub) {
+		this._clear_cb_helpers();
+		this.active_sub_p = sub;
+		this.editor.show_constraint(true, this.active_prop, sub);
+		for (let i in this.shapes) {
+			this.shapes[i].manipulate_helper(sub);
 		}
 	}
 
@@ -267,26 +322,22 @@ export class AMES_List {
 		this.cb_helpers['shapes'] = [];
 	}
 
-	// attach_interactivity: if true, enable interactivity; otherwise disable
+	// attach_interactivity: if true, enable interactivity on child shapes; otherwise disable
 	attach_interactivity(bool) {
-		for (let i in shapes) {
-			if (shapes[i].poly) {
+		for (let i in this.shapes) {
+			if (this.shapes[i].poly) {
 				if (bool) {
-					shapes[i].poly.onClick = (e) => {
+					this.shapes[i].poly.onClick = (e) => {
 						let toggle = !this.is_selected;
 						this.select(toggle);
 					}
 				} else {
-					shapes[i].poly.onClick = null;
+					this.shapes[i].poly.onClick = null;
 				}
 			}
 			// Make all other handlers void
-			shapes[i].poly.onMouseDrag = null;
+			this.shapes[i].poly.onMouseDrag = null;
 		}
-	}
-
-	manipulate_helper(sub) {
-		console.log("To do -- List.manipulate_helper()")
 	}
 
 	contains() {
@@ -310,4 +361,7 @@ export class AMES_List {
 	get_pos() {
 		return this.box.position;
 	}
+
+	show_path_control_shapes(bool) {};
+
 }
