@@ -22,6 +22,7 @@ export class AMES {
 	active_shape_btn;
 	active_objs = {};
 	objs = {};
+	lists = {};
 	n_shapes = 0;
 	n_lists = 0;
 	n_aobjs = 0;
@@ -444,11 +445,11 @@ export class AMES {
 			// utility function to make slider
 			let make_slider = function(y, label_text, cb, dot_start) {
 				let slider = new Path.Line({
-					from: [start, y + utils.ICON_OFFSET],
-					to: [end, y + utils.ICON_OFFSET],
+					from: [start, y + 2*utils.ICON_OFFSET],
+					to: [end, y + 2*utils.ICON_OFFSET],
 					strokeColor: utils.INACTIVE_S_COLOR
 				});
-				let dot = utils.make_dot(new Point(dot_start, y + utils.ICON_OFFSET));
+				let dot = utils.make_dot(new Point(dot_start, y + 2*utils.ICON_OFFSET));
 				dot.fillColor = utils.INACTIVE_S_COLOR;
 				dot.onMouseDrag = (e) => {
 					// define function for start / end based on colorpicker position
@@ -461,7 +462,7 @@ export class AMES {
 					};
 				 };
 				let label = new PointText({
-					point: [start, y],
+					point: [start, y + 0.25*utils.ICON_OFFSET],
 					content: label_text,
 					fillColor: utils.INACTIVE_S_COLOR,
 					fontFamily: utils.FONT,
@@ -470,7 +471,7 @@ export class AMES {
 				return [dot, slider, label];
 			}
 			// Make alpha slider & define function to calculate alpha
-			let alpha_y = r.position.y + r.bounds.height/2 + 2*utils.ICON_OFFSET;
+			let alpha_y = r.position.y + r.bounds.height/2 + 3.5*utils.ICON_OFFSET;
 			let get_slider_value = (p) => {
 				let range_s = get_bound(true);
 				return (p.x - range_s) / r.bounds.width
@@ -487,10 +488,10 @@ export class AMES {
 					ames.colorpicker.color_target(r.fillColor);
 				}
 			}
-			let alpha = make_slider(alpha_y, 'a', set_alpha, end);
+			let alpha = make_slider(alpha_y, 'alpha', set_alpha, end);
 			let alpha_dot = alpha[0]; let alpha_slider = alpha[1]; let alpha_label = alpha[2];
 			// Make lightness slider & define function to set lightness
-			let lightness_y = alpha_y + 4*utils.ICON_OFFSET;
+			let lightness_y = alpha_y + 5.5*utils.ICON_OFFSET;
 			let set_lightness = (p) => {
 				let v = get_slider_value(p);
 				r.fillColor.brightness = v;
@@ -502,7 +503,7 @@ export class AMES {
 					ames.colorpicker.color_target(r.fillColor);
 				}
 			}
-			let lightness = make_slider(lightness_y, 'v', set_lightness, end);
+			let lightness = make_slider(lightness_y, 'brightness', set_lightness, end);
 			let lightness_dot = lightness[0]; let lightness_slider = lightness[1]; let lightness_label = lightness[2];
 
 			// Color wheel radius is 73
@@ -576,16 +577,39 @@ export class AMES {
 				point: [colorpicker.position.x - bbox_w, colorpicker.position.y - bbox_h - 12],
 				size: [colorpicker.bounds.width, colorpicker.bounds.height + 5*utils.ICON_OFFSET],
 				strokeColor: utils.INACTIVE_S_COLOR,
-				fillColor: '#0000',
+				fillColor: 'white',
 				opacity: 0.5
 			});
 			colorpicker.insertChild(0, bbox);
+			bbox.sendToBack();
 
 			colorpicker.get_position = (e) => {
 				let cw = ames.canvas_view.size.width/2 - 2*utils.ICON_OFFSET;
 				let ch = -ames.canvas_view.size.height/2 + 2*utils.ICON_OFFSET;
 				let csize = new Point(-colorpicker.bounds.width/2, colorpicker.bounds.height/2)
 				return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+			}
+
+			// Make colorpicker draggable
+			let dragging = false;
+			let drag_offset = 0;
+			colorpicker.onMouseDown = (e) => {
+				let n_children = colorpicker.children.length;
+				for (let idx = 1; idx < n_children; idx++) {
+					let c = colorpicker.children[idx];
+					if (c.contains(e.point)) {
+						dragging = false;
+						return;
+					}
+				}
+				drag_offset = e.point.subtract(colorpicker.position);
+				dragging = true;
+			}
+			colorpicker.onMouseDrag = (e) => {
+				if (dragging) colorpicker.position = e.point.subtract(drag_offset);
+			}
+			colorpicker.onMouseUp = (e) => {
+				if (dragging) dragging = false;
 			}
 
 			// utils.make_dot(ames.canvas_view.center);
@@ -658,7 +682,7 @@ export class AMES {
 		// animation.animate();
 
 		let d = [[0, 2], [1, 3], [2, 12], [5, 147]];
-		console.log(utils.interpolate(d, 3));
+		console.log(d, utils.interpolate(d, 3));
 
 	}
 
@@ -676,22 +700,38 @@ export class AMES {
 		let n_shape = this.n_shapes - 1;
 		x.name = "Shape " + n_shape + " (" + x.get_name() + ")";
 		x.editor = new AMES_Shape_Editor(x);
-		x.editor.show(false);
 		this.add_obj(x, utils.L_CONTROLS[0]);
 	}
 
 	// add_list: adds given object as a list
 	add_list(x) {
 		this.n_lists += 1;
-		let n_list = this.n_lists - 1;
-		x.name = "List " + n_list;
+		// let n_list = this.n_lists - 1;
+		// x.name = "List " + n_list;
+		// console.log("list name set to", x.name);
 		x.editor = new AMES_List_Editor(x);
-		x.editor.show(false);
 		this.add_obj(x, utils.L_CONTROLS[1]);
 		x.show(true);
+		this.lists[x.name] = x;
+	}
+
+	hide_editors(obj) {
+		obj = obj || {};
+		for (let i in this.objs) {
+			if (this.objs[i].name != obj.name) {
+				if (!(obj.is_shape && this.objs[i].is_list && this.objs[i].has_shape(obj))) {
+					this.objs[i].editor.show(false);
+					this.objs[i]._clear_cb_helpers();
+				}
+			}
+		}
+		ames.colorpicker.visible = false;
+		if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
 	}
 
 	add_obj(x, t_obj) {
+		// Hide all open editors
+		this.hide_editors(x);
 
 		let n = x.name;
 		let box_idx;
@@ -770,7 +810,7 @@ export class AMES {
 		box.addChild(eye_slash);
 
 		// Set active box to false
-		box.is_active_box = false;
+		box.is_active_box = true;
 
 		// Add box to ames controls
 		this.idx_boxes.splice(box_idx, 0, n);
@@ -874,6 +914,9 @@ export class AMES {
 
 	remove_obj(n, t_obj) {
 		// Remove from objs in ames
+		if (this.objs[n].is_list) {
+			delete this.lists[n];
+		}
 		this.objs[n].show(false);
 		this.objs[n].remove();
 		delete this.objs[n];
@@ -882,6 +925,10 @@ export class AMES {
 		if (this.active_objs[n]) {
 			this.active_objs[n].remove();
 			delete this.active_objs[n];
+		}
+
+		if (this.objs[n].is_list) {
+			delete this.lists[n];
 		}
 
 		// Update length of entries for appropriate type of obj
@@ -1158,6 +1205,7 @@ export class AMES {
 
 			// From active shapes select shapes
 			let lbox_bbox = lbox.strokeBounds;
+
 			for (let i in this.active_objs) {
 				let s = this.active_objs[i];
 				if (s.is_shape) {
@@ -1173,6 +1221,7 @@ export class AMES {
 					} else {
 						// Otherwise if it was selected...
 						if (selected_shapes[s.name]) {
+							select_helpers[s.name].remove();
 							// Remove it from the selected shapes
 							delete selected_shapes[s.name];
 							delete select_helpers[s.name];
@@ -1217,8 +1266,14 @@ export class AMES {
 		let point_in_box = false;
 
 		let clean_constraint_tool = () => {
-			if (c_reference_box) c_reference_box.remove();
-			if (c_relative_box) c_relative_box.remove();
+			if (c_reference_box) {
+				c_reference_box.remove();
+				if (curr_obj && curr_obj.is_list) curr_obj.list_box.visible = true;
+			}
+			if (c_relative_box) {
+				c_relative_box.remove();
+				if (ames.c_relative && ames.c_relative.is_list) ames.c_relative.list_box.visible = true;
+			}
 			if (line) line.remove();
 			c_reference_box = null;
 			c_relative_box = null;
@@ -1235,11 +1290,13 @@ export class AMES {
 			if (!this.active_objs[this.c_relative.name]) { return; }
 			// console.log("The relative is " + ames.c_relative.name);
 			line_start = ames.c_relative.editor.constraint_info.link.position;
+			console.log(line_start);
 			line = new Path.Line(line_start, e.point);
 			line.strokeWidth = 1;
 			line.dashArray = [3,1];
 			line.strokeColor = utils.ACTIVE_COLOR;
 			c_relative_box = ames.c_relative.highlight(utils.C_RELATIVE_COLOR);
+			if (ames.c_relative.is_list) ames.c_relative.list_box.visible = false;
 			curr_obj = null;
 			c_reference_box = null;
 			point_in_box = false;
@@ -1247,6 +1304,7 @@ export class AMES {
 
 		let cb_select_obj = (e) => {
 			if (!this.active_objs[this.c_relative.name]) { clean_constraint_tool(); return; }
+			if (!line) { clean_constraint_tool(); return; }
 			point_in_box = false;
 			// If end point is the bounding box of an active object
 			for (let k in this.active_objs) {
@@ -1257,11 +1315,16 @@ export class AMES {
 						// Attach line to bbox corner with closest match
 						let p = obj.get_closest_bbox_corner(line_start);
 						if (p) line.lastSegment.point = p;
+						else line.lastSegment.point = e.point;
 						if (obj != curr_obj) {
 							// Update highlighted object
-							if (c_reference_box) c_reference_box.remove();
+							if (c_reference_box) {
+								c_reference_box.remove();
+							}
 							c_reference_box = obj.highlight(utils.C_REFERENCE_HIGHLIGHT);
 							curr_obj = obj;
+							// If list, hide list box
+							if (curr_obj.is_list) curr_obj.list_box.visible = false;
 
 						}
 						point_in_box = true;
@@ -1271,11 +1334,11 @@ export class AMES {
 
 			if (!point_in_box) {
 				line.lastSegment.point = e.point;
-				curr_obj = null;
 				if (c_reference_box) {
 					c_reference_box.remove();
 					c_reference_box = null;
 				}
+				curr_obj = null;
 			}
 		}
 
@@ -1288,6 +1351,7 @@ export class AMES {
 				let p = ames.c_relative.active_prop;
 				let sub_p = ames.c_relative.active_sub_p;
 				// console.log("p and sub_p", p, sub_p);
+				console.log("constrain", rel.name, curr_obj.name, p, sub_p)
 				let constraint = new AMES_Constraint(rel, curr_obj, p, sub_p, {
 					'c_rel_box': c_relative_box,
 					'c_ref_box': c_reference_box,
@@ -1299,12 +1363,10 @@ export class AMES {
 				link.visible = false;
 				link_remove.visible = true;
 			}
+
 			// Turn off constraint tool
 			ames.tools['inactive_tool'].activate();
 			link.strokeColor = utils.INACTIVE_S_COLOR;
-
-
-
 			clean_constraint_tool();
 		}
 
@@ -1318,7 +1380,7 @@ export class AMES {
 	// on_canvas: determines if event fired is on the animation canvas
 	on_canvas(e) {
 		let a = e.event.clientX;
-		let b = e.event.clientY;
+		let b = e.event.clientY - 40;
 		let p = new Point(a,b);
 		return this.canvas_view.bounds.contains(p);
 	}

@@ -126,13 +126,15 @@ export class AMES_Utils {
 	}
 
 	// interpolate: Lagrange interpolation over polynomial given by y = f(x),
-	// where data = {1:(x,y), 2:(x,y), ...} and idx is the relative idx of the
+	// where data = [[x,y], [x,y], ...] and idx is the relative idx of the
 	// desired queried result
 	// ref: https://www.geeksforgeeks.org/lagranges-interpolation/
 	static interpolate(data, idx) {
-		let n = Object.keys(data).length;
+		let n = data.length;
 		let X = 0; let Y = 1;
 		let r = 0;
+
+		if (n == 1) r = data[0][Y];
 
 		// console.log(data[1][1]);
 		for (let i = 0; i < n; i++) {

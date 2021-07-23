@@ -127,7 +127,6 @@ export class AMES_Shape {
 			// 	anchor = this.rotation_control_shapes.da.position;
 			// }
 			if (!anchor) anchor = this.rotation_control_shapes.line.segments[0].point;
-			console.log(anchor);
 			if (anchor) {
 				this.poly.rotate(theta, anchor);
 				if (this.rotation_control_shapes.line)
@@ -171,6 +170,18 @@ export class AMES_Shape {
 
 	// manipulate: enable interaction on a given property with opt sub properties
 	manipulate(p, sub) {
+		// Change active property in lists containing shape to match
+		for (let i in this.lists) {
+			if (this.lists[i].active_prop != p) {
+				this.lists[i].manipulate(p, sub);
+				return;
+			} else {
+				if (sub && this.lists[i].active_sub_p != sub) {
+					this.lists[i].manipulate_helper(sub);
+					return;
+				}
+			}
+		}
 		this._clear_cb_helpers();
 		// Turn off the active property
 		if (this.active_prop) {
@@ -184,15 +195,27 @@ export class AMES_Shape {
 			// Turn off selection toggle and hide path control shapes
 			this.attach_interactivity(false);
 			this.show_path_control_shapes(false);
-			// Activate new propety callback
-			this.cbs[p](this, this.cb_helpers);
+
+			this.active_prop = p;
+			let sub_p = 'all'
+			this.active_sub_p = sub_p;
+
+			if (p == 'strokeColor' || p == 'fillColor') {
+				if (!ames.colorpicker.visible) ames.colorpicker.visible = true;
+			} else {
+				if (ames.colorpicker.visible) ames.colorpicker.visible = false;
+			}
+
 			// Indicate active property and show subproperty buttons
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
-			let sub_p = 'all'
+
 			this.editor.show_constraint(true, p, sub_p);
-			this.active_prop = p;
-			this.active_sub_p = sub_p;
+
+			// Activate new propety callback
+			this.cbs[p](this, this.cb_helpers);
+
+
 		} else {
 			// Turn selection toggle back on
 			this.attach_interactivity(true);
@@ -203,6 +226,18 @@ export class AMES_Shape {
 	}
 
 	manipulate_helper(sub) {
+		// Change active property in lists containing shape to match
+		for (let i in this.lists) {
+			if (this.lists[i].active_prop != this.active_prop) {
+				this.lists[i].manipulate(this.active_prop, sub);
+				return;
+			} else {
+				if (sub && this.lists[i].active_sub_p != sub) {
+					this.lists[i].manipulate_helper(sub);
+					return;
+				}
+			}
+		}
 		this._clear_cb_helpers();
 		this.active_sub_p = sub;
 		this.editor.select_subprop(sub, true);
@@ -215,10 +250,16 @@ export class AMES_Shape {
 		let s = this.active_sub_p;
 		if (!s) s = 'all';
 		constraints.update_constraints(p, s, this);
+		for (let i in this.lists) {
+			this.lists[i].update_constraints();
+		}
+		for (let i in ames.lists) {
+			ames.lists[i].update_show_box_bounds();
+		}
 	}
 
 	notify_lists_shape_is_active() {
-		console.log("here");
+		console.log("here", this.lists);
 		for (let i in this.lists) {
 			this.lists[i].set_active_obj(this);
 		}
@@ -245,6 +286,8 @@ export class AMES_Shape {
 	_position_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
 			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				let pos = shape.poly.position;
 				let offset = pos.subtract(e.point);
@@ -278,6 +321,11 @@ export class AMES_Shape {
 
 			let scale_box = shape.scale_control_shapes.scale_box;
 			let scale_dots = shape.scale_control_shapes.scale_dots;
+
+			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
+			}
 
 			let bbox = shape.get_bbox();
 			let corners = [bbox.bottomLeft, bbox.topLeft, bbox.topRight, bbox.bottomRight];
@@ -369,6 +417,11 @@ export class AMES_Shape {
 
 			}
 
+			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
+			}
+
 			// Update anchor point for rotation
 			da.onMouseDrag = (e) => {
 				da.position = e.point;
@@ -458,6 +511,8 @@ export class AMES_Shape {
 			ames.colorpicker.color_target = shape_color_target;
 
 			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				ames.colorpicker.color_target = shape_color_target;
 			}
@@ -471,6 +526,8 @@ export class AMES_Shape {
 			let yo;
 			let w;
 			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				yo = e.point.y;
 				w = shape.poly.strokeWidth;
@@ -534,6 +591,8 @@ export class AMES_Shape {
 			ames.colorpicker.color_target = shape_color_target;
 
 			shape.poly.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				ames.colorpicker.color_target = shape_color_target;
 			}
@@ -547,6 +606,11 @@ export class AMES_Shape {
 			shape.update_path_control_shapes();
 			shape.show_path_control_shapes(true);
 			cb_helpers['path'] = true;
+
+			shape.onMouseDown = (e) => {
+				ames.hide_editors(shape);
+				shape.show_all_editors();
+			}
 		}
 	}
 
@@ -670,6 +734,16 @@ export class AMES_Shape {
 			if (!bool) {
 				if (this.active_prop) this.manipulate(this.active_prop);
 			}
+		}
+	}
+
+	show_all_editors() {
+		if (!this.editor.is_visible) {
+			this.editor.show(true);
+		}
+
+		for (let i in this.lists) {
+			if (!this.lists[i].editor.is_visible) this.lists[i].editor.show(true);
 		}
 	}
 
@@ -861,6 +935,7 @@ export class AMES_Shape {
 		this.show_editor(bool);
 		this.visible = bool;
 		this.poly.visible = bool;
+		if (bool && !this.pos_is_set) this.pos_is_set = bool;
 		// Ensure consistency if object is selected
 		// if (this.is_selected) {
 		// 	this.show_path_control_shapes(bool);
@@ -882,6 +957,11 @@ export class AMES_Shape {
 	attach_interactivity(bool) {
 		if (this.poly) {
 			if (bool) {
+				this.poly.onMouseDown = (e) => {
+					// Show only editors for this object
+					ames.hide_editors(this);
+					this.show_all_editors();
+				}
 				// select and de-select on click
 				this.poly.onClick = (e) => {
 					let toggle = !this.is_selected;
@@ -890,6 +970,7 @@ export class AMES_Shape {
 				}
 			} else {
 				this.poly.onClick = null;
+				this.poly.onMouseDown = null;
 			}
 			// make all other handlers void;
 			this.poly.onMouseDrag = null;

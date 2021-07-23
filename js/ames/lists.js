@@ -26,12 +26,12 @@ export class AMES_List {
 	}
 	cb_helpers = {'shapes': []};
 	c_inbound = {
-		"position" : {"all": null, "x": null, "y": null},
-		"scale": {"all": null, "x": null, "y": null},
-		"rotation": {"all": null, "t": null},
-		"fillColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
-		"strokeWidth": {"all": null, "w": null},
-		"strokeColor": {"all": null, "h": null, "s": null, "v": null, "a": null},
+		"position" : {"all": [], "x": [], "y": []},
+		"scale": {"all": [], "x": [], "y": []},
+		"rotation": {"all": [], "t": []},
+		"fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		"strokeWidth": {"all": [], "w": []},
+		"strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
 		"path" : {}
 	}
 	c_outbound = {
@@ -48,6 +48,10 @@ export class AMES_List {
 	offset_mode = false;
 
 	constructor(shapes) {
+		this.box = new Group();
+		let n_list = ames.n_lists;
+		this.name = "List " + ames.n_lists;
+		console.log("Setting list name", this.name);
 		this.count = shapes.length;
 		// Sort shapes by x_position
 		shapes.sort((a, b) => a.pos.x - b.pos.x);
@@ -56,7 +60,6 @@ export class AMES_List {
 		this.first_last.push(shapes[0]);
 		if (shapes.length > 1) this.first_last.push(shapes[shapes.length-1]);
 
-		this.box = new Group();
 		for (let idx in shapes) {
 			let s = shapes[idx];
 			this.add_to_list(s);
@@ -66,12 +69,24 @@ export class AMES_List {
 
 		if (!ames.mode) ames.mode = 'list';
 
+
+
 		// TO DO: Make this touch screen friendly
-		this.box.on("doubleclick", (e) => {
-			this.offset_mode = !this.offset_mode;
-			console.log(this.offset_mode);
-			this.update_offset_mode();
-		})
+		for (let i in this.shapes) {
+			this.shapes[i].poly.on("doubleclick", (e) => {
+				for (let j in this.shapes[i].lists) {
+					this.shapes[i].lists[j].offset_mode = !this.shapes[i].lists[j].offset_mode
+					this.shapes[i].lists[j].update_offset_mode();
+				}
+			})
+		}
+
+		console.log("printing all ",ames.n_lists," lists...");
+		for (let i in ames.lists) {
+			console.log(ames.lists[i].name, ames.lists[i].box.children);
+		}
+
+		this.active_obj = this.shapes[0];
 
 	}
 
@@ -81,19 +96,36 @@ export class AMES_List {
 		}
 	}
 
+	// show_editor: if true open editor; otherwise close;
+	show_editor(bool) {
+		if (this.editor) {
+			this.editor.show(bool)
+			this.show_box(bool);
+
+			if (!bool) {
+				if (this.active_prop) this.manipulate(this.active_prop);
+			}
+		}
+	}
+
+	// has_shape: returns whether or not the shape is in the list
+	has_shape(x) {
+		for (let i in this.shapes) {
+			if (this.shapes[i] == x) return true;
+		}
+		return false;
+	}
+
 
 	add_to_list(s) {
-		console.log('add_to_list', s)
 		if (this.shapes.length > 0) {
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs
 			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
 				let p = utils.VIS_PROPS[i];
-				console.log(p);
 				if (p != 'path') {
 					if (this.shapes.length > 1) {
-
 						let oc;
 						for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
 							let sub = utils.SUB_PROPS[p][sub_idx];
@@ -111,9 +143,8 @@ export class AMES_List {
 					let c_loop = new AMES_Constraint(fs, s, p, 'all');
 
 					this.list_constraints.push(c_append);
-					console.log(c_append);
 					this.list_constraints.push(c_loop);
-					console.log(c_loop);
+
 					for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
 						let sub = utils.SUB_PROPS[p][sub_idx];
 						this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
@@ -123,9 +154,15 @@ export class AMES_List {
 			}
 		}
 		this.shapes.push(s);
+		// this.box.addChild(s.poly.clone());
+		// this.box.sendToBack();
 		s.add_list(this);
-		console.log('shapes: ', this.shapes);
-		this.box.addChild(s.poly)
+	}
+
+	update_constraints() {
+		let s = this.active_sub_p;
+		if (!s) s = "all";
+		AMES_Constraint.update_constraints(this.active_prop, s, this);
 	}
 
 	get_shape_names() {
@@ -178,6 +215,26 @@ export class AMES_List {
 	}
 
 	update_show_box() {
+		this.update_show_box_count();
+		this.update_show_box_bounds();
+	}
+
+	update_show_box_bounds() {
+		let TL = 1; let BL = 0;
+		let bbox = this.get_bbox();
+		// console.log(this.name, 'update_show_box', this.box.children);
+		let x_off = 20 / (bbox.width + 20);
+		let y_off = 20 / (bbox.height + 20);
+		bbox = bbox.scale(1 + x_off, 1 + y_off);
+		let is_visible = this.list_box.visible;
+		this.list_box.remove();
+		this.list_box = utils.make_rect(bbox, utils.LIST_HIGHLIGHT_COLOR);
+		this.list_box.visible = is_visible;
+		this.count_box.position = this.list_box.segments[BL].point.add(this.label_box_offset);
+	}
+
+	// update_show_box_count: updates count box value to match list count of items in list
+	update_show_box_count() {
 		this.text_count.content = this.count;
 	}
 
@@ -191,7 +248,7 @@ export class AMES_List {
 
 
 		this.label_count = new PointText({
-			point: [bbox.bottomLeft.x + utils.ICON_OFFSET, bbox.bottomLeft.y + utils.ICON_OFFSET*2],
+			point: [bbox.bottomLeft.x + utils.ICON_OFFSET, bbox.bottomLeft.y + utils.ICON_OFFSET*2.5],
 			content: 'count:',
 			fontFamily: utils.FONT,
 			fontSize: utils.FONT_SIZE,
@@ -199,7 +256,7 @@ export class AMES_List {
 		});
 		let x = this.label_count.bounds.bottomRight.x + utils.ICON_OFFSET;
 		this.text_count = new PointText({
-			point: [x, bbox.bottomLeft.y + utils.ICON_OFFSET*2],
+			point: [x, bbox.bottomLeft.y + utils.ICON_OFFSET*2.5],
 			content: this.count,
 			fontFamily: utils.FONT,
 			fontSize: utils.FONT_SIZE,
@@ -228,20 +285,15 @@ export class AMES_List {
 
 		}
 		console.log('count', '' + this.count);
-		let r_size = new Size(this.label_count.bounds.width + this.text_count.bounds.width + utils.ICON_OFFSET*4, this.label_count.bounds.height + utils.ICON_OFFSET/2);
+		let r_size = new Size(this.label_count.bounds.width + this.text_count.bounds.width + utils.ICON_OFFSET*5, this.label_count.bounds.height + utils.ICON_OFFSET);
 		let r_count = new Rectangle(bbox.bottomLeft, r_size);
 		console.log(r_size);
 		console.log(r_count);
 		this.label_box = utils.make_rect(r_count, utils.LIST_HIGHLIGHT_COLOR);
-	}
-
-	show_editor(bool) {
-		if (this.editor) {
-			this.editor.show(bool);
-			if (!bool) {
-				// Something with active prop?
-			}
-		}
+		this.count_box = new Group();
+		this.count_box.addChildren([this.label_count, this.text_count, this.label_box]);
+		let TL = 1;
+		this.label_box_offset = this.label_box.position.subtract(this.label_box.segments[TL].point);
 	}
 
 	make_interactive() {
@@ -249,8 +301,6 @@ export class AMES_List {
 	}
 
 	manipulate(p, sub) {
-		console.log("To do -- manipulate()");
-
 		this._clear_cb_helpers();
 		// Turn off the active property
 		if (this.active_prop) {
@@ -269,6 +319,10 @@ export class AMES_List {
 			this.attach_interactivity(false);
 			// this.show_path_control_shapes(false);
 			// Activate new propety callback
+			this.active_prop = p;
+			let sub_p = 'all'
+			this.active_sub_p = sub_p;
+
 			for (let i in this.shapes) {
 				if (this.shapes[i].active_prop == p) {
 					this.shapes[i].manipulate_helper('all');
@@ -278,7 +332,6 @@ export class AMES_List {
 			// Indicate active property and show subproperty buttons
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
-			let sub_p = 'all'
 			this.editor.show_constraint(true, p, sub_p);
 			this.active_prop = p;
 			this.active_sub_p = sub_p;
@@ -292,7 +345,8 @@ export class AMES_List {
 	}
 
 	set_active_obj(obj) {
-		console.log(obj.name);
+		this.active_obj = obj;
+		this.editor.update_constraint(this.active_prop, this.active_sub_p);
 	}
 
 	manipulate_helper(sub) {
@@ -340,26 +394,78 @@ export class AMES_List {
 		}
 	}
 
-	contains() {
-		console.log("To do -- List.contains()");
+	// select: if true, select object and opens editor; otherwise deselect and close
+	select(bool) {
+		if (this.poly) {
+			// this.poly.fullySelected = bool;
+			this.is_selected = bool;
+		}
+	}
+
+	// contains: true if list contains point and point is not inside a shape of the list that
+	// is currently active; false otherwise
+	contains(p) {
+		let b = this.list_box.strokeBounds;
+		if (b) {
+			let in_other_shape = false;
+			if (p.isInside(b)) {
+				for (let i in this.shapes) {
+					let is_active = ames.active_objs[this.shapes[i].name];
+					if (is_active && this.shapes[i].contains(p)) in_other_shape = true;
+				}
+				if (in_other_shape) return false;
+				else return true;
+			}
+
+		}
+		return false;
 	}
 
 	remove() {
 		console.log("To do -- List.remove()");
 	}
 
+	make_list_group() {
+		let box = new Group();
+		for (let i in this.shapes) {
+			box.addChild(this.shapes[i].poly);
+		}
+		return box;
+	}
+
+	empty_list_group(box) {
+		for (let i in box.children) {
+			box.children[i].addTo(ames.canvas_view._project);
+		}
+	}
+
 	// get_bbox: returns the bounding box of the group containing the list items
 	get_bbox() {
-		if (this.count > 0) {
-			if (this.box.strokeBounds) return this.box.strokeBounds;
-			else return this.box.bounds;
-		}
-		return;
+		let bbox;
+		let box = this.make_list_group();
+		if (box.strokeBounds) bbox = box.strokeBounds;
+		else bbox = box.bounds;
+		this.empty_list_group(box);
+		return bbox;;
+	}
+
+	highlight(color) {
+		let r = utils.make_rect(this.list_box.strokeBounds, color);
+		r.insertBelow(this.list_box);
+		return r;
+	}
+
+	get_closest_bbox_corner(p) {
+		return null; // nb: better UX
 	}
 
 	// get_pos: returns position of list
 	get_pos() {
-		return this.box.position;
+		let box = this.make_list_group();
+		let p = box.position;
+		console.log(p);
+		this.empty_list_group(box);
+		return p;
 	}
 
 	show_path_control_shapes(bool) {};

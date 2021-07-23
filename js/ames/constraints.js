@@ -11,17 +11,42 @@ export class AMES_Constraint {
 	reference;
 	relative;
 	offset;
+	rel_idx;
 	property;
 	sub_prop;
 	is_manual_constraint = false;
 	// Visual aids
 	c_rel_box;
 	c_ref_box;
+	rel_idx;
 	cycle = 1;
 	offset_mode = false;
 
 
 	constructor(rel, ref, p, sub_p, opt) {
+		console.log('Making constraint between ', rel.name, ref.name, p, sub_p);
+
+		// if (!((rel.is_shape && ref.is_shape) || (rel.is_list))) return;
+
+		if (rel.is_list) {
+			// Add to relative's list_constraints
+			// rel.list_constraints.push(this);
+
+			// Initialize rel_idx
+
+			if (rel.is_list) {
+				this.rel_idx = [];
+				let n = rel.count;
+				let m = ref.count;
+				if (ref.is_shape) m = 0;
+				for (let i = 0; i < n; i++) {
+					this.rel_idx[i] = i;
+				}
+				if (n == 1) this.rel_idx[0] = 0.5;
+			}
+			console.log(this.rel_idx);
+		}
+
 		this.relative = rel;
 		this.reference = ref;
 		this.property = p;
@@ -65,6 +90,7 @@ export class AMES_Constraint {
 
 	}
 
+
 	// TO DO: child properties??
 	_remove_all_constraint() {
 		let p = this.property;
@@ -90,33 +116,191 @@ export class AMES_Constraint {
 		let p = this.property;
 		let s = this._lookup(this.sub_prop);
 
-		let ol = this.relative.poly[p][s];
-		let of = this.reference.poly[p][s];
+		let ol = this.get_data(this.relative, p, s);
+		let of = this.get_data(this.reference, p, s);
 
-		if (p == "rotation") {
-			ol = this.relative.rotation;
-			of = this.reference.rotation;
-		}
-		if (p == "scale") {
-			ol = this.relative.scale[s];
-			of = this.reference.scale[s];
-		}
-		if (p == "strokeWidth") {
-			ol = this.relative.poly.strokeWidth;
-			of = this.reference.poly.strokeWidth;
+		// Case #1: relative & reference are a shape
+		if (this.relative.is_shape && this.reference.is_shape) {
+			this.offset = ol - of;
+			if (p == 'scale') {
+				this.offset = ol / of;
+			}
+			if (!this.offset) this.offset = 0;
 		}
 
-		if (!ol) ol = 0;
-		if (!of) of = 0;
-
-		this.offset = ol - of;
-
-
-		if (p == 'scale') {
-			this.offset = ol / of;
+		// Case #2: relative is a list & reference is a shape
+		if (this.relative.is_list && this.reference.is_shape) {
+			if (!this.offset) this.offset = [];
+			// ol is y values of relative; of is y values of reference
+			// Assume only mode for now is interpolate
+			let n = this.relative.count;
+			let m = 1;
+			// Create Lagrangian representation of reference values by
+			// evenly distributing them across the relative indices
+			let data = [];
+			if (n%2 == 0) data[0] = [(n-1)/2, of];
+			else data[0] = [((n-1)/2) - 1, of];
+			for (let i = 0; i < n; i++) {
+				let ov = utils.interpolate(data, this.rel_idx[i]);
+				let off = ol[i] - ov;
+				if (p == 'scale') off = ov / ol[i];
+				if (!off) off = 0;
+				this.offset[i] = off;
+			}
 		}
 
-		if (!this.offset) this.offset = 0;
+		// Case #3: relative is a shape & reference is a list
+		if (this.relative.is_shape && this.reference.is_list) {
+			// ol is y values of relative; of is y values of reference
+			// Assume only mode for now is interpolate
+			let m = this.reference.count;
+			// Create Lagrangian representation of reference values by
+			// evenly distributing them across the relative indices
+			let data = [];
+			for (let i = 0; i < m; i++) {
+				data[i] = [i/(m-1), of[i]];
+			}
+			let ov = utils.interpolate(data, 0.5);
+			let off = ol- ov;
+			if (p == 'scale') off = ov / ol;
+			if (!off) off = 0;
+			this.offset = off;
+		}
+
+		// Case #4: relative & reference are lists
+		if (this.relative.is_list & this.reference.is_list) {
+			if (!this.offset) this.offset = [];
+			// ol is y values of relative; of is y values of reference
+			// Assume only mode for now is interpolate
+			let n = this.relative.count;
+			let m = this.reference.count;
+			// Create Lagrangian representation of reference values by
+			// evenly distributing them across the relative indices
+			let data = [];
+			let k = n-1;
+			if (n == 1) k = 1;
+			for (let i = 0; i < m; i++) {
+				data[i] = [i*(k/(m-1)), of[i]];
+			}
+			if (m == 1) {
+				if (n%2 == 0) data[0] = [(n-1)/2, of[0]];
+				else data[0] = [((n-1)/2) - 1, of[0]]
+			}
+			for (let i = 0; i < n; i++) {
+				let ov = utils.interpolate(data, this.rel_idx[i]);
+				let off = ol[i] - ov;
+				if (p == 'scale') off = ov / ol[i];
+				if (!off) off = 0;
+				this.offset[i] = off;
+			}
+		}
+	}
+
+	process_data(y) {
+		if (this.reference.is_shape) return [[0, y]];
+		let n = this.relative.count;
+		if (this.relative.is_shape) n = 1;
+		let m = this.reference.count;
+		let data = [];
+		let k = n-1;
+		if (n == 1) k = 1;
+		for (let i = 0; i < m; i++) {
+			data[i] = [i*(k/(m-1)), y[i]];
+		}
+		if (m == 1) {
+			if (n%2 == 0) data[0] = [(n-1)/2, y[0]];
+			else data[0] = [((n-1)/2) - 1, y[0]]
+		}
+		return data;
+	}
+
+	// get_data(obj, p, s): Returns the value of the obj specified by either
+	// fetching data from a list or getting the necessary value from the shape
+	get_data(obj, p, s) {
+		let data = []; let x; let y;
+		if (obj.is_list) {
+			for (let i in obj.shapes) {
+				x = i;
+				y = obj.shapes[i].poly[p][s];
+				if (p == "rotation") { y = obj.shapes[i].rotation; }
+				if (p == "scale") { y = obj.shapes[i].scale[s]; }
+				if (p == "strokeWidth") { y = obj.shapes[i].poly.strokeWidth; }
+				if (!y) y = 0;
+				data[i] = y;
+			}
+			return data;
+		} else {
+			y = obj.poly[p][s];
+			if (p == "rotation") { y = obj.rotation; }
+			if (p == "scale") { y = obj.scale[s]; }
+			if (p == "strokeWidth") { y = obj.poly.strokeWidth; }
+			if (!y) y = 0;
+			return y;
+		}
+	}
+
+	// change_offset: changes the offset by the amount specified by x
+	change_offset(x) {
+		console.log("change_offset")
+		if (this.relative.is_shape) {
+			this.offset += x;
+			this.update_value();
+			this.relative.update_constraints();
+		}
+		if (this.relative.is_list) {
+			let n = this.relative.count;
+			let active_obj_idx = 0;
+			// If in list mode, update offsets for all items in the list
+			if (!this.relative.offset_mode) {
+				for (let i = 0; i < n; i++) {
+					this.offset[i] += x;
+				}
+			} else {
+				// Otherwise only update the offset for the active object
+				for (let i = 0; i < n; i++) {
+					if (this.relative.shapes[i].name == this.relative.active_obj.name)
+					active_obj_idx = i;
+				}
+				this.offset[active_obj_idx] += x;
+			}
+
+			this.update_value();
+			this.relative.update_constraints();
+		}
+	}
+
+	change_rel_idx(x) {
+		let constraints_to_update = [this];
+
+		// If they exist update relative value of subproperty constraints
+		if (this.sub_prop == "all") {
+			let p = this.property;
+			let s_list = utils.SUB_PROPS[p];
+			for (let s_idx in s_list) {
+				let s = s_list[s_idx];
+				let c_s = this.relative.c_inbound[p][s][this.reference.name];
+				if (c_s) constraints_to_update.push(c_s);
+			}
+		}
+
+		console.log(constraints_to_update);
+
+		// Iterate through all necessary constraints...
+		for (let idx in constraints_to_update) {
+			let c = constraints_to_update[idx];
+			if (c.relative.is_list) {
+				let active_obj_idx = 0;
+				let n = this.relative.count;
+				for (let i = 0; i < n; i++) {
+					if (c.relative.shapes[i].name == c.relative.active_obj.name)
+					active_obj_idx = i;
+				}
+				c.rel_idx[active_obj_idx] += x;
+
+				c.update_value();
+				c.relative.update_constraints();
+			}
+		}
 	}
 
 	update_value() {
@@ -137,32 +321,193 @@ export class AMES_Constraint {
 			s = this._lookup(this.sub_prop);
 			if (p == 'position') {
 				let pt;
-				if (s == 'x') pt = new Point(this.reference.poly[p][s] + this.offset - this.relative.poly.position.x, 0);
-				if (s == 'y') pt = new Point(0, this.reference.poly[p][s] + this.offset - this.relative.poly.position.y);
-				if (pt) this.relative.set_pos(pt, true);
+				if (this.relative.is_shape) {
+					let nv;
+					if (this.reference.is_shape) nv = this.reference.poly[p][s];
+					if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, s)), 0.5);
+					console.log(this.process_data(this.get_data(this.reference, p, s)), nv);
+					if (s == 'x') pt = new Point(nv + this.offset - this.relative.poly.position.x, 0);
+					if (s == 'y') pt = new Point(0, nv + this.offset - this.relative.poly.position.y);
+					if (pt) this.relative.set_pos(pt, true);
+				}
+				if (this.relative.is_list) {
+					let n = this.relative.count; let nv;
+					let data = this.process_data(this.get_data(this.reference, p, s));
+					for (let i = 0; i < n; i++) {
+						nv = utils.interpolate(data, this.rel_idx[i]);
+						if (s == 'x') pt = new Point(nv + this.offset[i] - this.relative.shapes[i].poly.position.x, 0);
+						if (s == 'y') pt = new Point(0, nv + this.offset[i] - this.relative.shapes[i].poly.position.y);
+						if (pt) this.relative.shapes[i].set_pos(pt, true);
+					}
+				}
 			}
 			if (p == "rotation") {
-				let r0 = this.relative.rotation;
-				this.relative.set_rotation(-r0 + this.reference.rotation + this.offset);
+				let r0;
+				if (this.relative.is_shape) {
+					let nv;
+					if (this.reference.is_shape) nv = this.reference.rotation;
+					if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, s)), 0.5);
+					r0 = this.relative.rotation;
+					this.relative.set_rotation(-r0 + nv + this.offset);
+				}
+				if (this.relative.is_list) {
+					let n = this.relative.count; let nv;
+					let data = this.process_data(this.get_data(this.reference, p, s));
+					console.log(data, this.rel_idx);
+					for (let i = 0; i < n; i++) {
+						r0 = this.relative.shapes[i].rotation;
+						nv = utils.interpolate(data, this.rel_idx[i]);
+						this.relative.shapes[i].set_rotation(-r0 + nv + this.offset[i]);
+					}
+				}
 			} else if (p == "scale") {
-				let fx = this.reference.scale.x;
-				let fy = this.reference.scale.y;
-				if (s == 'x') this.relative.set_scale(fx*this.offset, null);
-				if (s == 'y') this.relative.set_scale(null, fy*this.offset);
+				let fx; let fy;
+				if (this.relative.is_shape) {
+					let nv_x; let nv_y;
+					if (this.reference.is_shape) {
+						nv_x = this.reference.scale.x;
+						nv_y = this.reference.scale.y;
+					}
+					if (this.reference.is_list) {
+						nv_x = utils.interpolate(this.process_data(this.get_data(this.reference, p, 'x')), 0.5);
+						nv_y = utils.interpolate(this.process_data(this.get_data(this.reference, p, 'y')), 0.5);
+					}
+					fx = this.reference.scale.x;
+					fy = this.reference.scale.y;
+					if (s == 'x') this.relative.set_scale(fx*this.offset, null);
+					if (s == 'y') this.relative.set_scale(null, fy*this.offset);
+				}
+				if (this.relative.is_list) {
+					let n = this.relative.count; let nv_x; let nv_y;
+					let data_x = this.process_data(this.get_data(this.reference, p, "x"));
+					let data_y = this.process_data(this.get_data(this.reference, p, "y"));
+					for (let i = 0; i < n; i++) {
+						fx = utils.interpolate(data_x, this.rel_idx[i]);
+						fy = utils.interpolate(data_y, this.rel_idx[i]);
+						if (s == 'x') this.relative.shapes[i].set_scale(fx*this.offset[i], null);
+						if (s == 'y') this.relative.shapes[i].set_scale(null, fy*this.offset[i]);
+					}
+				}
 			} else if (p == "strokeWidth") {
-				this.relative.poly.strokeWidth = this.reference.poly.strokeWidth + this.offset;
+				if (this.relative.is_shape) {
+					let nv;
+					if (this.reference.is_shape) nv = this.reference.poly.strokeWidth;
+					if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, s)), 0.5);
+					this.relative.poly.strokeWidth = this.reference.poly.strokeWidth + this.offset;
+				}
+				if (this.relative.is_list) {
+					let n = this.relative.count; let nv;
+					let data = this.process_data(this.get_data(this.reference, p, s));
+					for (let i = 0; i < n; i++) {
+						nv = utils.interpolate(data, this.rel_idx[i]);
+						this.relative.shapes[i].poly.strokeWidth = nv + this.offset[i];
+					}
+				}
 			} else {
-				if (s == "hue" && this.relative.poly.fillColor.saturation == 0) this.relative.poly.fillColor.saturation = this.reference.poly.fillColor.saturation;
-				this.relative.poly[p][s] = this.reference.poly[p][s] + this.offset;
+				if (this.relative.is_shape) {
+					let nv;
+					if (this.reference.is_shape) nv = this.reference.poly[p][s];
+					if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, s)), 0.5);
+					if (s == "hue" && this.relative.poly.fillColor.saturation == 0) {
+						if (this.reference.is_shape) nv = this.reference.poly.fillColor.saturation
+						if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, "saturation")), 0.5);
+						this.relative.poly.fillColor.saturation = nv;
+					}
+					this.relative.poly[p][s] = nv + this.offset;
+				}
+				if (this.relative.is_list) {
+					let n = this.relative.count; let nv;
+					let data = this.process_data(this.get_data(this.reference, p, s));
+					let data_hue = this.process_data(this.get_data(this.reference, p, "hue"));
+					let reset_sat = true;
+					if (s == "hue") {
+						for (let i = 0; i < n; i++) {
+							if (this.relative.shapes[i].poly.saturation != 0) {
+								reset_sat = false;
+							}
+						}
+					}
+					for (let i = 0; i < n; i++) {
+						if (s == "hue") {
+							if (reset_sat) {
+								nv = utils.interpolate(data_hue, this.rel_idx[i]);
+								this.relative.shapes[i].poly.saturation = nv;
+							}
+						}
+						nv = utils.interpolate(data, this.rel_idx[i]);
+						this.relative.shapes[i].poly[p][s] = nv + this.offset[i]
+					}
+				}
 
 			}
 		}
 
-		this.relative.update_control_shapes();
+		if (this.relative.is_shape) {
+			this.relative.update_control_shapes();
+		}
+		if (this.relative.is_list) {
+			let n = this.relative.count;
+			for (let i = 0; i < n; i++) this.relative.shapes[i].update_control_shapes();
+			this.relative.update_show_box_bounds();
+			this.update_list_constraints();
+		}
 	}
 
-	get_constraint_offset() {
-		return this.offset;
+	update_list_constraints() {
+		let p = this.property;
+		let s = this.sub_prop;
+		let active_obj_idx = 0;
+		if (this.relative.is_list) {
+			for (let i = 1; i < this.relative.count; i++) {
+				let idx = i + active_obj_idx;
+				if (idx > this.relative.count) idx -= this.relative.count;
+				let shape = this.relative.shapes[idx];
+				for (let j in this.relative.list_constraints) {
+					let c = this.relative.list_constraints[j];
+					if (c != this && c.property == p && c.sub_prop == s) {
+						c.calculate_offset();
+						c.update_value();
+					}
+				}
+			}
+		}
+	}
+	// get_value() {
+	// 	if (this.constraint_behavior == "INTERPOLATE") {
+	//
+	// 	}
+	// }
+
+	get_offset() {
+		if (this.relative.is_shape) {
+			return this.offset;
+		}
+		if (this.relative.is_list) {
+			let active_obj_idx = 0;
+			if (this.relative.active_obj) {
+				let n = this.relative.count;
+				for (let i = 0; i < n; i++) {
+					if (this.relative.shapes[i].name == this.relative.active_obj.name)
+						active_obj_idx = i;
+				}
+			}
+			return this.offset[active_obj_idx];
+		}
+	}
+
+	get_rel_idx() {
+		if (this.relative.is_list) {
+			let active_obj_idx = 0;
+			if (this.relative.active_obj) {
+				let n = this.relative.count;
+				for (let i = 0; i < n; i++) {
+					if (this.relative.shapes[i].name == this.relative.active_obj.name)
+						active_obj_idx = i;
+				}
+			}
+			// console.log('get_rel_idx: ', active_obj_idx, this.rel_idx);
+			return this.rel_idx[active_obj_idx];
+		}
 	}
 
 	remove() {

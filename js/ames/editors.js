@@ -19,6 +19,8 @@ export class AMES_Shape_Editor {
 
 	selected_subprop;
 	selected_prop;
+	is_visible = false;
+	pos_is_set = false;
 
 	get_height() {
 		return 125;
@@ -62,6 +64,7 @@ export class AMES_Shape_Editor {
 		close_button.visible = true;
 		close_button.onClick = (e) => {
 			this.show(false);
+			this.pos_is_set = false;
 			// Disable property interactivity if any
 			if (obj.active_prop) {
 				obj.manipulate(this.obj.active_prop)
@@ -222,9 +225,9 @@ export class AMES_Shape_Editor {
 				ames.c_relative = this.obj;
 				ames.tools['Constraint'].activate();
 				// Little workaround... to start drawing line that defines constraint
+				link.strokeColor = utils.ACTIVE_S_COLOR;
 				ames.tools['Constraint'].onMouseDown(e);
 				ames.tools['Constraint'].onMouseDrag(e);
-				link.strokeColor = utils.ACTIVE_S_COLOR;
 			}
 			link_remove.onMouseDown = (e) => {
 				let p = this.obj.active_prop;
@@ -269,6 +272,40 @@ export class AMES_Shape_Editor {
 				fontSize: utils.FONT_SIZE,
 			});
 			this.constraint_info.offset_val = offset_val;
+			// Make offset val draggable
+			this.constraint_info.offset_val.onMouseDown = (e) => {
+				console.log("mouse down on offset val")
+				ames.canvas.style.cursor = 'move';
+			}
+			let offset_val_drag = 0;
+			this.constraint_info.offset_val.onMouseDrag = (e) => {
+				offset_val_drag += e.event.movementX;
+				if (offset_val_drag < 0) ames.canvas.style.cursor = 'w-resize';
+				if (offset_val_drag > 0) ames.canvas.style.cursor = 'e-resize';
+				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+				if (offset_val_drag < -5) {
+					// Manipulate active constraint
+					for (let i in c_ins) {
+						if (c_ins[i].is_manual_constraint) {
+							c_ins[i].change_offset(-1);
+						}
+
+					}
+					offset_val_drag = 0;
+				}
+				if (offset_val_drag > 5) {
+					// Manipulate active constraint
+					for (let i in c_ins) {
+						if (c_ins[i].is_manual_constraint) {
+							c_ins[i].change_offset(1);
+						}
+					}
+					offset_val_drag = 0;
+				}
+			}
+			this.constraint_info.offset_val.onMouseUp = (e) => {
+				ames.canvas.style.cursor = null;
+			}
 			let ox = offset_val.position.x; let oy = offset_val.position.y + offset_val.bounds.height/2;
 			let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 6*utils.ICON_OFFSET, oy));
 			offset_line.strokeColor = utils.INACTIVE_S_COLOR;
@@ -349,7 +386,8 @@ export class AMES_Shape_Editor {
 				link_name = c.reference.name;
 
 				if (s != "all") {
-					offset_val = c.offset.toFixed(2);
+					let offset = c.get_offset();
+					offset_val = offset.toFixed(2);
 				}
 				// Show unlink button
 				this.constraint_info.link.visible = false;
@@ -360,7 +398,6 @@ export class AMES_Shape_Editor {
 				this.constraint_info.link_remove.visible = false;
 			}
 		}
-
 
 		this.constraint_info.link_name.content = link_name;
 		this.constraint_info.offset_val.content = offset_val;
@@ -378,7 +415,6 @@ export class AMES_Shape_Editor {
 			}
 			// Indicate that the selected subproperty box is active
 			sub = this.subprops[s];
-			console.log(s, this.subprops);
 			s_text = sub[0];
 			s_box = sub[1];
 			s_box.fillColor = utils.ACTIVE_COLOR;
@@ -412,7 +448,7 @@ export class AMES_Shape_Editor {
 			prop.strokeColor = utils.ACTIVE_S_COLOR;
 		} else {
 			prop = this.props[p];
-			console.log(p, prop);
+			// console.log(p, prop);
 			prop.fillColor = utils.INACTIVE_S_COLOR;
 			prop.strokeColor = utils.INACTIVE_S_COLOR;
 			this.selected_prop = null;
@@ -422,11 +458,23 @@ export class AMES_Shape_Editor {
 	// open: if true show editor; otherwise close
 	show(bool) {
 		// Update editor position
-		if (bool) this.set_editor_pos();
+		if (bool && !this.is_visible) { this.set_editor_pos(); }
+		this.is_visible = bool;
 		this.box.visible = bool;
+		// if (!bool) {
+		// 	// Disable property interactivity if any
+		// 	if (this.obj.active_prop) {
+		// 		this.obj.manipulate(this.obj.active_prop)
+		// 	}
+		// 	// Deselect any active properties
+		// 	if (this.selected_prop) this.select_prop(this.selected_prop, false);
+		// 	if (this.selected_subprop) this.select_subprop(this.selected_subprop, false);
+		// }
 	}
 
 	set_editor_pos() {
+		if (this.pos_is_set) return;
+		this.pos_is_set = true;
 		let b = this.obj.get_bbox();
 		b.strokeColor = 'green';
 		b.strokeWidth = 2;
@@ -486,8 +534,6 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 		rel_idx_line.opacity = 0.5;
 		rel_idx_line.visible = true;
 
-		this.show_constraint(true, 'position', 'x');
-
 		// switch y position
 		let y1_label = rel_idx_label.position.y;
 		let y1_val = rel_idx_val.position.y;
@@ -505,6 +551,10 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 		rel_idx_val.position.y = y2_val;
 		rel_idx_line.position.y = y2_line;
 
+		rel_idx_label.visible = false;
+		rel_idx_val.visible = false;
+		rel_idx_line.visible = false;
+
 		// Add to constraint info
 		this.constraint_info.rel_idx_label = rel_idx_label;
 		this.constraint_info.rel_idx_val = rel_idx_val;
@@ -512,10 +562,63 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 
 		// Add to editor box
 		this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]);
+
+		// Draggable editability to change rel idx value
+		this.constraint_info.rel_idx_val.onMouseDown = (e) => {
+			ames.canvas.style.cursor = 'move';
+		}
+		let rel_idx_drag = 0;
+		this.constraint_info.rel_idx_val.onMouseDrag = (e) => {
+			rel_idx_drag += e.event.movementX;
+			if (rel_idx_drag < 0) ames.canvas.style.cursor = 'w-resize';
+			if (rel_idx_drag > 0) ames.canvas.style.cursor = 'e-resize';
+			if (rel_idx_drag < -5) {
+
+				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+				for (let i in c_ins) {
+					if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(-1)
+				}
+				console.log("drag left", c_ins);
+				rel_idx_drag = 0;
+			}
+			if (rel_idx_drag > 5) {
+
+				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+				for (let i in c_ins) {
+					if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(1);
+				}
+				console.log("drag right", c_ins);
+				rel_idx_drag = 0;
+			}
+		}
+		this.constraint_info.rel_idx_val.onMouseUp = (e) => {
+			ames.canvas.style.cursor = null;
+		}
 	}
 
 	get_height() {
 		return 175;
+	}
+
+	update_constraint(p, s) {
+		if (!p) p = this.obj.active_prop;
+		if (!s) s = this.obj.active_sub_p;
+		if (!s) s = "all";
+		super.update_constraint(p, s);
+
+		let c = null; let rel_idx;
+		let c_ins = this.obj.c_inbound[p][s];
+		// console.log(c_ins);
+		for (let i in c_ins) {
+			if (c_ins[i].is_manual_constraint)
+				c = c_ins[i];
+		}
+		if (c) {
+			rel_idx = c.get_rel_idx();
+			rel_idx = rel_idx.toFixed(0);
+		}
+
+		this.constraint_info.rel_idx_val.content = rel_idx;
 	}
 
 	set_editor_pos() {
@@ -531,11 +634,11 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 	show_constraint(bool, p, sub_p) {
 		super.show_constraint(bool, p, sub_p);
 
-		if (sub_p == 'all') {
-			this.constraint_info['rel_idx_label'].visible = false;
-			this.constraint_info['rel_idx_val'].visible = false;
-			this.constraint_info['rel_idx_line'].visible = false;
-		}
+		// if (sub_p == 'all') {
+		// 	this.constraint_info['rel_idx_label'].visible = false;
+		// 	this.constraint_info['rel_idx_val'].visible = false;
+		// 	this.constraint_info['rel_idx_line'].visible = false;
+		// }
 
 		// Update property value
 		if (bool) this.update_constraint(p, sub_p);
