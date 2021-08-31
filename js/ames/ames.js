@@ -9,7 +9,7 @@ import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
 import {AMES_Shape_Editor, AMES_List_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
-import {AMES_List} from './lists.js'
+import {AMES_List, AMES_Duplicator} from './lists.js'
 import {AMES_Animation} from './animations.js'
 
 // Globals for ames
@@ -52,6 +52,9 @@ export class AMES {
 	is_playing = false;
 	is_looping = false;
 	reset_time = false;
+	// Testing
+	offset_mode = false;
+
 
 	// Iniitalize AMES app properties after window loads
 	init() {
@@ -85,6 +88,7 @@ export class AMES {
 		this.tools['Circle'] = this.init_circle_tool();
 		this.tools['Square'] = this.init_square_tool();
 		this.tools['List'] = this.init_list_tool();
+		this.tools['Duplicator'] = this.init_duplicator_tool();
 		this.tools['Constraint'] = this.init_constraint_tool();
 
 
@@ -1198,6 +1202,7 @@ export class AMES {
 		// selection rectangle to make a list contains
 		let cb_select_shapes = (e) => {
 			console.log("select shapes");
+			if (!lbox) return;
 			lbox.segments[BR].point = e.point;
 			lbox.segments[TR].point.x = e.point.x;
 			lbox.segments[BL].point.y = e.point.y;
@@ -1256,6 +1261,93 @@ export class AMES {
 		list_tool.onMouseUp = cb_make_list;
 		return list_tool;
 	}
+
+	// init_duplicator_tool: creates a duplicator using underlying active shapes
+	init_duplicator_tool() {
+		let list_tool = new Tool();
+		let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+		let lbox; let s_dot; let e_dot;
+		let selected_shapes = {};
+		let select_helpers = {};
+
+		// Start rectangle to make list
+		let cb_start_list = (e) => {
+			console.log("start list");
+
+			lbox = new Path.Rectangle(e.point, 10);
+			lbox.strokeColor = utils.ACTIVE_COLOR;
+			lbox.strokeWidth = 1;
+			lbox.dashArray = [3,1];
+
+			// Create boundary dots
+			s_dot = utils.make_dot(lbox.segments[TL].point, utils.ACTIVE_COLOR);
+			e_dot = utils.make_dot(lbox.segments[BR].point, utils.ACTIVE_COLOR);
+		}
+
+		// Increase rectangle size and highlight activated shapes that the
+		// selection rectangle to make a list contains
+		let cb_select_shapes = (e) => {
+			console.log("select shapes");
+			if (!lbox) return;
+			lbox.segments[BR].point = e.point;
+			lbox.segments[TR].point.x = e.point.x;
+			lbox.segments[BL].point.y = e.point.y;
+			e_dot.position = e.point;
+
+			// From active shapes select shapes
+			let lbox_bbox = lbox.strokeBounds;
+
+			for (let i in this.active_objs) {
+				let s = this.active_objs[i];
+				if (s.is_shape) {
+					let s_bbox = s.get_bbox();
+					// If bbox contains shape...
+					if (lbox_bbox.contains(s_bbox)) {
+						// If shape is not in selected shape...
+						if (!selected_shapes[s.name]) {
+							// Add it to the selected shapes and highlight it
+							selected_shapes[s.name] = s;
+							select_helpers[s.name] = utils.make_rect(s_bbox, utils.ACTIVE_COLOR);
+						}
+					} else {
+						// Otherwise if it was selected...
+						if (selected_shapes[s.name]) {
+							select_helpers[s.name].remove();
+							// Remove it from the selected shapes
+							delete selected_shapes[s.name];
+							delete select_helpers[s.name];
+						}
+					}
+				}
+			}
+		}
+
+		// If active shapes are selected, make a list using those forms
+		let cb_make_list = (e) => {
+			console.log("make list");
+			let shapes = [];
+			for (let k in selected_shapes) shapes.push(selected_shapes[k]);
+			if (shapes.length !=0 ) {
+				let list = new AMES_Duplicator(shapes);
+				this.add_list(list);
+			}
+
+			// clean tool shapes
+			for (let i in select_helpers) {
+				let s = select_helpers[i];
+				s.remove();
+			}
+			lbox.remove(); s_dot.remove(); e_dot.remove();
+			lbox = null; s_dot = null; e_dot = null;
+			selected_shapes = {}; select_helpers = [];
+		}
+
+		list_tool.onMouseDown = cb_start_list;
+		list_tool.onMouseDrag = cb_select_shapes;
+		list_tool.onMouseUp = cb_make_list;
+		return list_tool;
+	}
+
 
 	init_constraint_tool() {
 		let constraint_tool = new Tool();

@@ -173,12 +173,16 @@ export class AMES_Shape {
 		// Change active property in lists containing shape to match
 		for (let i in this.lists) {
 			if (this.lists[i].active_prop != p) {
-				this.lists[i].manipulate(p, sub);
-				return;
+				if (!this.lists[i].is_list_control) {
+					this.lists[i].manipulate(p, sub);
+					return;
+				}
 			} else {
 				if (sub && this.lists[i].active_sub_p != sub) {
-					this.lists[i].manipulate_helper(sub);
-					return;
+					if (!this.lists[i].is_list_control) {
+						this.lists[i].manipulate_helper(sub);
+						return;
+					}
 				}
 			}
 		}
@@ -259,7 +263,6 @@ export class AMES_Shape {
 	}
 
 	notify_lists_shape_is_active() {
-		console.log("here", this.lists);
 		for (let i in this.lists) {
 			this.lists[i].set_active_obj(this);
 		}
@@ -738,12 +741,12 @@ export class AMES_Shape {
 	}
 
 	show_all_editors() {
-		if (!this.editor.is_visible) {
+		if (this.editor && !this.editor.is_visible) {
 			this.editor.show(true);
 		}
 
 		for (let i in this.lists) {
-			if (!this.lists[i].editor.is_visible) this.lists[i].editor.show(true);
+			if (this.lists[i].editor && !this.lists[i].editor.is_visible) this.lists[i].editor.show(true);
 		}
 	}
 

@@ -15,6 +15,7 @@ export class AMES_Constraint {
 	property;
 	sub_prop;
 	is_manual_constraint = false;
+	is_self_referencing = false;
 	// Visual aids
 	c_rel_box;
 	c_ref_box;
@@ -24,27 +25,39 @@ export class AMES_Constraint {
 
 
 	constructor(rel, ref, p, sub_p, opt) {
+
 		console.log('Making constraint between ', rel.name, ref.name, p, sub_p);
 
 		// if (!((rel.is_shape && ref.is_shape) || (rel.is_list))) return;
 
 		if (rel.is_list) {
+			let n = rel.count;
+			let m = ref.count;
+			if (ref.is_shape) m = 0;
 			// Add to relative's list_constraints
 			// rel.list_constraints.push(this);
 
 			// Initialize rel_idx
 
-			if (rel.is_list) {
-				this.rel_idx = [];
-				let n = rel.count;
-				let m = ref.count;
-				if (ref.is_shape) m = 0;
-				for (let i = 0; i < n; i++) {
-					this.rel_idx[i] = i;
-				}
-				if (n == 1) this.rel_idx[0] = 0.5;
+
+			this.rel_idx = [];
+			for (let i = 0; i < n; i++) {
+				this.rel_idx[i] = i;
 			}
-			console.log(this.rel_idx);
+			if (n == 1) this.rel_idx[0] = 0.5;
+
+			if (ref.is_list) {
+				for (let i = 0; i < n; i++) {
+					let s1 = rel.shapes[i].name;
+					for (let j = 0; j < m; j++) {
+						let s2 = ref.shapes[j].name;
+						// If they are the same object...
+						if (s1 == s2) {
+							this.is_self_referencing = true;
+						}
+					}
+				}
+			}
 		}
 
 		this.relative = rel;
@@ -60,6 +73,8 @@ export class AMES_Constraint {
 		let root = !opt.overwrite;
 
 		if (sub_p != 'all') this.calculate_offset();
+
+		console.log(this.relative, p, sub_p);
 
 
 		this.relative.c_inbound[p][sub_p][ref.name] = this;
@@ -87,6 +102,8 @@ export class AMES_Constraint {
 			// subproperty is constrained
 			if (root) this._remove_all_constraint()
 		}
+
+		console.log("constructor... self-referencing?", this.is_self_referencing);
 
 	}
 
@@ -170,6 +187,7 @@ export class AMES_Constraint {
 		// Case #4: relative & reference are lists
 		if (this.relative.is_list & this.reference.is_list) {
 			if (!this.offset) this.offset = [];
+			if (!this.exempt) this.exempt = [];
 			// ol is y values of relative; of is y values of reference
 			// Assume only mode for now is interpolate
 			let n = this.relative.count;
@@ -186,6 +204,25 @@ export class AMES_Constraint {
 				if (n%2 == 0) data[0] = [(n-1)/2, of[0]];
 				else data[0] = [((n-1)/2) - 1, of[0]]
 			}
+
+			console.log("list to list constraint", this.relative.shapes, this.reference.shapes);
+
+			// For the objects in the relative list in the reference list...
+			for (let i = 0; i < n; i++) {
+				let s1 = this.relative.shapes[i].name;
+				let match = false;
+				for (let j = 0; j < m; j++) {
+					let s2 = this.reference.shapes[j].name;
+					// If they are the same object...
+					if (s1 == s2) {
+						match = true;
+					}
+				}
+				if (match) this.exempt[i] = true;
+				else this.exempt[i] = false;
+			}
+
+			//
 			for (let i = 0; i < n; i++) {
 				let ov = utils.interpolate(data, this.rel_idx[i]);
 				let off = ol[i] - ov;
@@ -193,6 +230,8 @@ export class AMES_Constraint {
 				if (!off) off = 0;
 				this.offset[i] = off;
 			}
+
+			console.log('check list to list constraint is correct', data, this.rel_idx, this.offset);
 		}
 	}
 
@@ -283,8 +322,6 @@ export class AMES_Constraint {
 			}
 		}
 
-		console.log(constraints_to_update);
-
 		// Iterate through all necessary constraints...
 		for (let idx in constraints_to_update) {
 			let c = constraints_to_update[idx];
@@ -325,7 +362,6 @@ export class AMES_Constraint {
 					let nv;
 					if (this.reference.is_shape) nv = this.reference.poly[p][s];
 					if (this.reference.is_list) nv = utils.interpolate(this.process_data(this.get_data(this.reference, p, s)), 0.5);
-					console.log(this.process_data(this.get_data(this.reference, p, s)), nv);
 					if (s == 'x') pt = new Point(nv + this.offset - this.relative.poly.position.x, 0);
 					if (s == 'y') pt = new Point(0, nv + this.offset - this.relative.poly.position.y);
 					if (pt) this.relative.set_pos(pt, true);
@@ -334,10 +370,12 @@ export class AMES_Constraint {
 					let n = this.relative.count; let nv;
 					let data = this.process_data(this.get_data(this.reference, p, s));
 					for (let i = 0; i < n; i++) {
-						nv = utils.interpolate(data, this.rel_idx[i]);
-						if (s == 'x') pt = new Point(nv + this.offset[i] - this.relative.shapes[i].poly.position.x, 0);
-						if (s == 'y') pt = new Point(0, nv + this.offset[i] - this.relative.shapes[i].poly.position.y);
-						if (pt) this.relative.shapes[i].set_pos(pt, true);
+						if (!this.exempt[i]) {
+							nv = utils.interpolate(data, this.rel_idx[i]);
+							if (s == 'x') pt = new Point(nv + this.offset[i] - this.relative.shapes[i].poly.position.x, 0);
+							if (s == 'y') pt = new Point(0, nv + this.offset[i] - this.relative.shapes[i].poly.position.y);
+							if (pt) this.relative.shapes[i].set_pos(pt, true);
+						}
 					}
 				}
 			}
@@ -449,22 +487,30 @@ export class AMES_Constraint {
 			let n = this.relative.count;
 			for (let i = 0; i < n; i++) this.relative.shapes[i].update_control_shapes();
 			this.relative.update_show_box_bounds();
-			this.update_list_constraints();
+			AMES_Constraint.update_list_constraints(this.relative, this.property, this.sub_prop, this);
 		}
 	}
 
-	update_list_constraints() {
-		let p = this.property;
-		let s = this.sub_prop;
-		let active_obj_idx = 0;
-		if (this.relative.is_list) {
-			for (let i = 1; i < this.relative.count; i++) {
-				let idx = i + active_obj_idx;
-				if (idx > this.relative.count) idx -= this.relative.count;
-				let shape = this.relative.shapes[idx];
-				for (let j in this.relative.list_constraints) {
-					let c = this.relative.list_constraints[j];
-					if (c != this && c.property == p && c.sub_prop == s) {
+
+	static update_list_constraints(obj, p, s, constraint) {
+		if (obj.is_list) {
+			let active_obj_idx = 0;
+			// Iterate through all the shapes in the list starting w/ active list object
+			// Update constraints that define the list on the same property
+			for (let j in obj.list_constraints) {
+				let c = obj.list_constraints[j];
+				if (c != constraint && c.property == p && c.sub_prop == s) {
+					c.calculate_offset();
+					c.update_value();
+				}
+			}
+
+			// If list defines duplicator update list constraints for the duplicator
+			// controls
+			if (obj.first_last) {
+				for (let i in obj.first_last.list_constraints) {
+					let c = obj.first_last.list_constraints[i];
+					if (c.property == p && c.sub_prop == s) {
 						c.calculate_offset();
 						c.update_value();
 					}
@@ -472,11 +518,6 @@ export class AMES_Constraint {
 			}
 		}
 	}
-	// get_value() {
-	// 	if (this.constraint_behavior == "INTERPOLATE") {
-	//
-	// 	}
-	// }
 
 	get_offset() {
 		if (this.relative.is_shape) {
@@ -621,10 +662,12 @@ export class AMES_Constraint {
 	}
 
 	static update_constraints(p, s, obj, cycle) {
+
 		// Get inbound and outbound constraints
-		// console.log(p, obj.c_inbound, obj.c_inbound[p]);
+
 		let c_inbounds = obj.c_inbound[p][s];
 		let c_outbounds = obj.c_outbound[p][s];
+		console.log(obj, c_inbounds, c_outbounds);
 
 		// console.log("updating", obj, p, s);
 
@@ -651,9 +694,11 @@ export class AMES_Constraint {
 		// Inbound: update offsets
 		for (let i in c_inbounds) {
 			let c_in = c_inbounds[i];
-			// If constraint is not bidrectional update offset or in a list
-			if (!c_in.reference.c_inbound[p][s][obj.name] && c_in.is_manual_constraint) {
+			// If constraint is not bidrectional update offset or the constraint is not in a self-referencing list...
+			if (c_in.is_self_referencing) console.log("self referencing inbound constraint");
+			if (!c_in.reference.c_inbound[p][s][obj.name] && !c_in.is_self_referencing) {
 				let r_name = c_in.reference.name;
+
 				// Update offsets for child properties
 				if (s == "all") {
 					let s_list = utils.SUB_PROPS[p];
@@ -670,7 +715,6 @@ export class AMES_Constraint {
 					c_in.calculate_offset();
 				}
 			}
-
 		}
 
 
@@ -707,7 +751,7 @@ export class AMES_Constraint {
 			}
 		}
 
-		obj.editor.update_constraint();
+		if (obj.editor) obj.editor.update_constraint();
 	}
 
 }

@@ -12,6 +12,7 @@ export class AMES_List {
 	name = "List";
 	is_list = true;
 	shapes = [];
+	original_shapes = [];
 	count = 1;
 	box;
 	editor;
@@ -43,7 +44,7 @@ export class AMES_List {
 		"strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
 		"path" : {}
 	}
-	first_last = [];
+
 	list_constraints = [];
 	offset_mode = false;
 
@@ -57,9 +58,6 @@ export class AMES_List {
 		shapes.sort((a, b) => a.pos.x - b.pos.x);
 		console.log(shapes);
 
-		this.first_last.push(shapes[0]);
-		if (shapes.length > 1) this.first_last.push(shapes[shapes.length-1]);
-
 		for (let idx in shapes) {
 			let s = shapes[idx];
 			this.add_to_list(s);
@@ -69,15 +67,13 @@ export class AMES_List {
 
 		if (!ames.mode) ames.mode = 'list';
 
-
-
 		// TO DO: Make this touch screen friendly
 		for (let i in this.shapes) {
 			this.shapes[i].poly.on("doubleclick", (e) => {
-				for (let j in this.shapes[i].lists) {
-					this.shapes[i].lists[j].offset_mode = !this.shapes[i].lists[j].offset_mode
-					this.shapes[i].lists[j].update_offset_mode();
-				}
+				// Change offset mode for all lists that contain shape
+				console.log(this.name, "changed offset mode to", !this.offset_mode);
+				this.offset_mode = !this.offset_mode;
+				this.update_offset_mode();
 			})
 		}
 
@@ -87,10 +83,9 @@ export class AMES_List {
 		}
 
 		this.active_obj = this.shapes[0];
-
 	}
 
-	update_offset_mode(mode) {
+	update_offset_mode() {
 		for (let i in this.list_constraints) {
 			this.list_constraints[i].offset_mode = this.offset_mode;
 		}
@@ -154,15 +149,17 @@ export class AMES_List {
 			}
 		}
 		this.shapes.push(s);
-		// this.box.addChild(s.poly.clone());
-		// this.box.sendToBack();
 		s.add_list(this);
 	}
 
 	update_constraints() {
-		let s = this.active_sub_p;
+		AMES_List.update_constraints(this);
+	}
+
+	static update_constraints(list) {
+		let s = list.active_sub_p;
 		if (!s) s = "all";
-		AMES_Constraint.update_constraints(this.active_prop, s, this);
+		AMES_Constraint.update_constraints(list.active_prop, s, list);
 	}
 
 	get_shape_names() {
@@ -302,6 +299,7 @@ export class AMES_List {
 
 	manipulate(p, sub) {
 		this._clear_cb_helpers();
+		console.log("Manipulate list", p, sub);
 		// Turn off the active property
 		if (this.active_prop) {
 			// Remove subproperty buttons
@@ -324,9 +322,12 @@ export class AMES_List {
 			this.active_sub_p = sub_p;
 
 			for (let i in this.shapes) {
+				console.log('...iterating over', this.shapes[i].name);
 				if (this.shapes[i].active_prop == p) {
 					this.shapes[i].manipulate_helper('all');
-				} else { this.shapes[i].manipulate(p, sub); };
+				} else {
+						this.shapes[i].manipulate(p, sub);
+			 	}
 			}
 			// this.cbs[p](this, this.cb_helpers);
 			// Indicate active property and show subproperty buttons
@@ -469,5 +470,136 @@ export class AMES_List {
 	}
 
 	show_path_control_shapes(bool) {};
+}
 
+export class AMES_Duplicator extends AMES_List {
+	// Make control shapes list to control duplicator
+	controls = {
+		name: null,
+		is_list: true,
+		is_list_control: true,
+		count: 0,
+		shapes: [],
+		parent: null,
+		active_prop: null,
+		active_sub_p: null,
+		c_inbound: {
+		   "position" : {"all": [], "x": [], "y": []},
+		   "scale": {"all": [], "x": [], "y": []},
+		   "rotation": {"all": [], "t": []},
+		   "fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		   "strokeWidth": {"all": [], "w": []},
+		   "strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		   "path" : {}
+	   },
+	   c_outbound: {
+		   "position" : {"all": [], "x": [], "y": []},
+		   "scale": {"all": [], "x": [], "y": []},
+		   "rotation": {"all": [], "t": []},
+		   "fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		   "strokeWidth": {"all": [], "w": []},
+		   "strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+		   "path" : {}
+	   },
+	   update_constraints: function() {
+		   this.active_prop = this.parent.active_prop;
+		   this.active_sub_p = this.parent.active_sub_p;
+		   AMES_List.update_constraints(this);
+		},
+	   list_constraints: [],
+	   update_list_constraints: function() { AMES.update_list_constraints(this) },
+	   update_show_box_bounds: function() {},
+	   manipulate: function(p, sub) { console.log("here..."); },
+	   manipulate_helper: function(sub) { console.log("here..."); },
+	   set_active_obj: function(s) { this.active_obj = s; }
+	};
+
+	constructor(shapes) {
+		super(shapes);
+
+		// AMES_List(controls);
+
+		// Initialize control list (for now just first / last)
+		// TO DO change to all original shapes
+
+		this.controls.parent = this;
+		this.controls.name = this.name + " Controls";
+		this.add_to_control_list(shapes[0]);
+		this.add_to_control_list(shapes[shapes.length-1]);
+		console.log(this.controls.shapes);
+
+		// // Self constrain child list with all duplicator shapes to parent
+		// for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+		// 	let p = utils.VIS_PROPS[i];
+		// 	if (p != 'path') {
+		// 		let c = new AMES_Constraint(this, this.controls, p, 'all');
+		// 	}
+		// }
+
+		let c = new AMES_Constraint(this, this.controls, 'position', 'all');
+		console.log("is self-referencing?", c.is_self_referencing);
+		c.is_manual_constraint = true;
+		this.active_prop = 'position';
+		super.update_constraints();
+		this.active_prop = null;
+	}
+
+	add_to_control_list(s) {
+		let controls = this.controls;
+		if (controls.shapes.length > 0) {
+			let fs = controls.shapes[0];
+			let ls = controls.shapes[controls.shapes.length - 1];
+			// Remove constraint connecting ls to fs
+			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+				let p = utils.VIS_PROPS[i];
+				if (p != 'path') {
+					if (controls.shapes.length > 1) {
+						let oc;
+						for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+							let sub = utils.SUB_PROPS[p][sub_idx];
+							oc = ls.c_outbound[p][sub][fs.name];
+							controls.list_constraints.splice(controls.list_constraints.indexOf(oc), 1);
+							oc.remove();
+						}
+						oc = ls.c_outbound[p]['all'][fs.name];
+						controls.list_constraints.splice(controls.list_constraints.indexOf(oc), 1);
+						oc.remove();
+					}
+
+					let c_append = new AMES_Constraint(s, ls, p, 'all');
+					let c_loop = new AMES_Constraint(fs, s, p, 'all');
+
+					controls.list_constraints.push(c_append);
+					controls.list_constraints.push(c_loop);
+
+					for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+						let sub = utils.SUB_PROPS[p][sub_idx];
+						controls.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+						controls.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+					}
+				}
+			}
+		}
+		controls.count += 1;
+		controls.shapes.push(s);
+		s.add_list(controls);
+
+		// TO DO: Make this touch screen friendly
+		s.poly.on("doubleclick", (e) => {
+			// Change offset mode for all lists that contain shape
+			console.log(this.name, "changed offset mode to", !controls.offset_mode);
+			controls.offset_mode = !this.offset_mode;
+			this.update_controls_offset_mode();
+		})
+	}
+
+
+	update_offset_mode() {
+		super.update_offset_mode();
+		this.controls.offset_mode = this.offset_mode;
+	}
+
+	update_controls_offset_mode() {
+
+	}
 }
