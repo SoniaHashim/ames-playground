@@ -18,13 +18,12 @@ window.ames = new AMES();
 window.onload = function() {
 	ames.init();
 	var colorwheel = document.getElementById('colorwheel');
-	ames.test(); 
-	// ames.test();
+	ames.test();
 	// let colorbox =  document.querySelector('colorbox');
 	// let colorPicker = new window.iro.ColorPicker('#colorbox', {
 	// 	width: 100,
 	// });
 	// colorPicker.display = 'absolute';
-	// console.log(colorPicker);
+	// console.logA 	(colorPicker);
 
 }

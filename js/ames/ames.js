@@ -7,10 +7,10 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
-import {AMES_Shape_Editor, AMES_List_Editor} from './editors.js'
+import {AMES_Shape_Editor, AMES_List_Editor, AMES_Animation_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_List, AMES_Duplicator} from './lists.js'
-import {AMES_Animation} from './animations.js'
+import {AMES_Animation_Test, AMES_Animation} from './animations.js'
 
 // Globals for ames
 // ames.canvas_cx;
@@ -23,6 +23,7 @@ export class AMES {
 	active_objs = {};
 	objs = {};
 	lists = {};
+	aobjs = {};
 	n_shapes = 0;
 	n_lists = 0;
 	n_aobjs = 0;
@@ -31,7 +32,7 @@ export class AMES {
 	n_lists = 1;
 	l_list_idx = 1;
 	n_aobjs = 1;
-	l_aobjs_idx = 1;
+	l_aobj_idx = 1;
 	// Views & controls
 	canvas_view;
 	controls_view;
@@ -88,8 +89,11 @@ export class AMES {
 		this.tools['Circle'] = this.init_circle_tool();
 		this.tools['Square'] = this.init_square_tool();
 		this.tools['List'] = this.init_list_tool();
+		this.tools['Collection'] = this.init_list_tool({'is_para_style_list': false});
 		this.tools['Duplicator'] = this.init_duplicator_tool();
 		this.tools['Constraint'] = this.init_constraint_tool();
+		this.tools['Animation'] = this.init_animation_tool();
+		this.tools['Animation_Link'] = this.init_animation_link_tool();
 
 
 		// Import any necessary icons
@@ -101,15 +105,13 @@ export class AMES {
 
 		// Layers: create empty array for shapes
 
-
-
 	}
 
 	// import_icon: imports *.svg from local dir ../svg/
 	import_icons() {
 		let icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right",
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
-			"close", "link", "link-remove", "path"];
+			"close", "link", "link-remove", "path", "play", "axes", "brush"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -682,12 +684,11 @@ export class AMES {
 	}
 
 	test() {
-		// let animation = new AMES_Animation();
+		// let animation = new AMES_Animation_Test();
 		// animation.animate();
 
-		let d = [[0, 2], [1, 3], [2, 12], [5, 147]];
-		console.log(d, utils.interpolate(d, 3));
-
+		// let d = [[0, 2], [1, 3], [2, 12], [5, 147]];
+		// console.log(d, utils.interpolate(d, 3));
 	}
 
 	// add_shape: adds given object as a shape
@@ -697,6 +698,7 @@ export class AMES {
 			hue: 90,
 			brightness: 1,
 			saturation: 0,
+			alpha: 0
 		});
 		if (x.poly.fillColor) x.poly.fillColor.brightness = 1;
 		this.expand_layers(utils.L_CONTROLS[0], true);
@@ -717,6 +719,13 @@ export class AMES {
 		this.add_obj(x, utils.L_CONTROLS[1]);
 		x.show(true);
 		this.lists[x.name] = x;
+	}
+
+	add_animation(x) {
+		this.n_aobjs += 1;
+		x.editor = new AMES_Animation_Editor(x);
+		this.add_obj(x, utils.L_CONTROLS[2]);
+		this.aobjs[x.name] = x;
 	}
 
 	hide_editors(obj) {
@@ -751,9 +760,6 @@ export class AMES {
 			this.l_list_idx += 1;
 		}
 		if (t_obj == utils.L_CONTROLS[2]) {
-			this.n_aobjs += 1;
-			let n_aboj = this.n_aobjs - 1;
-			n = "Animation Obj " + n_aboj + " (" + x.get_name() + ")";
 			box_idx = this.l_shape_idx + this.l_list_idx + this.l_aobj_idx;
 			this.l_aobj_idx += 1;
 		}
@@ -819,6 +825,7 @@ export class AMES {
 		// Add box to ames controls
 		this.idx_boxes.splice(box_idx, 0, n);
 		this.obj_boxes[n] = box;
+		if (t_obj == utils.L_CONTROLS[2]) console.log("adding animation box?", box_idx, box);
 
 		// Insert box & update the locations of the other boxes
 		let ny = box_idx*by + by/2 + box_idx*.5;
@@ -1177,7 +1184,8 @@ export class AMES {
 	}
 
 	// init_list_tool: creates a list using underlying active shapes
-	init_list_tool() {
+	init_list_tool(opt) {
+		opt = opt || {};
 		let list_tool = new Tool();
 		let TL = 1; let TR = 2; let BR = 3; let BL = 0;
 		let lbox; let s_dot; let e_dot;
@@ -1242,7 +1250,7 @@ export class AMES {
 			let shapes = [];
 			for (let k in selected_shapes) shapes.push(selected_shapes[k]);
 			if (shapes.length !=0 ) {
-				let list = new AMES_List(shapes);
+				let list = new AMES_List(shapes, opt);
 				this.add_list(list);
 			}
 
@@ -1348,7 +1356,6 @@ export class AMES {
 		return list_tool;
 	}
 
-
 	init_constraint_tool() {
 		let constraint_tool = new Tool();
 
@@ -1360,7 +1367,7 @@ export class AMES {
 		let clean_constraint_tool = () => {
 			if (c_reference_box) {
 				c_reference_box.remove();
-				if (curr_obj && curr_obj.is_list) curr_obj.list_box.visible = true;
+				//if (curr_obj && curr_obj.is_list) curr_obj.list_box.visible = true;
 			}
 			if (c_relative_box) {
 				c_relative_box.remove();
@@ -1466,6 +1473,134 @@ export class AMES {
 		constraint_tool.onMouseDrag = cb_select_obj;
 		constraint_tool.onMouseUp = cb_enable_constraint;
 		return constraint_tool;
+	}
+
+	init_animation_link_tool() {
+		let animation_link_tool = new Tool();
+
+		let line; let line_start;
+		let c_relative_box;
+		let curr_obj; let c_reference_box;
+		let point_in_box = false;
+
+		let clean_animation_link_tool = () => {
+			if (c_reference_box) {
+				c_reference_box.remove();
+				// if (curr_obj && curr_obj.is_list) curr_obj.list_box.visible = true;
+			}
+			if (line) line.remove();
+			c_reference_box = null;
+			line = null;
+			line_start = null;
+			curr_obj = null;
+			point_in_box = false;
+		}
+
+
+		let cb_start_animation_link = (e) => {
+			clean_animation_link_tool();
+			console.log("starting animation link connection?")
+			if (!this.on_canvas(e)) return;
+			console.log("...on canvas");
+			// console.log("The relative is " + ames.c_relative.name);
+			line_start = this.active_linking_animation.editor.geometry_field_info[this.animation_active_field].link.position;
+			line = new Path.Line(line_start, e.point);
+			console.log("animation link line_start and line", line_start, line);
+			line.strokeWidth = 1;
+			line.dashArray = [3,1];
+			line.strokeColor = utils.ACTIVE_COLOR;
+			curr_obj = null;
+			c_reference_box = null;
+			point_in_box = false;
+		}
+
+		let cb_select_obj = (e) => {
+			if (!this.active_objs[this.active_linking_animation.name]) { clean_animation_link_tool(); return; }
+			if (!line) { clean_animation_link_tool(); return; }
+			point_in_box = false;
+			// If end point is the bounding box of an active object
+			for (let k in this.active_objs) {
+				// Snap the endpoint to the closest bounding box corner
+				let obj = this.active_objs[k];
+				if (obj.is_geometry) {
+					if (obj.contains(e.point)) {
+						// Attach line to bbox corner with closest match
+						let p = obj.get_closest_bbox_corner(line_start);
+						if (p) line.lastSegment.point = p;
+						else line.lastSegment.point = e.point;
+						if (obj != curr_obj) {
+							// Update highlighted object
+							if (c_reference_box) {
+								c_reference_box.remove();
+							}
+							c_reference_box = obj.highlight(utils.C_REFERENCE_HIGHLIGHT);
+							curr_obj = obj;
+							// If list, hide list box
+							if (curr_obj.is_list) curr_obj.list_box.visible = false;
+
+						}
+						point_in_box = true;
+					}
+				}
+			}
+
+			if (!point_in_box) {
+				line.lastSegment.point = e.point;
+				if (c_reference_box) {
+					c_reference_box.remove();
+					c_reference_box = null;
+				}
+				curr_obj = null;
+			}
+		}
+
+		let cb_enable_animation_link = (e) => {
+			// Set animation geometry field as specified
+			let geometry_field_info = ames.active_linking_animation.editor.geometry_field_info[ames.animation_active_field]
+			let link = geometry_field_info.link;
+			let link_remove = geometry_field_info.link_remove;
+			if (curr_obj) {
+				let rel = ames.active_linking_animation;
+				ames.active_linking_animation.set_geometry_field(ames.animation_active_field, curr_obj);
+				ames.active_linking_animation.editor.geometry_field_info[ames.animation_active_field].label.content = curr_obj.name;
+				link.visible = false;
+				link_remove.visible = true;
+			}
+
+			// Turn off constraint tool
+			ames.tools['inactive_tool'].activate();
+			link.strokeColor = utils.INACTIVE_S_COLOR;
+			clean_animation_link_tool();
+		}
+
+		animation_link_tool.onMouseDown = cb_start_animation_link;
+		animation_link_tool.onMouseDrag = cb_select_obj;
+		animation_link_tool.onMouseUp = cb_enable_animation_link;
+		return animation_link_tool;
+	}
+
+	init_animation_tool() {
+		let animation_tool = new Tool();
+
+		let create_animation_box = () => {
+			// Create empty animation object
+		}
+
+		let cb_make_animation = (e) => {
+			if (this.on_canvas(e)) {
+				// Create box and show animation editor
+				let a = new AMES_Animation();
+				this.add_animation(a);
+			}
+		}
+
+		let cb_deactivate_tool = (e) => {
+			this.switch_tool({b: "Animation", deactivate: true});
+		}
+
+		animation_tool.onMouseDown = cb_make_animation;
+		animation_tool.onMouseUp = cb_deactivate_tool;
+		return animation_tool;
 	}
 
 

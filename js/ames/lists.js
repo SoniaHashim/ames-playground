@@ -10,6 +10,7 @@ import {AMES_Shape} from './shapes.js'
 
 export class AMES_List {
 	name = "List";
+	is_geometry = true; 
 	is_list = true;
 	shapes = [];
 	original_shapes = [];
@@ -47,8 +48,12 @@ export class AMES_List {
 
 	list_constraints = [];
 	offset_mode = false;
+	is_para_style_list = true;
 
-	constructor(shapes) {
+	constructor(shapes, opt) {
+		opt = opt || {};
+		if (opt.is_para_style_list) this.is_para_style_list = opt.is_para_style_list;
+
 		this.box = new Group();
 		let n_list = ames.n_lists;
 		this.name = "List " + ames.n_lists;
@@ -113,7 +118,7 @@ export class AMES_List {
 
 
 	add_to_list(s) {
-		if (this.shapes.length > 0) {
+		if (!this.is_para_style_list && this.shapes.length > 0) {
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs

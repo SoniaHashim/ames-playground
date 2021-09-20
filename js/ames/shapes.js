@@ -19,6 +19,7 @@ import {PropertyBox} from './propertybox.js'
 export class AMES_Shape {
 	// Display properties including name, visibility, layer
 	name = "Shape";
+	is_geometry = true;
 	is_shape = true;
 	obj_type = "shape";
 	visible = false;
@@ -970,6 +971,8 @@ export class AMES_Shape {
 					let toggle = !this.is_selected;
 					this.select(toggle);
 					// this.open_editor(toggle);
+
+
 				}
 			} else {
 				this.poly.onClick = null;
@@ -977,6 +980,18 @@ export class AMES_Shape {
 			}
 			// make all other handlers void;
 			this.poly.onMouseDrag = null;
+
+			console.log("attaching interactivity?")
+
+			if (this.is_ames_path) {
+				this.poly.onMouseDrag = (e) => {
+					let nearest_point_on_path = this.poly.getNearestPoint(e.point);
+					let path_offset = this.poly.getOffsetOf(nearest_point_on_path);
+					console.log("event point / point on path / path offset / path length:", e.point, nearest_point_on_path, path_offset, this.poly.length);
+					console.log("path offset at point:", path_offset / this.poly.length);
+					console.log("path curvature at point:", this.poly.getCurvatureAt(path_offset))
+				}
+			}
 		}
 	}
 
@@ -987,6 +1002,7 @@ export class AMES_Shape {
 // Description: Implementation of a square / rectangle
 export class AMES_Square extends AMES_Shape {
 	name = "Rectangle";
+	is_ames_rectangle = true;
 
 	constructor() {
 		super();
@@ -1027,6 +1043,7 @@ export class AMES_Square extends AMES_Shape {
 // Description: Implementation of a circle / ellipse
 export class AMES_Circle extends AMES_Shape {
 	name = "Ellipse";
+	is_ames_ellipse = true;
 
 	constructor() {
 		super();
@@ -1067,6 +1084,7 @@ export class AMES_Circle extends AMES_Shape {
 export class AMES_Path extends AMES_Shape {
 	name = "Path";
 	bbox;
+	is_ames_path = true;
 
 	constructor() {
 		super();
@@ -1074,6 +1092,7 @@ export class AMES_Path extends AMES_Shape {
 			strokeColor: 'darkgray',
 			strokeWidth: 1,
 			visible: true,
+			fillColor: 'rgba(255, 0, 0, 0)'
 			// fullySelected: true
 		});
 		this.visual_prop_box = new PropertyBox(this, this.visual_props);

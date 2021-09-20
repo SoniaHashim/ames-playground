@@ -49,7 +49,9 @@ export class AMES_Utils {
 		'Circle' : 'btn-shape-circle',
 		'Path' : 'btn-shape-path',
 		'List': 'btn-list',
-		'Duplicator': 'btn-duplicator'
+		'Duplicator': 'btn-duplicator',
+		'Collection': 'btn-collection',
+		'Animation': 'btn-animation'
 	}
 
 	static btns = [this.shape_btns];
