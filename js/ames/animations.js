@@ -5,6 +5,7 @@
 // Description: AMES animations representations
 // ----------------------------------------------------------------------------
 import {AMES_Utils as utils} from './utils.js'
+import 'regenerator-runtime/runtime'
 
 export class AMES_Animation_Test {
 	static count = 0;
