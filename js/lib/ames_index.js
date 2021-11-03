@@ -11,35 +11,21 @@ var _ames = require("./ames.js");
 // ---------------------------------------------------------------------------
 console.log("Growth mindset & learning opportunities");
 paper.install(window);
-window.AMES = new _ames.AMES(); // AMES set-up phase 1 before DOM is ready
-
-_ames.AMES.change_mode('ELEMENT');
-
-_ames.AMES.change_edit_mode('SHAPE'); // Execute main function once DOM is ready
-
+window.ames;
+// Set up before DOM is ready
+window.ames = new _ames.AMES(); // Execute main function once DOM is ready
 
 window.onload = function () {
-  console.log("here"); // Get a reference to the canvas object and set up canvas as animation space
+  ames.init();
+  var colorwheel = document.getElementById('colorwheel'); // Wait on load
 
-  var canvas = document.getElementById('env-animation'); // AMES set-up phase 2 after DOM is ready
+  function sleep(time) {
+    return new Promise(function (resolve) {
+      return setTimeout(resolve, time);
+    });
+  }
 
-  window.ames.canvas = canvas;
-  window.ames.canvas_cx = canvas.width / 2;
-  window.ames.canvas_cy = canvas.height / 2; // Create an empty project and a view for the canvas:
-
-  paper.setup(canvas); // Create a Paper.js Path to draw a line into it:
-
-  var path = new Path(); // Give the stroke a color
-
-  path.strokeColor = 'black';
-  var start = new Point(100, 100); // Move to start and draw a line from there
-
-  path.moveTo(start); // Note that the plus operator on Point objects does not work
-  // in JavaScript. Instead, we need to call the add() function:
-
-  path.lineTo(start.add([200, -50])); // Draw the view now:
-
-  window.testpath = path;
-  view.draw();
-  console.log("Shape: ", Shape);
+  sleep(500).then(function () {
+    ames.test();
+  });
 };

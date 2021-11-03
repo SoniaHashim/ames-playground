@@ -90,7 +90,7 @@ export class AMES {
 		this.tools['Square'] = this.init_square_tool();
 		this.tools['List'] = this.init_list_tool();
 		this.tools['Collection'] = this.init_list_tool({'is_para_style_list': false});
-		this.tools['Duplicator'] = this.init_duplicator_tool();
+		this.tools['Duplicator'] = this.init_list_tool({'is_para_style_list': false, 'is_duplicator': true});
 		this.tools['Constraint'] = this.init_constraint_tool();
 		this.tools['Animation'] = this.init_animation_tool();
 		this.tools['Animation_Link'] = this.init_animation_link_tool();
@@ -111,7 +111,8 @@ export class AMES {
 	import_icons() {
 		let icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right",
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
-			"close", "link", "link-remove", "path", "play", "axes", "brush"];
+			"close", "link", "link-remove", "path", "play", "axes", "brush", "pause",
+			"rewind", "loop", "arrow"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -684,11 +685,38 @@ export class AMES {
 	}
 
 	test() {
-		// let animation = new AMES_Animation_Test();
-		// animation.animate();
+		let obj_a = new AMES_Circle();
+		obj_a.set_pos(new Point(200, 200));
+		obj_a.poly.visible = true;
+		obj_a.poly.radius = 25;
+		obj_a.to_path();
+		this.add_shape(obj_a);
 
-		// let d = [[0, 2], [1, 3], [2, 12], [5, 147]];
-		// console.log(d, utils.interpolate(d, 3));
+		let artwork_duplicator = new AMES_List([obj_a], {"is_para_style_list": false, "is_duplicator": true});
+		this.add_list(artwork_duplicator);
+		for (let i = 0; i < 2; i++) artwork_duplicator.add_item();
+
+		let obj_b = new AMES_Square();
+		obj_b.set_pos(new Point(400, 400));
+		obj_b.poly.visible = true;
+		obj_b.poly.size = new Size(100, 100);
+		obj_b.to_path();
+		this.add_shape(obj_b);
+
+		let obj_c = new AMES_Circle();
+		obj_c.set_pos(new Point(550, 450));
+		obj_c.poly.visible = true;
+		obj_c.poly.radius = 50;
+		obj_c.to_path();
+		this.add_shape(obj_c);
+
+		let transformation_list = new AMES_List([obj_b, obj_c], {"is_para_style_list": false});
+		this.add_list(transformation_list);
+
+		let animation = new AMES_Animation;
+		this.add_animation(animation);
+		animation.set_geometry_field('artwork', artwork_duplicator);
+		animation.set_geometry_field('transformation', transformation_list);
 	}
 
 	// add_shape: adds given object as a shape
@@ -698,13 +726,13 @@ export class AMES {
 			hue: 90,
 			brightness: 1,
 			saturation: 0,
-			alpha: 0
+			alpha: 1
 		});
 		if (x.poly.fillColor) x.poly.fillColor.brightness = 1;
 		this.expand_layers(utils.L_CONTROLS[0], true);
 		this.n_shapes += 1;
 		let n_shape = this.n_shapes - 1;
-		x.name = "Shape " + n_shape + " (" + x.get_name() + ")";
+		x.name = "Shape " + n_shape + " (" + x.get_type() + ")";
 		x.editor = new AMES_Shape_Editor(x);
 		this.add_obj(x, utils.L_CONTROLS[0]);
 	}

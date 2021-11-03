@@ -930,6 +930,10 @@ export class AMES_Shape {
 		return this.name;
 	}
 
+	get_type() {
+		return this.shape_type;
+	}
+
 	set_name(n) {
 		this.name = n;
 	}
@@ -1002,6 +1006,7 @@ export class AMES_Shape {
 // Description: Implementation of a square / rectangle
 export class AMES_Square extends AMES_Shape {
 	name = "Rectangle";
+	shape_type = "Rectangle";
 	is_ames_rectangle = true;
 
 	constructor() {
@@ -1042,7 +1047,8 @@ export class AMES_Square extends AMES_Shape {
 // ---------------------------------------------------------------------------
 // Description: Implementation of a circle / ellipse
 export class AMES_Circle extends AMES_Shape {
-	name = "Ellipse";
+	name = "Ellipse"
+	shape_type = "Ellipse";
 	is_ames_ellipse = true;
 
 	constructor() {
@@ -1083,6 +1089,7 @@ export class AMES_Circle extends AMES_Shape {
 // Description: Implementation of a path
 export class AMES_Path extends AMES_Shape {
 	name = "Path";
+	shape_type = "Path"; 
 	bbox;
 	is_ames_path = true;
 

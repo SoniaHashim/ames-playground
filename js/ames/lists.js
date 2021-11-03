@@ -10,7 +10,7 @@ import {AMES_Shape} from './shapes.js'
 
 export class AMES_List {
 	name = "List";
-	is_geometry = true; 
+	is_geometry = true;
 	is_list = true;
 	shapes = [];
 	original_shapes = [];
@@ -53,6 +53,7 @@ export class AMES_List {
 	constructor(shapes, opt) {
 		opt = opt || {};
 		if (opt.is_para_style_list) this.is_para_style_list = opt.is_para_style_list;
+		if (opt.is_duplicator) this.is_duplicator = opt.is_duplicator;
 
 		this.box = new Group();
 		let n_list = ames.n_lists;
@@ -62,6 +63,7 @@ export class AMES_List {
 		// Sort shapes by x_position
 		shapes.sort((a, b) => a.pos.x - b.pos.x);
 		console.log(shapes);
+		this.original_shapes = shapes;
 
 		for (let idx in shapes) {
 			let s = shapes[idx];
@@ -114,6 +116,24 @@ export class AMES_List {
 			if (this.shapes[i] == x) return true;
 		}
 		return false;
+	}
+
+	duplicate() {
+		console.log("duplicator: ", this.shapes);
+		let original_shape = this.original_shapes[0];
+		if (this.is_duplicator) {
+			let shape = new AMES_Shape();
+			Object.assign(shape, original_shape);
+			shape.editor = null;
+			shape.poly = original_shape.poly.clone();
+			console.log("...made new shape: ", shape);
+			ames.add_shape(shape);
+			console.log("...new shape editor:", shape.editor);
+			this.shapes.push(shape);
+			console.log("...new list contains: ", this.shapes);
+			shape.set_pos(new Point(10, 10), true);
+			this.show(true);
+		}
 	}
 
 
@@ -205,6 +225,7 @@ export class AMES_List {
 
 	add_item() {
 		this.count = this.count + 1;
+		this.duplicate();
 		this.update_show_box();
 	}
 
@@ -273,17 +294,18 @@ export class AMES_List {
 			total_drag += e.event.movementX;
 			if (total_drag < 0) ames.canvas.style.cursor = 'w-resize';
 			if (total_drag > 0) ames.canvas.style.cursor = 'e-resize';
-			if (total_drag < -5) {
+			if (total_drag < -10) {
 				this.remove_item();
 				total_drag = 0;
 			}
-			if (total_drag > 5) {
+			if (total_drag > 10) {
 				this.add_item();
 				total_drag = 0;
 			}
 		}
 		this.text_count.onMouseUp = (e) => {
 			ames.canvas.style.cursor = null;
+			total_drag = 0;
 
 		}
 		console.log('count', '' + this.count);

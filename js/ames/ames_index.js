@@ -18,12 +18,12 @@ window.ames = new AMES();
 window.onload = function() {
 	ames.init();
 	var colorwheel = document.getElementById('colorwheel');
-	ames.test();
-	// let colorbox =  document.querySelector('colorbox');
-	// let colorPicker = new window.iro.ColorPicker('#colorbox', {
-	// 	width: 100,
-	// });
-	// colorPicker.display = 'absolute';
-	// console.logA 	(colorPicker);
 
+	// Wait on load
+	function sleep (time) {
+		return new Promise((resolve) => setTimeout(resolve, time));
+	}
+	sleep(500).then(() => {
+		ames.test();
+	})
 }

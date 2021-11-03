@@ -76,8 +76,7 @@ var PropertyBox = /*#__PURE__*/function () {
         content: p,
         fillColor: _utils.AMES_Utils.INACTIVE_COLOR,
         fontSize: '.75rem'
-      }); // this.box.text(p).attr({x: 5, y: i*this.offset/2})
-
+      });
       this.props_text[p] = p_text;
       this.box.addChild(p_text);
       i = i + 1;
@@ -163,6 +162,7 @@ var PropertyBox = /*#__PURE__*/function () {
 
 
         _this.props_text[_this.active_prop].fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
+        _this.active_prop = null;
       }
     });
     this.close_text.on('mouseenter', function (e) {
@@ -282,8 +282,6 @@ var PropertyBox = /*#__PURE__*/function () {
 
 
       var cb_scale_update = function cb_scale_update(e) {
-        console.log("dragEvent");
-
         if (activated) {
           endp = _utils.AMES_Utils.get_e_point(e);
           line.segments[0].point = new Point(cx, cy);
@@ -328,7 +326,7 @@ var PropertyBox = /*#__PURE__*/function () {
     value: function update_position() {
       // Use parent bounding box to displace property box away from center
       var parent_bbox = this.parent.get_bbox();
-      this.offset = parent_bbox.width / 2; // Set property box position
+      this.offset = parent_bbox.width / 4; // Set property box position
 
       this.pos.x = this.parent.pos.x + 2.25 * this.offset;
       this.pos.y = this.parent.pos.y - .25 * this.offset;

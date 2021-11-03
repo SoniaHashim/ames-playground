@@ -149,9 +149,12 @@ export class AMES_Animation_Editor extends AMES_Editor {
 		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'transformation')
 
 		// Create a play button
-		this.make_button(0, "play", "animate", 0);
+		this.make_button(0, "play", "play");
+		this.make_button(0, "pause", "pause");
+		this.make_button(0, "rewind", "rewind");
+		this.make_button(0, "loop", "loop");
 		this.make_button(1, "axes", "set_transformation_axes");
-		this.make_button(1, "brush", "change_axes_properties");
+		this.make_button(1, "brush", "change_animation_property");
 
 		// Initialize editor position
 		this.set_editor_position();
