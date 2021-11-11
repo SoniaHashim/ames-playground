@@ -404,8 +404,11 @@ export class AMES {
 	}
 
 	create_color_picker() {
+		// ames.layers_view._project.activate();
 		let colorwheel = new Raster('colorwheel');
+		// ames.canvas_view._project.activate();
 		colorwheel.on('load', function() {
+			// ames.layers_view._project.activate();
 			colorwheel.scaling = 0.2;
 			ames.colorwheel = colorwheel;
 
@@ -595,6 +598,13 @@ export class AMES {
 				let ch = -ames.canvas_view.size.height/2 + 2*utils.ICON_OFFSET;
 				let csize = new Point(-colorpicker.bounds.width/2, colorpicker.bounds.height/2)
 				return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+
+				// let cw = ames.layers_view.size.width/2 - 2*utils.ICON_OFFSET;
+				// let ch = -ames.layers_view.size.height/2 + 2*utils.ICON_OFFSET;
+				// let csize = new Point(-colorpicker.bounds.width/2, colorpicker.bounds.height/2);
+				// let p = ames.layers_view.center.add(new Point(cw, ch)).add(csize);
+				// return p;
+				// console.log("colorwheel at position ", p);
 			}
 
 			// Make colorpicker draggable
@@ -623,7 +633,10 @@ export class AMES {
 			colorpicker.position = colorpicker.get_position();
 			ames.colorpicker = colorpicker;
 			ames.colorpicker.visible = false;
+			// this.canvas_view._project.activate();
 		});
+		// ames.canvas_view._project.activate();
+
 	}
 
 	adjust_t_delta() {

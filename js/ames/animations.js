@@ -5,7 +5,10 @@
 // Description: AMES animations representations
 // ----------------------------------------------------------------------------
 import {AMES_Utils as utils} from './utils.js'
-import 'regenerator-runtime/runtime'
+
+// TOGGLE FOR BUILD
+// import 'regenerator-runtime/runtime'
+
 
 export class AMES_Animation_Test {
 	static count = 0;
@@ -124,7 +127,7 @@ export class AMES_Animation {
 	name;
 	artwork = null;
 	transformation = null;
-	transformation_is_proprtional = true;
+	transformation_is_proportional = true;
 	start_state_idx = 0;
 	is_animation_playble = false;
 	is_paused = false;

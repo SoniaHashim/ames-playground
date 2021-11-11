@@ -7,7 +7,6 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Constraint as constraints} from './constraints.js'
-import {PropertyBox} from './propertybox.js'
 
 // let cb_canvas_crosshair = (e) => {
 // 	ames.canvas.style.cursor = 'crosshair';
@@ -1019,26 +1018,6 @@ export class AMES_Square extends AMES_Shape {
 			strokeWidth: 1,
 			strokeColor: 'darkgray'
 		});
-		this.visual_prop_box = new PropertyBox(this, this.visual_props);
-
-		// // On double click launch properties editor
-		// this.latest_tap;
-		// this.poly.on('click', e => {
-		// 	console.log("tap on ", this.name);
-		// 	let now = new Date().getTime();
-		// 	if (this.latest_tap) {
-		// 		let time_elapsed = now - this.latest_tap;
-		// 		// Double tap
-		// 		if (time_elapsed < 600 && time_elapsed > 0) {
-		// 			console.log("double tap on ", this.name);
-		// 			// In Shape mode, open shape editor
-		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-		// 				this.visual_prop_box.show();
-		// 			}
-		// 		}
-		// 	}
-		// 	this.latest_tap = new Date().getTime();
-		// });
 	}
 }
 
@@ -1061,26 +1040,6 @@ export class AMES_Circle extends AMES_Shape {
 			strokeWidth: 1,
 			strokeColor: 'darkgray'
 		});
-		this.visual_prop_box = new PropertyBox(this, this.visual_props);
-
-		// // On double click launch properties editor
-		// this.latest_tap;
-		// this.poly.on('click', e => {
-		// 	console.log("tap on ", this.name);
-		// 	let now = new Date().getTime();
-		// 	if (this.latest_tap) {
-		// 		let time_elapsed = now - this.latest_tap;
-		// 		// Double tap
-		// 		if (time_elapsed < 600 && time_elapsed > 0) {
-		// 			console.log("double tap on ", this.name);
-		// 			// In Shape mode, open shape editor
-		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-		// 				this.visual_prop_box.show();
-		// 			}
-		// 		}
-		// 	}
-		// 	this.latest_tap = new Date().getTime();
-		// });
 	}
 }
 
@@ -1089,7 +1048,7 @@ export class AMES_Circle extends AMES_Shape {
 // Description: Implementation of a path
 export class AMES_Path extends AMES_Shape {
 	name = "Path";
-	shape_type = "Path"; 
+	shape_type = "Path";
 	bbox;
 	is_ames_path = true;
 
@@ -1102,7 +1061,6 @@ export class AMES_Path extends AMES_Shape {
 			fillColor: 'rgba(255, 0, 0, 0)'
 			// fullySelected: true
 		});
-		this.visual_prop_box = new PropertyBox(this, this.visual_props);
 	}
 
 	update_bbox() {
@@ -1111,25 +1069,6 @@ export class AMES_Path extends AMES_Shape {
 		this.bbox.sendToBack();
 		this.bbox.fillColor = "lavender";
 		this.bbox.opacity = 0;
-		// // On double click launch properties editor
-		// this.latest_tap;
-		// this.bbox.on('click', e => {
-		// 	let nearpoint = this.poly.getNearestPoint(e.point);
-		// 	if (nearpoint.getDistance(e.point, true) > 50 ) return;
-		// 	let now = new Date().getTime();
-		// 	if (this.latest_tap) {
-		// 		let time_elapsed = now - this.latest_tap;
-		// 		// Double tap
-		// 		if (time_elapsed < 600 && time_elapsed > 0) {
-		// 			console.log("double tap on ", this.name);
-		// 			// In Shape mode, open shape editor
-		// 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-		// 				this.visual_prop_box.show();
-		// 			}
-		// 		}
-		// 	}
-		// 	this.latest_tap = new Date().getTime();
-		// });
 	}
 
 	make_path_helper() {
