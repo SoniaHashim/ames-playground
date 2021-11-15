@@ -97,7 +97,6 @@ export class AMES {
 		this.setup_layers();
 
 		// Import icons
-
 		this.create_toolbar();
 		this.create_sidebar();
 		this.import_icons();
