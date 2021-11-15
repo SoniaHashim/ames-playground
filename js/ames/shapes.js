@@ -472,9 +472,6 @@ export class AMES_Shape {
 
 	_fill_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
-			let p = ames.colorpicker.get_position();
-			ames.colorpicker.position = p;
-			ames.colorpicker.visible = true;
 			if (shape.poly) ames.colorpicker.load_color(shape.poly.fillColor);
 
 			let color_function = (c) => {

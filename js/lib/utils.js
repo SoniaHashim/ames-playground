@@ -193,6 +193,16 @@ _defineProperty(AMES_Utils, "L_EXPAND_IDX", 2);
 
 _defineProperty(AMES_Utils, "L_CONTRACT_IDX", 3);
 
+_defineProperty(AMES_Utils, "SIDEBAR_WIDTH", 300);
+
+_defineProperty(AMES_Utils, "SIDEBAR_HEIGHT", 500);
+
+_defineProperty(AMES_Utils, "OFFSET", 4);
+
+_defineProperty(AMES_Utils, "UX_SHOW_IDX", 4);
+
+_defineProperty(AMES_Utils, "UX_HIDE_IDX", 3);
+
 _defineProperty(AMES_Utils, "VIS_PROPS", ["position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "path"]);
 
 _defineProperty(AMES_Utils, "SUB_PROPS", {

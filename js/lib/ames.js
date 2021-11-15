@@ -96,6 +96,10 @@ var AMES = /*#__PURE__*/function () {
     _defineProperty(this, "reset_time", false);
 
     _defineProperty(this, "offset_mode", false);
+
+    _defineProperty(this, "ux", []);
+
+    _defineProperty(this, "layers", {});
   }
 
   _createClass(AMES, [{
@@ -109,23 +113,16 @@ var AMES = /*#__PURE__*/function () {
     // in seconds
     // State
     // Testing
+    // UX
     // Iniitalize AMES app properties after window loads
     function init() {
       // Get references to canvas objects
-      var canvas = document.getElementById('animation-canvas'); // let controls = document.getElementById('control-canvas');
-
-      var layers = document.getElementById('layers-canvas'); // Store animation canvas properties
+      var canvas = document.getElementById('animation-canvas'); // Store animation canvas properties
 
       window.ames.canvas = canvas;
       window.ames.canvas_cx = canvas.width / 2;
       window.ames.canvas_cy = canvas.height / 2;
-      window.ames.animations = {}; // // Set up project & view for controls - DELETE OLD CODE w/ SCRUBBER
-      // paper.setup(controls);
-      // this.init_controls(controls);
-      // Set up project & view for layers
-
-      paper.setup(layers);
-      this.init_layers(); // Set up project & view for animation canvas
+      window.ames.animations = {}; // Set up project & view for animation canvas
 
       paper.setup(canvas);
       this.init_canvas(canvas); // Make drawing tools
@@ -144,17 +141,175 @@ var AMES = /*#__PURE__*/function () {
       });
       this.tools['Constraint'] = this.init_constraint_tool();
       this.tools['Animation'] = this.init_animation_tool();
-      this.tools['Animation_Link'] = this.init_animation_link_tool(); // Import any necessary icons
+      this.tools['Animation_Link'] = this.init_animation_link_tool(); // Activate canvas
+
+      this.canvas_view._project.activate(); // Set up sidebar
+
 
       this.idx_boxes = new Array();
-      this.setup_layers();
-      this.import_icons(); // Layers: create empty array for shapes
+      this.setup_layers(); // Import icons
+
+      this.create_toolbar();
+      this.create_sidebar();
+      this.import_icons();
+    }
+  }, {
+    key: "create_toolbar",
+    value: function create_toolbar() {
+      var toolbar = new Group();
+      toolbar.n_btns = 0;
+      toolbar.active_btn = null;
+      toolbar.btns = {};
+
+      toolbar.get_position = function () {
+        var cw = -ames.canvas_view.size.width / 2 + 5 * _utils.AMES_Utils.ICON_OFFSET;
+        var ch = ames.canvas_view.size.height / 2 - 5 * _utils.AMES_Utils.ICON_OFFSET;
+        var csize = new Point(-toolbar.bounds.width / 2, toolbar.bounds.height / 2);
+        var p = ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+        return p;
+      };
+
+      toolbar.activate_btn = function (btn_name) {};
+
+      toolbar.deactivate_btn = function (btn_name) {};
+
+      toolbar.create_btn = function (btn_name, i_name, cb) {
+        var btn = new Group();
+        var btn_i = ames.icons[i_name].clone();
+        var p = ames.toolbar.get_position();
+        btn_i.position = new Point(p.x, p.y - 25 * ames.toolbar.n_btns);
+        btn_i.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
+        btn_i.scaling = 1.25;
+        btn_i.visible = true;
+        var btn_position = btn_i.position;
+        var btn_r = new Path.Rectangle(ames.canvas_view.center, new Size(25, 25));
+        btn_r.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+        btn_r.position = btn_i.position;
+        btn_r.strokeWidth = 1;
+        btn_r.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
+        btn.addChildren([btn_r, btn_i]);
+        btn.position = btn_i.position;
+        console.log(btn.position);
+
+        btn.onClick = function (e) {
+          cb();
+        };
+
+        ames.toolbar.n_btns += 1;
+        ames.toolbar.btns[btn_name] = btn;
+        console.log('Toolbar Buttons', ames.toolbar.n_btns, ames.toolbar.children);
+        toolbar.position = toolbar.get_position();
+        ames.ux.push(btn);
+      };
+
+      toolbar.create_tool_btn = function (btn_name, i_name) {
+        var tool_cb = function tool_cb() {
+          ames.switch_tool({
+            b: btn_name
+          });
+        };
+
+        console.log(ames.toolbar);
+        ames.toolbar.create_btn(btn_name, i_name, tool_cb);
+      };
+
+      toolbar.position = toolbar.get_position();
+      ames.toolbar = toolbar;
+    }
+  }, {
+    key: "create_sidebar",
+    value: function create_sidebar() {
+      var _this = this;
+
+      var sidebar = new Group();
+      this.create_color_picker();
+      var w = _utils.AMES_Utils.SIDEBAR_WIDTH;
+      console.log("SIDEBAR_WIDTH", w);
+      var h = _utils.AMES_Utils.SIDEBAR_HEIGHT;
+      var r = new Path.Rectangle(ames.canvas_view.center, new Size(w, h));
+      r.position = new Point(0, 0);
+      r.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+      this.ux.push(r);
+      var ames_text = new PointText({
+        point: [0, 0],
+        content: "Animating Multiple Elements Simultaneously",
+        fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: 12,
+        visible: true,
+        position: [r.position.x, r.position.y - r.bounds.height / 2]
+      });
+      ames_text.position = new Point(0, -h / 2 + 1.5 * ames_text.bounds.height);
+      var ames_box = new Path.Rectangle(r.position, new Size(w, 3 * ames_text.bounds.height));
+      ames_box.position = ames_text.position;
+      ames_box.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+      ames_box.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR; // Add ux show / hide carets
+
+      sidebar.add_caret = function (i_name) {
+        var button = ames.icons[i_name].clone();
+        var caret_position = new Point(ames_text.position.x - ames_text.bounds.width / 2 - 4 * _utils.AMES_Utils.ICON_OFFSET, ames_text.position.y);
+        button.position = caret_position;
+        button.scaling = 0.75;
+        button.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR; // Show
+
+        if (i_name == "caret-right") {
+          button.visible = false;
+
+          button.onClick = function (e) {
+            _this.show_ux(true);
+
+            button.visible = false;
+            sidebar.children[_utils.AMES_Utils.UX_HIDE_IDX].visible = true;
+          };
+
+          sidebar.insertChild(_utils.AMES_Utils.UX_SHOW_IDX, button);
+        } // Hide
+
+
+        if (i_name == "caret-down") {
+          button.visible = true;
+
+          button.onClick = function (e) {
+            _this.show_ux(false);
+
+            button.visible = false;
+            sidebar.children[_utils.AMES_Utils.UX_SHOW_IDX].visible = true;
+            console.log("make visible...", sidebar.children[_utils.AMES_Utils.UX_SHOW_IDX]);
+          };
+
+          sidebar.insertChild(_utils.AMES_Utils.UX_HIDE_IDX, button);
+        }
+      };
+
+      sidebar.addChildren([r, ames_box, ames_text]);
+      var layers_panel = new Group();
+      sidebar.addChild(layers_panel);
+
+      var get_position = function get_position() {
+        var cw = ames.canvas_view.size.width / 2 - .5 * _utils.AMES_Utils.ICON_OFFSET;
+        var ch = -ames.canvas_view.size.height / 2 + 2 * _utils.AMES_Utils.ICON_OFFSET;
+        var csize = new Point(-sidebar.bounds.width / 2, sidebar.bounds.height / 2);
+        return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+      };
+
+      sidebar.position = get_position();
+      sidebar.visible = true;
+      this.sidebar = sidebar;
+    }
+  }, {
+    key: "show_ux",
+    value: function show_ux(bool) {
+      console.log("Toggle show_ux", bool);
+
+      for (var idx in this.ux) {
+        this.ux[idx].visible = bool;
+      }
     } // import_icon: imports *.svg from local dir ../svg/
 
   }, {
     key: "import_icons",
     value: function import_icons() {
-      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow"];
+      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen"];
 
       for (var idx in icons) {
         this.import_icon(icons[idx]);
@@ -171,21 +326,19 @@ var AMES = /*#__PURE__*/function () {
         i.strokeWidth = 0.5;
         i.scaling = 0.65;
         ames.icons[n] = i.clone();
-
-        if (n == 'caret-down' || n == 'caret-right') {
-          ames.icon_caret(n);
-        }
-
-        if (n == 'close') {
-          ames.create_color_picker();
-        }
+        if (n == 'caret-down' || n == 'caret-right') ames.icon_caret(n);
+        if (n == 'dotted-circle') ames.toolbar.create_tool_btn('Circle', n);
+        if (n == 'dotted-square') ames.toolbar.create_tool_btn('Square', n);
+        if (n == 'vector-pen') ames.toolbar.create_tool_btn('Path', n);
       });
     } // icon_caret: use caret to expand & contract layers controls
 
   }, {
     key: "icon_caret",
     value: function icon_caret(i_name) {
-      var _this = this;
+      var _this2 = this;
+
+      ames.sidebar.add_caret(i_name); // CHANGE - Delete everything below this line
 
       var by = _utils.AMES_Utils.LAYER_HEIGHT;
 
@@ -193,7 +346,7 @@ var AMES = /*#__PURE__*/function () {
         var n = _utils.AMES_Utils.L_CONTROLS[idx];
         var box = ames.obj_boxes[n];
 
-        var caret = _this.icons[i_name].clone();
+        var caret = _this2.icons[i_name].clone();
 
         var caret_w = caret.bounds.width;
         caret.scaling = 0.65;
@@ -208,7 +361,7 @@ var AMES = /*#__PURE__*/function () {
           caret.visible = true;
 
           caret.onClick = function (e) {
-            _this.expand_layers(n, true);
+            _this2.expand_layers(n, true);
 
             caret.visible = false;
             box.children[collapse_idx].visible = true;
@@ -220,7 +373,7 @@ var AMES = /*#__PURE__*/function () {
           caret.visible = false;
 
           caret.onClick = function (e) {
-            _this.expand_layers(n, false);
+            _this2.expand_layers(n, false);
 
             caret.visible = false;
             box.children[expand_idx].visible = true;
@@ -374,12 +527,9 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "setup_layers",
     value: function setup_layers() {
-      // Activate layers project
-      this.layers_view._project.activate(); // Add control boxes for shapes, lists, animations
-
-
+      // Add control boxes for shapes, lists, animations
       var controls = _utils.AMES_Utils.L_CONTROLS;
-      var w = this.layers_view.size.width;
+      var w = 250; // CHANGE
 
       for (var i in controls) {
         var c_name = controls[i]; // Create box with dropdown control
@@ -417,10 +567,7 @@ var AMES = /*#__PURE__*/function () {
 
         this.idx_boxes[n_boxes] = c_name;
         this.obj_boxes[c_name] = box;
-      } // Activate canvas
-
-
-      this.canvas_view._project.activate();
+      }
     }
   }, {
     key: "init_canvas",
@@ -472,8 +619,11 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "create_color_picker",
     value: function create_color_picker() {
-      var colorwheel = new Raster('colorwheel');
+      // ames.layers_view._project.activate();
+      var colorwheel = new Raster('colorwheel'); // ames.canvas_view._project.activate();
+
       colorwheel.on('load', function () {
+        // ames.layers_view._project.activate();
         colorwheel.scaling = 0.2;
         ames.colorwheel = colorwheel; // Create color picker
 
@@ -649,70 +799,40 @@ var AMES = /*#__PURE__*/function () {
         colorpicker.addChildren([alpha_dot, alpha_slider, alpha_label]);
         colorpicker.addChildren([lightness_dot, lightness_slider, lightness_label]); // close icon and surrounding box
 
-        var close_button = ames.icons["close"].clone();
-        close_button.scaling = 0.75;
-        var close_w = close_button.bounds.width;
-        var bbox_w = colorpicker.bounds.width / 2;
-        var bbox_h = colorpicker.bounds.height / 2;
-        var by = _utils.AMES_Utils.LAYER_HEIGHT;
-        close_button.position = colorpicker.position.add(bbox_w + _utils.AMES_Utils.ICON_OFFSET, -bbox_h - 2 * _utils.AMES_Utils.ICON_OFFSET);
-        close_button.visible = true;
-
-        close_button.onClick = function (e) {
-          colorpicker.visible = false;
-        };
-
-        colorpicker.addChild(close_button);
-        var bbox = new Path.Rectangle({
-          point: [colorpicker.position.x - bbox_w, colorpicker.position.y - bbox_h - 12],
-          size: [colorpicker.bounds.width, colorpicker.bounds.height + 5 * _utils.AMES_Utils.ICON_OFFSET],
-          strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-          fillColor: 'white',
-          opacity: 0.5
-        });
-        colorpicker.insertChild(0, bbox);
-        bbox.sendToBack();
-
-        colorpicker.get_position = function (e) {
-          var cw = ames.canvas_view.size.width / 2 - 2 * _utils.AMES_Utils.ICON_OFFSET;
-          var ch = -ames.canvas_view.size.height / 2 + 2 * _utils.AMES_Utils.ICON_OFFSET;
-          var csize = new Point(-colorpicker.bounds.width / 2, colorpicker.bounds.height / 2);
-          return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+        var get_position = function get_position(e) {
+          var x = ames.sidebar.position.x - _utils.AMES_Utils.OFFSET * 2;
+          var y = ames.sidebar.bounds.topLeft.y + .85 * colorpicker.bounds.height;
+          return new Point(x, y);
         }; // Make colorpicker draggable
+        // let dragging = false;
+        // let drag_offset = 0;
+        // colorpicker.onMouseDown = (e) => {
+        // 	let n_children = colorpicker.children.length;
+        // 	for (let idx = 1; idx < n_children; idx++) {
+        // 		let c = colorpicker.children[idx];
+        // 		if (c.contains(e.point)) {
+        // 			dragging = false;
+        // 			return;
+        // 		}
+        // 	}
+        // 	drag_offset = e.point.subtract(colorpicker.position);
+        // 	dragging = true;
+        // }
+        // colorpicker.onMouseDrag = (e) => {
+        // 	if (dragging) colorpicker.position = e.point.subtract(drag_offset);
+        // }
+        // colorpicker.onMouseUp = (e) => {
+        // 	if (dragging) dragging = false;
+        // }
+        // utils.make_dot(ames.canvas_view.center);
 
 
-        var dragging = false;
-        var drag_offset = 0;
-
-        colorpicker.onMouseDown = function (e) {
-          var n_children = colorpicker.children.length;
-
-          for (var idx = 1; idx < n_children; idx++) {
-            var c = colorpicker.children[idx];
-
-            if (c.contains(e.point)) {
-              dragging = false;
-              return;
-            }
-          }
-
-          drag_offset = e.point.subtract(colorpicker.position);
-          dragging = true;
-        };
-
-        colorpicker.onMouseDrag = function (e) {
-          if (dragging) colorpicker.position = e.point.subtract(drag_offset);
-        };
-
-        colorpicker.onMouseUp = function (e) {
-          if (dragging) dragging = false;
-        }; // utils.make_dot(ames.canvas_view.center);
-
-
-        colorpicker.position = colorpicker.get_position();
+        colorpicker.position = get_position();
+        ames.sidebar.addChild(colorpicker);
         ames.colorpicker = colorpicker;
-        ames.colorpicker.visible = false;
-      });
+        ames.ux.push(colorpicker); // ames.colorpicker.visible = false;
+        // this.canvas_view._project.activate();
+      }); // ames.canvas_view._project.activate();
     }
   }, {
     key: "adjust_t_delta",
@@ -736,12 +856,12 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "pause",
     value: function pause() {
-      var _this2 = this;
+      var _this3 = this;
 
       this.is_playing = false; // Pause animations
 
       var _loop2 = function _loop2(k) {
-        var a = _this2.animations[k];
+        var a = _this3.animations[k];
         a.curr_tw.stop();
         setTimeout(function () {
           a.curr_tw.start();
@@ -875,15 +995,15 @@ var AMES = /*#__PURE__*/function () {
             this.objs[i]._clear_cb_helpers();
           }
         }
-      }
+      } // ames.colorpicker.visible = false;
 
-      ames.colorpicker.visible = false;
+
       if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
     }
   }, {
     key: "add_obj",
     value: function add_obj(x, t_obj) {
-      var _this3 = this;
+      var _this4 = this;
 
       // Hide all open editors
       this.hide_editors(x);
@@ -912,10 +1032,7 @@ var AMES = /*#__PURE__*/function () {
       this.objs[n] = x; // Create obj box in layers view
       // Activate layers project
 
-      this.layers_view._project.activate();
-
-      var w = this.layers_view.size.width;
-      var h = this.layers_view.size.height; // Create a new layers ui box
+      var w = 250; // Create a new layers ui box
 
       var box = new Group();
       box.position = new Point(0, 0);
@@ -982,14 +1099,14 @@ var AMES = /*#__PURE__*/function () {
 
         if (box.is_active_box) {
           // deactivate object
-          _this3.deactivate_obj(n);
+          _this4.deactivate_obj(n);
 
-          delete _this3.active_objs[n];
+          delete _this4.active_objs[n];
         } else {
           // activate object
-          _this3.activate_obj(n);
+          _this4.activate_obj(n);
 
-          _this3.active_objs[n] = x;
+          _this4.active_objs[n] = x;
         }
 
         box.is_active_box = !box.is_active_box;
@@ -999,7 +1116,7 @@ var AMES = /*#__PURE__*/function () {
       trash.onClick = function (e) {
         // Box has to be active to delete an object
         if (box.is_active_box) {
-          _this3.remove_obj(n, t_obj);
+          _this4.remove_obj(n, t_obj);
         }
       }; // Toggle visibility on clicking the eye
 
@@ -1011,7 +1128,7 @@ var AMES = /*#__PURE__*/function () {
         eye_slash.visible = true;
         x.show(false); // Remove from active objs until visible
 
-        delete _this3.active_objs[x.name];
+        delete _this4.active_objs[x.name];
       };
 
       eye_slash.onClick = function (e) {
@@ -1022,11 +1139,8 @@ var AMES = /*#__PURE__*/function () {
         x.show(true); // Add back to active objs
         // Remove from active objects
 
-        _this3.active_objs[x.name] = x;
-      }; // Re-activate main project
-
-
-      this.canvas_view._project.activate(); // start objects as active
+        _this4.active_objs[x.name] = x;
+      }; // start objects as active
 
 
       this.activate_obj(n);
@@ -1119,31 +1233,27 @@ var AMES = /*#__PURE__*/function () {
       opt = opt || {};
       var b = opt.b;
 
-      if (_utils.AMES_Utils.is_active(b) || opt.deactivate) {
+      if (ames.toolbar.active_btn == b || opt.deactivate) {
         if (b == 'Path') {
-          console.log("here");
           this.tools[b].clean_tool(true);
         }
 
-        _utils.AMES_Utils.deactivate(b);
-
+        ames.toolbar.deactivate_btn(b);
         ames.canvas.style.cursor = null;
-        this.active_shape_btn = null;
+        ames.toolbar.active_btn = null;
         this.tools['inactive_tool'].activate();
       } else {
         // Disable active shape button
-        if (this.active_shape_btn) {
+        if (ames.toolbar.active_btn) {
           this.switch_tool({
-            'b': this.active_shape_btn,
+            'b': ames.toolbar.active_btn,
             'deactivate': true
           });
         }
 
         ames.canvas.style.cursor = 'crosshair';
         this.active_shape_btn = b;
-
-        _utils.AMES_Utils.activate(b);
-
+        ames.toolbar.activate_btn(b);
         var tool = this.tools[b];
         tool.activate();
       }
@@ -1152,14 +1262,14 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_square_tool",
     value: function init_square_tool() {
-      var _this4 = this;
+      var _this5 = this;
 
       var square_tool = new Tool();
       var x; // Adjust the scale of the circle
       // Set center point of circle and scale to desired radius
 
       var cb_start_square = function cb_start_square(e) {
-        if (!_this4.on_canvas(e)) return;
+        if (!_this5.on_canvas(e)) return;
         x = new _shapes.AMES_Square();
 
         if (x.poly) {
@@ -1182,7 +1292,7 @@ var AMES = /*#__PURE__*/function () {
         x.to_path();
         x.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
 
-        _this4.add_shape(x);
+        _this5.add_shape(x);
 
         x = null;
       };
@@ -1195,14 +1305,14 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_circle_tool",
     value: function init_circle_tool() {
-      var _this5 = this;
+      var _this6 = this;
 
       var circle_tool = new Tool();
       var c; // Adjust the scale of the circle
       // Set center point of circle and scale to desired radius
 
       var cb_start_circle = function cb_start_circle(e) {
-        if (!_this5.on_canvas(e)) return;
+        if (!_this6.on_canvas(e)) return;
         c = new _shapes.AMES_Circle();
 
         if (c.poly) {
@@ -1224,7 +1334,7 @@ var AMES = /*#__PURE__*/function () {
         c.to_path();
         c.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
 
-        _this5.add_shape(c);
+        _this6.add_shape(c);
 
         c = null;
       };
@@ -1237,7 +1347,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_path_tool",
     value: function init_path_tool() {
-      var _this6 = this;
+      var _this7 = this;
 
       var path_tool = new Tool();
       var x;
@@ -1311,7 +1421,7 @@ var AMES = /*#__PURE__*/function () {
 
 
       var cb_start_path = function cb_start_path(e) {
-        if (!_this6.on_canvas(e)) return;
+        if (!_this7.on_canvas(e)) return;
         x = new _shapes.AMES_Path();
         path_tool.onMouseDown = cb_add_point;
         path_tool.onMouseDrag = cb_adjust_handle;
@@ -1330,7 +1440,7 @@ var AMES = /*#__PURE__*/function () {
             console.log("closed path");
             x.poly.closed = true;
 
-            _this6.add_shape(x);
+            _this7.add_shape(x);
 
             path_tool.clean_tool();
             return;
@@ -1340,7 +1450,7 @@ var AMES = /*#__PURE__*/function () {
           if (_utils.AMES_Utils.lengthsq(x.poly.lastSegment.point, e.point) < thresh) {
             console.log("open path");
 
-            _this6.add_shape(x);
+            _this7.add_shape(x);
 
             path_tool.clean_tool();
             return;
@@ -1384,111 +1494,9 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_list_tool",
     value: function init_list_tool(opt) {
-      var _this7 = this;
-
-      opt = opt || {};
-      var list_tool = new Tool();
-      var TL = 1;
-      var TR = 2;
-      var BR = 3;
-      var BL = 0;
-      var lbox;
-      var s_dot;
-      var e_dot;
-      var selected_shapes = {};
-      var select_helpers = {}; // Start rectangle to make list
-
-      var cb_start_list = function cb_start_list(e) {
-        console.log("start list");
-        lbox = new Path.Rectangle(e.point, 10);
-        lbox.strokeColor = _utils.AMES_Utils.ACTIVE_COLOR;
-        lbox.strokeWidth = 1;
-        lbox.dashArray = [3, 1]; // Create boundary dots
-
-        s_dot = _utils.AMES_Utils.make_dot(lbox.segments[TL].point, _utils.AMES_Utils.ACTIVE_COLOR);
-        e_dot = _utils.AMES_Utils.make_dot(lbox.segments[BR].point, _utils.AMES_Utils.ACTIVE_COLOR);
-      }; // Increase rectangle size and highlight activated shapes that the
-      // selection rectangle to make a list contains
-
-
-      var cb_select_shapes = function cb_select_shapes(e) {
-        console.log("select shapes");
-        if (!lbox) return;
-        lbox.segments[BR].point = e.point;
-        lbox.segments[TR].point.x = e.point.x;
-        lbox.segments[BL].point.y = e.point.y;
-        e_dot.position = e.point; // From active shapes select shapes
-
-        var lbox_bbox = lbox.strokeBounds;
-
-        for (var i in _this7.active_objs) {
-          var s = _this7.active_objs[i];
-
-          if (s.is_shape) {
-            var s_bbox = s.get_bbox(); // If bbox contains shape...
-
-            if (lbox_bbox.contains(s_bbox)) {
-              // If shape is not in selected shape...
-              if (!selected_shapes[s.name]) {
-                // Add it to the selected shapes and highlight it
-                selected_shapes[s.name] = s;
-                select_helpers[s.name] = _utils.AMES_Utils.make_rect(s_bbox, _utils.AMES_Utils.ACTIVE_COLOR);
-              }
-            } else {
-              // Otherwise if it was selected...
-              if (selected_shapes[s.name]) {
-                select_helpers[s.name].remove(); // Remove it from the selected shapes
-
-                delete selected_shapes[s.name];
-                delete select_helpers[s.name];
-              }
-            }
-          }
-        }
-      }; // If active shapes are selected, make a list using those forms
-
-
-      var cb_make_list = function cb_make_list(e) {
-        console.log("make list");
-        var shapes = [];
-
-        for (var k in selected_shapes) {
-          shapes.push(selected_shapes[k]);
-        }
-
-        if (shapes.length != 0) {
-          var list = new _lists.AMES_List(shapes, opt);
-
-          _this7.add_list(list);
-        } // clean tool shapes
-
-
-        for (var i in select_helpers) {
-          var s = select_helpers[i];
-          s.remove();
-        }
-
-        lbox.remove();
-        s_dot.remove();
-        e_dot.remove();
-        lbox = null;
-        s_dot = null;
-        e_dot = null;
-        selected_shapes = {};
-        select_helpers = [];
-      };
-
-      list_tool.onMouseDown = cb_start_list;
-      list_tool.onMouseDrag = cb_select_shapes;
-      list_tool.onMouseUp = cb_make_list;
-      return list_tool;
-    } // init_duplicator_tool: creates a duplicator using underlying active shapes
-
-  }, {
-    key: "init_duplicator_tool",
-    value: function init_duplicator_tool() {
       var _this8 = this;
 
+      opt = opt || {};
       var list_tool = new Tool();
       var TL = 1;
       var TR = 2;
@@ -1559,9 +1567,111 @@ var AMES = /*#__PURE__*/function () {
         }
 
         if (shapes.length != 0) {
-          var list = new _lists.AMES_Duplicator(shapes);
+          var list = new _lists.AMES_List(shapes, opt);
 
           _this8.add_list(list);
+        } // clean tool shapes
+
+
+        for (var i in select_helpers) {
+          var s = select_helpers[i];
+          s.remove();
+        }
+
+        lbox.remove();
+        s_dot.remove();
+        e_dot.remove();
+        lbox = null;
+        s_dot = null;
+        e_dot = null;
+        selected_shapes = {};
+        select_helpers = [];
+      };
+
+      list_tool.onMouseDown = cb_start_list;
+      list_tool.onMouseDrag = cb_select_shapes;
+      list_tool.onMouseUp = cb_make_list;
+      return list_tool;
+    } // init_duplicator_tool: creates a duplicator using underlying active shapes
+
+  }, {
+    key: "init_duplicator_tool",
+    value: function init_duplicator_tool() {
+      var _this9 = this;
+
+      var list_tool = new Tool();
+      var TL = 1;
+      var TR = 2;
+      var BR = 3;
+      var BL = 0;
+      var lbox;
+      var s_dot;
+      var e_dot;
+      var selected_shapes = {};
+      var select_helpers = {}; // Start rectangle to make list
+
+      var cb_start_list = function cb_start_list(e) {
+        console.log("start list");
+        lbox = new Path.Rectangle(e.point, 10);
+        lbox.strokeColor = _utils.AMES_Utils.ACTIVE_COLOR;
+        lbox.strokeWidth = 1;
+        lbox.dashArray = [3, 1]; // Create boundary dots
+
+        s_dot = _utils.AMES_Utils.make_dot(lbox.segments[TL].point, _utils.AMES_Utils.ACTIVE_COLOR);
+        e_dot = _utils.AMES_Utils.make_dot(lbox.segments[BR].point, _utils.AMES_Utils.ACTIVE_COLOR);
+      }; // Increase rectangle size and highlight activated shapes that the
+      // selection rectangle to make a list contains
+
+
+      var cb_select_shapes = function cb_select_shapes(e) {
+        console.log("select shapes");
+        if (!lbox) return;
+        lbox.segments[BR].point = e.point;
+        lbox.segments[TR].point.x = e.point.x;
+        lbox.segments[BL].point.y = e.point.y;
+        e_dot.position = e.point; // From active shapes select shapes
+
+        var lbox_bbox = lbox.strokeBounds;
+
+        for (var i in _this9.active_objs) {
+          var s = _this9.active_objs[i];
+
+          if (s.is_shape) {
+            var s_bbox = s.get_bbox(); // If bbox contains shape...
+
+            if (lbox_bbox.contains(s_bbox)) {
+              // If shape is not in selected shape...
+              if (!selected_shapes[s.name]) {
+                // Add it to the selected shapes and highlight it
+                selected_shapes[s.name] = s;
+                select_helpers[s.name] = _utils.AMES_Utils.make_rect(s_bbox, _utils.AMES_Utils.ACTIVE_COLOR);
+              }
+            } else {
+              // Otherwise if it was selected...
+              if (selected_shapes[s.name]) {
+                select_helpers[s.name].remove(); // Remove it from the selected shapes
+
+                delete selected_shapes[s.name];
+                delete select_helpers[s.name];
+              }
+            }
+          }
+        }
+      }; // If active shapes are selected, make a list using those forms
+
+
+      var cb_make_list = function cb_make_list(e) {
+        console.log("make list");
+        var shapes = [];
+
+        for (var k in selected_shapes) {
+          shapes.push(selected_shapes[k]);
+        }
+
+        if (shapes.length != 0) {
+          var list = new _lists.AMES_Duplicator(shapes);
+
+          _this9.add_list(list);
         } // clean tool shapes
 
 
@@ -1588,7 +1698,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_constraint_tool",
     value: function init_constraint_tool() {
-      var _this9 = this;
+      var _this10 = this;
 
       var constraint_tool = new Tool();
       var line;
@@ -1619,9 +1729,9 @@ var AMES = /*#__PURE__*/function () {
 
       var cb_start_constraint = function cb_start_constraint(e) {
         clean_constraint_tool();
-        if (!_this9.on_canvas(e)) return;
+        if (!_this10.on_canvas(e)) return;
 
-        if (!_this9.active_objs[_this9.c_relative.name]) {
+        if (!_this10.active_objs[_this10.c_relative.name]) {
           return;
         } // console.log("The relative is " + ames.c_relative.name);
 
@@ -1640,7 +1750,7 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_select_obj = function cb_select_obj(e) {
-        if (!_this9.active_objs[_this9.c_relative.name]) {
+        if (!_this10.active_objs[_this10.c_relative.name]) {
           clean_constraint_tool();
           return;
         }
@@ -1652,9 +1762,9 @@ var AMES = /*#__PURE__*/function () {
 
         point_in_box = false; // If end point is the bounding box of an active object
 
-        for (var k in _this9.active_objs) {
+        for (var k in _this10.active_objs) {
           // Snap the endpoint to the closest bounding box corner
-          var obj = _this9.active_objs[k];
+          var obj = _this10.active_objs[k];
 
           if (obj != ames.c_relative) {
             if (obj.contains(e.point)) {
@@ -1728,7 +1838,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_animation_link_tool",
     value: function init_animation_link_tool() {
-      var _this10 = this;
+      var _this11 = this;
 
       var animation_link_tool = new Tool();
       var line;
@@ -1754,10 +1864,10 @@ var AMES = /*#__PURE__*/function () {
       var cb_start_animation_link = function cb_start_animation_link(e) {
         clean_animation_link_tool();
         console.log("starting animation link connection?");
-        if (!_this10.on_canvas(e)) return;
+        if (!_this11.on_canvas(e)) return;
         console.log("...on canvas"); // console.log("The relative is " + ames.c_relative.name);
 
-        line_start = _this10.active_linking_animation.editor.geometry_field_info[_this10.animation_active_field].link.position;
+        line_start = _this11.active_linking_animation.editor.geometry_field_info[_this11.animation_active_field].link.position;
         line = new Path.Line(line_start, e.point);
         console.log("animation link line_start and line", line_start, line);
         line.strokeWidth = 1;
@@ -1769,7 +1879,7 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_select_obj = function cb_select_obj(e) {
-        if (!_this10.active_objs[_this10.active_linking_animation.name]) {
+        if (!_this11.active_objs[_this11.active_linking_animation.name]) {
           clean_animation_link_tool();
           return;
         }
@@ -1781,9 +1891,9 @@ var AMES = /*#__PURE__*/function () {
 
         point_in_box = false; // If end point is the bounding box of an active object
 
-        for (var k in _this10.active_objs) {
+        for (var k in _this11.active_objs) {
           // Snap the endpoint to the closest bounding box corner
-          var obj = _this10.active_objs[k];
+          var obj = _this11.active_objs[k];
 
           if (obj.is_geometry) {
             if (obj.contains(e.point)) {
@@ -1848,7 +1958,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_animation_tool",
     value: function init_animation_tool() {
-      var _this11 = this;
+      var _this12 = this;
 
       var animation_tool = new Tool();
 
@@ -1856,16 +1966,16 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_make_animation = function cb_make_animation(e) {
-        if (_this11.on_canvas(e)) {
+        if (_this12.on_canvas(e)) {
           // Create box and show animation editor
           var a = new _animations.AMES_Animation();
 
-          _this11.add_animation(a);
+          _this12.add_animation(a);
         }
       };
 
       var cb_deactivate_tool = function cb_deactivate_tool(e) {
-        _this11.switch_tool({
+        _this12.switch_tool({
           b: "Animation",
           deactivate: true
         });

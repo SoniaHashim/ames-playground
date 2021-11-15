@@ -76,20 +76,9 @@
 		<script src="./js/bundle.js"></script>
 		<!-- <script type="module" src="./js/ames/ames_index.js"></script> -->
 
-		<!-- NAVBAR -->
-
-		<div class="container">
-			<nav class="navbar fixed-top navbar-expand-lg">
-				<div class="container-fluid">
-					<span class="ames-text">ames</span>
-					<span class="ames-text">animating multiple elements simultaneously</span>
-				</div>
-			</nav>
-		</div>
-
 		<div class="container-fluid min-vh-100" id="main">
 
-			<div class="row nav-vertical-block" >
+			<!-- <div class="row nav-vertical-block" >
 				<div class="col-12" id="toolbars">
 					<div class="row horiontal-distribute">
 						<div class="col-10 btn-group" id="toolbar-tools">
@@ -98,7 +87,7 @@
 							<button type="button" class="btn btn-outline-dark btn-tool btn-shape" id="btn-shape-path" onclick="ames.switch_tool({b: 'Path'})">Path</button>
 							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-list" onclick="ames.switch_tool({b: 'List'})">List</button>
 							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-collection" onclick="ames.switch_tool({b: 'Collection'})">Collection</button>
-							<!-- <button type="button" class="btn btn-outline-dark btn-tool" id="btn-duplicator" onclick="ames.switch_tool({b: 'Duplicator'})">Duplicator</button> -->
+							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-duplicator" onclick="ames.switch_tool({b: 'Duplicator'})">Duplicator</button>
 							<button type="button" class="btn btn-outline-dark btn-tool" id="btn-animation" onclick="ames.switch_tool({b: 'Animation'})">Animation</button>
 						</div>
 						<div class="col-2 btn-group" id="toolbar-tools">
@@ -107,20 +96,16 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</div> -->
 
 
 			<div class="row">
-				<div class="col-10 main">
+				<div class="col-13 main">
 					<canvas id="animation-canvas"></canvas>
 				</div>
-				<div class="col-2" id="sidebar">
-					<div class="row horizontal-distribute">
-						<div class="col-12">
-							<canvas id="layers-canvas" style="background-color:white"></canvas>
-						</div>
-					</div>
-				</div>
+				<!-- <div class="col-2" id="sidebar">
+					<canvas id="layers-canvas" style="background-color:white"></canvas>
+				</div> -->
 			</div>
 
 			<img id="colorwheel" src='media/colorwheel.png'>

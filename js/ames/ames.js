@@ -55,14 +55,15 @@ export class AMES {
 	reset_time = false;
 	// Testing
 	offset_mode = false;
+	// UX
+	ux = [];
+	layers = {};
 
 
 	// Iniitalize AMES app properties after window loads
 	init() {
 		// Get references to canvas objects
 		let canvas = document.getElementById('animation-canvas');
-		// let controls = document.getElementById('control-canvas');
-		let layers = document.getElementById('layers-canvas');
 
 		// Store animation canvas properties
 		window.ames.canvas = canvas;
@@ -70,14 +71,6 @@ export class AMES {
 		window.ames.canvas_cy = canvas.height/2;
 		window.ames.animations = {};
 
-
-		// // Set up project & view for controls - DELETE OLD CODE w/ SCRUBBER
-		// paper.setup(controls);
-		// this.init_controls(controls);
-
-		// Set up project & view for layers
-		paper.setup(layers);
-		this.init_layers();
 
 		// Set up project & view for animation canvas
 		paper.setup(canvas);
@@ -96,15 +89,168 @@ export class AMES {
 		this.tools['Animation_Link'] = this.init_animation_link_tool();
 
 
-		// Import any necessary icons
+		// Activate canvas
+		this.canvas_view._project.activate();
+
+		// Set up sidebar
 		this.idx_boxes = new Array();
 		this.setup_layers();
 
+		// Import icons
 
+		this.create_toolbar();
+		this.create_sidebar();
 		this.import_icons();
 
-		// Layers: create empty array for shapes
+	}
 
+	create_toolbar() {
+		let toolbar = new Group();
+		toolbar.n_btns = 0;
+		toolbar.active_btn = null;
+		toolbar.btns = {};
+
+		toolbar.get_position = () => {
+			let cw = -ames.canvas_view.size.width/2 + 5*utils.ICON_OFFSET;
+			let ch = ames.canvas_view.size.height/2 - 5*utils.ICON_OFFSET;
+			let csize = new Point(-toolbar.bounds.width/2, toolbar.bounds.height/2)
+			let p = ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+			return p;
+		};
+
+		toolbar.activate_btn = (btn_name) => {
+
+		};
+
+		toolbar.deactivate_btn = (btn_name) => {
+
+		};
+
+		toolbar.create_btn = (btn_name, i_name, cb) => {
+			let btn = new Group();
+
+			let btn_i = ames.icons[i_name].clone();
+			let p = ames.toolbar.get_position();
+			btn_i.position = new Point(p.x, p.y - 25*ames.toolbar.n_btns);
+			btn_i.strokeColor = utils.INACTIVE_DARK_COLOR;
+			btn_i.scaling = 1.25;
+			btn_i.visible = true;
+			let btn_position = btn_i.position;
+
+			let btn_r = new Path.Rectangle(ames.canvas_view.center, new Size(25, 25));
+			btn_r.fillColor = utils.INACTIVE_S_COLOR;
+			btn_r.position = btn_i.position;
+			btn_r.strokeWidth = 1;
+			btn_r.strokeColor = utils.INACTIVE_DARK_COLOR;
+
+			btn.addChildren([btn_r, btn_i]);
+			btn.position = btn_i.position;
+			console.log(btn.position);
+			btn.onClick = (e) => { cb(); };
+
+			ames.toolbar.n_btns += 1;
+			ames.toolbar.btns[btn_name] = btn;
+			console.log('Toolbar Buttons', ames.toolbar.n_btns, ames.toolbar.children)
+			toolbar.position = toolbar.get_position();
+			ames.ux.push(btn);
+		};
+
+		toolbar.create_tool_btn = (btn_name, i_name) => {
+			let tool_cb = () => {
+				ames.switch_tool({b: btn_name});
+			};
+			console.log(ames.toolbar);
+			ames.toolbar.create_btn(btn_name, i_name, tool_cb);
+		};
+
+		toolbar.position = toolbar.get_position();
+		ames.toolbar = toolbar;
+	};
+
+	create_sidebar() {
+		let sidebar = new Group();
+		this.create_color_picker();
+
+		let w = utils.SIDEBAR_WIDTH;
+		console.log("SIDEBAR_WIDTH", w);
+		let h = utils.SIDEBAR_HEIGHT;
+
+		let r = new Path.Rectangle(ames.canvas_view.center, new Size(w, h));
+		r.position = new Point(0, 0);
+		r.strokeColor = utils.INACTIVE_S_COLOR;
+		this.ux.push(r);
+
+
+		let ames_text = new PointText({
+			point: [0, 0],
+			content: "Animating Multiple Elements Simultaneously",
+			fillColor: utils.INACTIVE_DARK_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: 12,
+			visible: true,
+			position: [r.position.x, r.position.y - r.bounds.height/2]
+		});
+		ames_text.position = new Point(0, -h/2 + 1.5*ames_text.bounds.height);
+
+		let ames_box = new Path.Rectangle(r.position, new Size(w, 3*ames_text.bounds.height));
+		ames_box.position = ames_text.position;
+		ames_box.fillColor = utils.INACTIVE_S_COLOR;
+		ames_box.strokeColor = utils.INACTIVE_S_COLOR;
+
+		// Add ux show / hide carets
+		sidebar.add_caret = (i_name) => {
+			let button = ames.icons[i_name].clone();
+			let caret_position = new Point(ames_text.position.x - ames_text.bounds.width/2 - 4*utils.ICON_OFFSET, ames_text.position.y);
+			button.position = caret_position;
+			button.scaling = 0.75;
+			button.strokeColor = utils.INACTIVE_DARK_COLOR;
+			// Show
+			if (i_name == "caret-right") {
+				button.visible = false;
+				button.onClick = (e) => {
+					this.show_ux(true);
+					button.visible = false;
+					sidebar.children[utils.UX_HIDE_IDX].visible = true;
+				}
+				sidebar.insertChild(utils.UX_SHOW_IDX, button);
+			}
+
+			// Hide
+			if (i_name == "caret-down") {
+				button.visible = true;
+				button.onClick = (e) => {
+					this.show_ux(false);
+					button.visible = false;
+					sidebar.children[utils.UX_SHOW_IDX].visible = true;
+					console.log("make visible...", sidebar.children[utils.UX_SHOW_IDX]);
+				}
+				sidebar.insertChild(utils.UX_HIDE_IDX, button);
+			}
+
+		}
+
+		sidebar.addChildren([r, ames_box, ames_text]);
+
+		let layers_panel = new Group();
+		sidebar.addChild(layers_panel);
+
+		let get_position = () => {
+			let cw = ames.canvas_view.size.width/2 - .5*utils.ICON_OFFSET;
+			let ch = -ames.canvas_view.size.height/2 + 2*utils.ICON_OFFSET;
+			let csize = new Point(-sidebar.bounds.width/2, sidebar.bounds.height/2)
+			return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
+		};
+
+		sidebar.position = get_position();
+		sidebar.visible = true;
+		this.sidebar = sidebar;
+	}
+
+	show_ux(bool) {
+		console.log("Toggle show_ux", bool);
+		for (let idx in this.ux) {
+			this.ux[idx].visible = bool;
+		}
 	}
 
 	// import_icon: imports *.svg from local dir ../svg/
@@ -112,7 +258,7 @@ export class AMES {
 		let icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right",
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
 			"close", "link", "link-remove", "path", "play", "axes", "brush", "pause",
-			"rewind", "loop", "arrow"];
+			"rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -128,19 +274,18 @@ export class AMES {
 			i.scaling = 0.65;
 			ames.icons[n] = i.clone();
 
-			if (n == 'caret-down' || n == 'caret-right') {
-				ames.icon_caret(n);
-			}
-
-			if (n == 'close') {
-				ames.create_color_picker();
-			}
-
+			if (n == 'caret-down' || n == 'caret-right') ames.icon_caret(n);
+			if (n == 'dotted-circle') ames.toolbar.create_tool_btn('Circle', n);
+			if (n == 'dotted-square') ames.toolbar.create_tool_btn('Square', n);
+			if (n == 'vector-pen') ames.toolbar.create_tool_btn('Path', n);
 		});
 	}
 
 	// icon_caret: use caret to expand & contract layers controls
 	icon_caret(i_name) {
+		ames.sidebar.add_caret(i_name);
+
+		// CHANGE - Delete everything below this line
 		let by = utils.LAYER_HEIGHT;
 		for (let idx in utils.L_CONTROLS) {
 			let n = utils.L_CONTROLS[idx];
@@ -302,12 +447,10 @@ export class AMES {
 	}
 
 	setup_layers() {
-		// Activate layers project
-		this.layers_view._project.activate();
 
 		// Add control boxes for shapes, lists, animations
 		let controls = utils.L_CONTROLS;
-		let w = this.layers_view.size.width;
+		let w = 250; // CHANGE
 		for (let i in controls) {
 			let c_name = controls[i];
 
@@ -349,9 +492,6 @@ export class AMES {
 			this.idx_boxes[n_boxes] = c_name;
 			this.obj_boxes[c_name] = box;
 		}
-
-		// Activate canvas
-		this.canvas_view._project.activate();
 	}
 
 	init_canvas(canvas) {
@@ -571,68 +711,40 @@ export class AMES {
 			colorpicker.addChildren([lightness_dot, lightness_slider, lightness_label]);
 
 			// close icon and surrounding box
-			let close_button = ames.icons["close"].clone();
-			close_button.scaling = 0.75;
-			let close_w = close_button.bounds.width;
-			let bbox_w = colorpicker.bounds.width/2;
-			let bbox_h = colorpicker.bounds.height/2;
-			let by = utils.LAYER_HEIGHT;
-			close_button.position = colorpicker.position.add(bbox_w + utils.ICON_OFFSET, -bbox_h - 2*utils.ICON_OFFSET);
-			close_button.visible = true;
-			close_button.onClick = (e) => {
-				colorpicker.visible = false;
-			}
-			colorpicker.addChild(close_button);
-			let bbox = new Path.Rectangle({
-				point: [colorpicker.position.x - bbox_w, colorpicker.position.y - bbox_h - 12],
-				size: [colorpicker.bounds.width, colorpicker.bounds.height + 5*utils.ICON_OFFSET],
-				strokeColor: utils.INACTIVE_S_COLOR,
-				fillColor: 'white',
-				opacity: 0.5
-			});
-			colorpicker.insertChild(0, bbox);
-			bbox.sendToBack();
-
-			colorpicker.get_position = (e) => {
-				let cw = ames.canvas_view.size.width/2 - 2*utils.ICON_OFFSET;
-				let ch = -ames.canvas_view.size.height/2 + 2*utils.ICON_OFFSET;
-				let csize = new Point(-colorpicker.bounds.width/2, colorpicker.bounds.height/2)
-				return ames.canvas_view.center.add(new Point(cw, ch)).add(csize);
-
-				// let cw = ames.layers_view.size.width/2 - 2*utils.ICON_OFFSET;
-				// let ch = -ames.layers_view.size.height/2 + 2*utils.ICON_OFFSET;
-				// let csize = new Point(-colorpicker.bounds.width/2, colorpicker.bounds.height/2);
-				// let p = ames.layers_view.center.add(new Point(cw, ch)).add(csize);
-				// return p;
-				// console.log("colorwheel at position ", p);
+			let get_position = (e) => {
+				let x = ames.sidebar.position.x - utils.OFFSET*2;
+				let y = ames.sidebar.bounds.topLeft.y + .85*colorpicker.bounds.height;
+				return new Point(x, y);
 			}
 
 			// Make colorpicker draggable
-			let dragging = false;
-			let drag_offset = 0;
-			colorpicker.onMouseDown = (e) => {
-				let n_children = colorpicker.children.length;
-				for (let idx = 1; idx < n_children; idx++) {
-					let c = colorpicker.children[idx];
-					if (c.contains(e.point)) {
-						dragging = false;
-						return;
-					}
-				}
-				drag_offset = e.point.subtract(colorpicker.position);
-				dragging = true;
-			}
-			colorpicker.onMouseDrag = (e) => {
-				if (dragging) colorpicker.position = e.point.subtract(drag_offset);
-			}
-			colorpicker.onMouseUp = (e) => {
-				if (dragging) dragging = false;
-			}
+			// let dragging = false;
+			// let drag_offset = 0;
+			// colorpicker.onMouseDown = (e) => {
+			// 	let n_children = colorpicker.children.length;
+			// 	for (let idx = 1; idx < n_children; idx++) {
+			// 		let c = colorpicker.children[idx];
+			// 		if (c.contains(e.point)) {
+			// 			dragging = false;
+			// 			return;
+			// 		}
+			// 	}
+			// 	drag_offset = e.point.subtract(colorpicker.position);
+			// 	dragging = true;
+			// }
+			// colorpicker.onMouseDrag = (e) => {
+			// 	if (dragging) colorpicker.position = e.point.subtract(drag_offset);
+			// }
+			// colorpicker.onMouseUp = (e) => {
+			// 	if (dragging) dragging = false;
+			// }
 
 			// utils.make_dot(ames.canvas_view.center);
-			colorpicker.position = colorpicker.get_position();
+			colorpicker.position = get_position();
+			ames.sidebar.addChild(colorpicker);
 			ames.colorpicker = colorpicker;
-			ames.colorpicker.visible = false;
+			ames.ux.push(colorpicker);
+			// ames.colorpicker.visible = false;
 			// this.canvas_view._project.activate();
 		});
 		// ames.canvas_view._project.activate();
@@ -779,7 +891,7 @@ export class AMES {
 				}
 			}
 		}
-		ames.colorpicker.visible = false;
+		// ames.colorpicker.visible = false;
 		if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
 	}
 
@@ -811,9 +923,7 @@ export class AMES {
 		// Create obj box in layers view
 
 		// Activate layers project
-		this.layers_view._project.activate();
-		let w = this.layers_view.size.width;
-		let h = this.layers_view.size.height;
+		let w = 250;
 
 		// Create a new layers ui box
 		let box = new Group();
@@ -924,9 +1034,6 @@ export class AMES {
 			this.active_objs[x.name] = x;
 		}
 
-		// Re-activate main project
-		this.canvas_view._project.activate();
-
 		// start objects as active
 		this.activate_obj(n);
 		this.active_objs[n] = x;
@@ -1011,23 +1118,22 @@ export class AMES {
 	switch_tool(opt) {
 		opt = opt || {};
 		let b = opt.b;
-		if (utils.is_active(b) || opt.deactivate) {
+		if (ames.toolbar.active_btn == b || opt.deactivate) {
 			if (b == 'Path') {
-				console.log("here");
 				this.tools[b].clean_tool(true);
 			}
-			utils.deactivate(b);
+			ames.toolbar.deactivate_btn(b);
 			ames.canvas.style.cursor = null;
-			this.active_shape_btn = null;
+			ames.toolbar.active_btn = null;
 			this.tools['inactive_tool'].activate();
 		} else {
 			// Disable active shape button
-			if (this.active_shape_btn) {
-				this.switch_tool({'b': this.active_shape_btn, 'deactivate': true});
+			if (ames.toolbar.active_btn) {
+				this.switch_tool({'b': ames.toolbar.active_btn, 'deactivate': true});
 			}
 			ames.canvas.style.cursor = 'crosshair';
 			this.active_shape_btn = b;
-			utils.activate(b);
+			ames.toolbar.activate_btn(b);
 			let tool = this.tools[b];
 			tool.activate();
 		}

@@ -32,6 +32,13 @@ export class AMES_Utils {
 	static L_EXPAND_IDX = 2;
 	static L_CONTRACT_IDX = 3;
 
+
+	static SIDEBAR_WIDTH = 300;
+	static SIDEBAR_HEIGHT = 500;
+	static OFFSET = 4;
+	static UX_SHOW_IDX = 4;
+	static UX_HIDE_IDX = 3; 
+
 	// Editor properties
 	static VIS_PROPS = ["position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "path"];
 	static SUB_PROPS = {

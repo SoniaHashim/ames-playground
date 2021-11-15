@@ -19,6 +19,8 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+// TOGGLE FOR BUILD
+// import 'regenerator-runtime/runtime'
 var AMES_Animation_Test = /*#__PURE__*/function () {
   function AMES_Animation_Test() {
     _classCallCheck(this, AMES_Animation_Test);
@@ -191,7 +193,7 @@ var AMES_Animation = /*#__PURE__*/function () {
 
     _defineProperty(this, "transformation", null);
 
-    _defineProperty(this, "transformation_is_proprtional", true);
+    _defineProperty(this, "transformation_is_proportional", true);
 
     _defineProperty(this, "start_state_idx", 0);
 

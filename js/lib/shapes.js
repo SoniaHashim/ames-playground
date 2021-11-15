@@ -11,8 +11,6 @@ var _utils = require("./utils.js");
 
 var _constraints = require("./constraints.js");
 
-var _propertybox = require("./propertybox.js");
-
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
@@ -615,9 +613,6 @@ var AMES_Shape = /*#__PURE__*/function () {
     key: "_fill_cb",
     value: function _fill_cb(shape, cb_helpers, sub) {
       if (shape.poly) {
-        var p = ames.colorpicker.get_position();
-        ames.colorpicker.position = p;
-        ames.colorpicker.visible = true;
         if (shape.poly) ames.colorpicker.load_color(shape.poly.fillColor);
 
         var color_function = function color_function(c) {
@@ -1242,25 +1237,6 @@ var AMES_Square = /*#__PURE__*/function (_AMES_Shape) {
       strokeWidth: 1,
       strokeColor: 'darkgray'
     });
-    _this3.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this3), _this3.visual_props); // // On double click launch properties editor
-    // this.latest_tap;
-    // this.poly.on('click', e => {
-    // 	console.log("tap on ", this.name);
-    // 	let now = new Date().getTime();
-    // 	if (this.latest_tap) {
-    // 		let time_elapsed = now - this.latest_tap;
-    // 		// Double tap
-    // 		if (time_elapsed < 600 && time_elapsed > 0) {
-    // 			console.log("double tap on ", this.name);
-    // 			// In Shape mode, open shape editor
-    // 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-    // 				this.visual_prop_box.show();
-    // 			}
-    // 		}
-    // 	}
-    // 	this.latest_tap = new Date().getTime();
-    // });
-
     return _this3;
   }
 
@@ -1298,25 +1274,6 @@ var AMES_Circle = /*#__PURE__*/function (_AMES_Shape2) {
       strokeWidth: 1,
       strokeColor: 'darkgray'
     });
-    _this4.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this4), _this4.visual_props); // // On double click launch properties editor
-    // this.latest_tap;
-    // this.poly.on('click', e => {
-    // 	console.log("tap on ", this.name);
-    // 	let now = new Date().getTime();
-    // 	if (this.latest_tap) {
-    // 		let time_elapsed = now - this.latest_tap;
-    // 		// Double tap
-    // 		if (time_elapsed < 600 && time_elapsed > 0) {
-    // 			console.log("double tap on ", this.name);
-    // 			// In Shape mode, open shape editor
-    // 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-    // 				this.visual_prop_box.show();
-    // 			}
-    // 		}
-    // 	}
-    // 	this.latest_tap = new Date().getTime();
-    // });
-
     return _this4;
   }
 
@@ -1355,7 +1312,6 @@ var AMES_Path = /*#__PURE__*/function (_AMES_Shape3) {
       fillColor: 'rgba(255, 0, 0, 0)' // fullySelected: true
 
     });
-    _this5.visual_prop_box = new _propertybox.PropertyBox(_assertThisInitialized(_this5), _this5.visual_props);
     return _this5;
   }
 
@@ -1366,25 +1322,7 @@ var AMES_Path = /*#__PURE__*/function (_AMES_Shape3) {
       this.bbox.visible = true;
       this.bbox.sendToBack();
       this.bbox.fillColor = "lavender";
-      this.bbox.opacity = 0; // // On double click launch properties editor
-      // this.latest_tap;
-      // this.bbox.on('click', e => {
-      // 	let nearpoint = this.poly.getNearestPoint(e.point);
-      // 	if (nearpoint.getDistance(e.point, true) > 50 ) return;
-      // 	let now = new Date().getTime();
-      // 	if (this.latest_tap) {
-      // 		let time_elapsed = now - this.latest_tap;
-      // 		// Double tap
-      // 		if (time_elapsed < 600 && time_elapsed > 0) {
-      // 			console.log("double tap on ", this.name);
-      // 			// In Shape mode, open shape editor
-      // 			if (ames.edit_mode = 'SHAPE' && !this.visual_prop_box.visible) {
-      // 				this.visual_prop_box.show();
-      // 			}
-      // 		}
-      // 	}
-      // 	this.latest_tap = new Date().getTime();
-      // });
+      this.bbox.opacity = 0;
     }
   }, {
     key: "make_path_helper",
