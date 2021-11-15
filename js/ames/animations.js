@@ -7,7 +7,7 @@
 import {AMES_Utils as utils} from './utils.js'
 
 // TOGGLE FOR BUILD
-// import 'regenerator-runtime/runtime'
+import 'regenerator-runtime/runtime'
 
 
 export class AMES_Animation_Test {
