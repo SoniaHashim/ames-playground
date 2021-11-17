@@ -7,10 +7,13 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
+import {AMES_Artwork, AMES_Polygon, AMES_Ellipse} from './artwork.js'
 import {AMES_Shape_Editor, AMES_List_Editor, AMES_Animation_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_List, AMES_Duplicator} from './lists.js'
+import {AMES_Collection} from './collection.js'
 import {AMES_Animation_Test, AMES_Animation} from './animations.js'
+import {AMES_Transformation} from './transformation.js'
 
 // Globals for ames
 // ames.canvas_cx;
@@ -44,7 +47,8 @@ export class AMES {
 	// Scrubber
 	scrubber;
 	// State & Timing
-	fps = 60;
+	fps = 24;			// frames per second used by transformations
+	use_fps = true;
 	time = 0;			// time in system
 	t_delta = 0; 		// time between elapsed frames
 	dur = 10; 			// in seconds
@@ -809,38 +813,67 @@ export class AMES {
 	}
 
 	test() {
-		let obj_a = new AMES_Circle();
-		obj_a.set_pos(new Point(200, 200));
-		obj_a.poly.visible = true;
-		obj_a.poly.radius = 25;
-		obj_a.to_path();
-		this.add_shape(obj_a);
+		console.log("---AMES TEST LOG--------------------------------------");
 
-		let artwork_duplicator = new AMES_List([obj_a], {"is_para_style_list": false, "is_duplicator": true});
-		this.add_list(artwork_duplicator);
-		for (let i = 0; i < 2; i++) artwork_duplicator.add_item();
+		// Create polygon collection
+		let tri = new AMES_Polygon();
+		let poly_collection = new AMES_Collection(tri);
+		poly_collection.set_count(8);
 
-		let obj_b = new AMES_Square();
-		obj_b.set_pos(new Point(400, 400));
-		obj_b.poly.visible = true;
-		obj_b.poly.size = new Size(100, 100);
-		obj_b.to_path();
-		this.add_shape(obj_b);
+		// Create dot collection
+		let dot = new AMES_Ellipse();
+		let dot_collection = new AMES_Collection(dot);
+		dot_collection.set_count(8)
 
-		let obj_c = new AMES_Circle();
-		obj_c.set_pos(new Point(550, 450));
-		obj_c.poly.visible = true;
-		obj_c.poly.radius = 50;
-		obj_c.to_path();
-		this.add_shape(obj_c);
 
-		let transformation_list = new AMES_List([obj_b, obj_c], {"is_para_style_list": false});
-		this.add_list(transformation_list);
+		let tf_motion_path = new AMES_Transformation({"mapping": "motion path"});
+		tf_motion_path.set_target(dot_collection);
+		tf_motion_path.set_input(poly_collection);
 
-		let animation = new AMES_Animation;
-		this.add_animation(animation);
-		animation.set_geometry_field('artwork', artwork_duplicator);
-		animation.set_geometry_field('transformation', transformation_list);
+		// let line = new AMES_Path([p1, p2]);
+
+
+		// let tf_scale_tri = new AMES_Transformation();
+		// tf_scale_tri.set_target(poly_collection);
+		// tf_scale_tri.set_input(line);
+
+		// let tf_nsides_tri = new AMES_Transformation();
+		// tf_nsides_tri.set_target(poly_collection);
+		// tf_scale_tri.set_input(line);
+
+		//
+		// let obj_a = new AMES_Circle();
+		// obj_a.set_pos(new Point(200, 200));
+		// obj_a.poly.visible = true;
+		// obj_a.poly.radius = 25;
+		// obj_a.to_path();
+		// this.add_shape(obj_a);
+		//
+		// let artwork_duplicator = new AMES_List([obj_a], {"is_para_style_list": false, "is_duplicator": true});
+		// this.add_list(artwork_duplicator);
+		// for (let i = 0; i < 2; i++) artwork_duplicator.add_item();
+		//
+		// let obj_b = new AMES_Square();
+		// obj_b.set_pos(new Point(400, 400));
+		// obj_b.poly.visible = true;
+		// obj_b.poly.size = new Size(100, 100);
+		// obj_b.to_path();
+		// this.add_shape(obj_b);
+		//
+		// let obj_c = new AMES_Circle();
+		// obj_c.set_pos(new Point(550, 450));
+		// obj_c.poly.visible = true;
+		// obj_c.poly.radius = 50;
+		// obj_c.to_path();
+		// this.add_shape(obj_c);
+		//
+		// let transformation_list = new AMES_List([obj_b, obj_c], {"is_para_style_list": false});
+		// this.add_list(transformation_list);
+		//
+		// let animation = new AMES_Animation;
+		// this.add_animation(animation);
+		// animation.set_geometry_field('artwork', artwork_duplicator);
+		// animation.set_geometry_field('transformation', transformation_list);
 	}
 
 	// add_shape: adds given object as a shape

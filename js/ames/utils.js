@@ -37,7 +37,7 @@ export class AMES_Utils {
 	static SIDEBAR_HEIGHT = 500;
 	static OFFSET = 4;
 	static UX_SHOW_IDX = 4;
-	static UX_HIDE_IDX = 3; 
+	static UX_HIDE_IDX = 3;
 
 	// Editor properties
 	static VIS_PROPS = ["position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "path"];
@@ -157,6 +157,64 @@ export class AMES_Utils {
 
 			r += t;
 		}
+
+		return r;
+	}
+
+	// interpolate: Lagrange interpolation over polynomial given by y = f(x),
+	// where data = [y0, y1, ... yn] and idx is the relative idx of the
+	// desired queried result or an array of indices [i0, i1, ... in]
+	// ref: https://www.geeksforgeeks.org/lagranges-interpolation/
+	static interpolate_fast(data, idx) {
+		let n = data.length;
+
+		let m = null;
+		if (Array.isArray(idx)) m = idx.length;
+
+		let r = 0;
+		if (n == 1) r = data[0];
+
+		let v = 0;
+		if (m) {
+			r = [];
+			if (n == 1) v = data[0];
+			for (let k = 0; k < m; k++) {
+				r.push(v)
+			}
+		}
+
+		let t;
+		for (let i = 0; i < n; i++) {
+
+			if (!m) { t = data[i]; }
+
+			if (m) {
+				t = [];
+				for (let k = 0; k < m; k++) { t[k] = data[i]; }
+			}
+
+			for (let j = 0; j < n; j++) {
+
+				if (j != i ) {
+
+					if (!m) { t = t*(idx - j)/(i - j); }
+
+					if (m) {
+						for (let k = 0; k < m; k++)
+							{ t[k] = t[k]*(idx[k] - j)/(i - j); }
+					}
+
+				}
+			}
+
+
+			if (!m) r += t;
+			if (m) {
+				for (let k = 0; k < m; k++) r[k] += t[k];
+			}
+
+		}
+
 
 		return r;
 	}
