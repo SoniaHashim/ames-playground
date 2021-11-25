@@ -31,7 +31,7 @@ export class AMES_Collection {
 	name = "Collection";
 	is_geometry = true;
 	is_list = true;
-	is_collection = true; 
+	is_collection = true;
 	shapes = [];
 	original = [];
 	count = 1;
@@ -111,7 +111,6 @@ export class AMES_Collection {
 			})
 		}
 
-		console.log("printing all ",ames.n_lists," lists...");
 		for (let i in ames.lists) {
 			console.log(ames.lists[i].name, ames.lists[i].box.children);
 		}
@@ -168,15 +167,17 @@ export class AMES_Collection {
 		if (n < 1) return;
 		if (this.shapes.length == 1) {
 			let og = this.shapes[0];
-			for (let i = 0; i < n - 1; i++) {
-				let a = new AMES_Artwork();
+			this.shapes = [];
+			for (let i = 0; i < n; i++) {
+				let a = new og.constructor();
 				Object.assign(a, og);
 				a.poly = og.poly.clone();
-				let c = (i+1)*10;
+				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
 				this.show(true);
 			}
+			og.remove();
 		} else {
 			// Increase copies using first and last
 		}

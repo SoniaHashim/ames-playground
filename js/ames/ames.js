@@ -7,7 +7,7 @@
 
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
-import {AMES_Artwork, AMES_Polygon, AMES_Ellipse} from './artwork.js'
+import {AMES_Artwork, AMES_Polygon, AMES_Ellipse, AMES_Artwork_Path} from './artwork.js'
 import {AMES_Shape_Editor, AMES_List_Editor, AMES_Animation_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_List, AMES_Duplicator} from './lists.js'
@@ -818,27 +818,35 @@ export class AMES {
 		// Create polygon collection
 		let tri = new AMES_Polygon();
 		let poly_collection = new AMES_Collection(tri);
-		poly_collection.set_count(8);
+		poly_collection.set_count(6);
 
 		// Create dot collection
 		let dot = new AMES_Ellipse();
 		let dot_collection = new AMES_Collection(dot);
-		dot_collection.set_count(8)
+		dot_collection.set_count(6)
 
+		// Create motion path transformation function
+		let tf_motion_path = new AMES_Transformation({
+			"input": poly_collection,
+			"target": dot_collection,
+			"mapping": "motion path"
+		});
 
-		let tf_motion_path = new AMES_Transformation({"mapping": "motion path"});
-		tf_motion_path.set_target(dot_collection);
-		tf_motion_path.set_input(poly_collection);
+		// Create number of sides transformation function
+		let line = new AMES_Artwork_Path();
+		line.add_points([new Point(200, 200), new Point(300, 100)]);
 
-		// let line = new AMES_Path([p1, p2]);
+		let tf_nsides_tri = new AMES_Transformation();
+		tf_nsides_tri.set_target(poly_collection);
+		tf_nsides_tri.set_input(line);
+		tf_nsides_tri.set_mapping({"type": "Polygon", "mapping": "number of sides"});
 
+		tf_nsides_tri.transform();
+
+		tf_motion_path.transform();
 
 		// let tf_scale_tri = new AMES_Transformation();
 		// tf_scale_tri.set_target(poly_collection);
-		// tf_scale_tri.set_input(line);
-
-		// let tf_nsides_tri = new AMES_Transformation();
-		// tf_nsides_tri.set_target(poly_collection);
 		// tf_scale_tri.set_input(line);
 
 		//

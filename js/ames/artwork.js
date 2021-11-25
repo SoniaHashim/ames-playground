@@ -1022,18 +1022,37 @@ export class AMES_Artwork {
 export class AMES_Polygon extends AMES_Artwork {
 	name = "Polygon";
 	shape_type = "Polygon";
+	artwork_type = "Polygon";
+	radius;
+	centroid;
 
-	constructor(centroid, nsides, side_length) {
+	constructor(opt) {
 		super();
-		if (!centroid) centroid = ames.canvas_view.center;
-		if (!nsides) nsides = 3;
-		if (!side_length) side_length = 100;
-		console.log("AMES_Polygon(", centroid, nsides, side_length, ")");
-		let radius = side_length / 2*Math.sin((180/nsides)*Math.PI/180);
-		console.log("Radius = ", radius);
-		this.poly = new Path.RegularPolygon(centroid, nsides, radius);
+		opt = opt || {};
+
+		if (!opt.centroid) opt.centroid = ames.canvas_view.center;
+		if (!opt.nsides) opt.nsides = 3;
+		if (!opt.side_length) opt.side_length = 100;
+
+		this.radius = this.get_radius_from_side_length(opt.side_length, opt.nsides);
+
+		this.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, this.radius);
 		this.poly.strokeWidth = 1;
 		this.poly.strokeColor = 'darkgray';
+	}
+
+	set_number_of_sides(nsides) {
+		console.log("set_number_of_sides", nsides);
+		let style = this.poly.style;
+		let position = this.poly.position;
+		this.poly.remove();
+		this.poly = new Path.RegularPolygon(this.poly.position, nsides, this.radius);
+		this.poly.style = style;
+		this.poly.position = position;
+	}
+
+	get_radius_from_side_length(side_length, nsides) {
+		return side_length / 2*Math.sin((180/nsides)*Math.PI/180);
 	}
 }
 
@@ -1044,74 +1063,82 @@ export class AMES_Polygon extends AMES_Artwork {
 export class AMES_Ellipse extends AMES_Artwork {
 	name = "Ellipse"
 	shape_type = "Ellipse";
+	artwork_type = "Ellipse";
 	is_ames_ellipse = true;
 
-	constructor(centroid, rx, ry) {
+	constructor(opt) {
 		super();
 
-		if (!centroid) centroid = ames.canvas_view.center;
-		if (!rx) rx = 2;
-		if (!ry) ry = rx;
+		opt = opt || {};
+
+		if (!opt.centroid) opt.centroid = ames.canvas_view.center;
+		if (!opt.rx) opt.rx = 2;
+		if (!opt.ry) opt.ry = opt.rx;
 
 		this.poly = new Shape.Ellipse({
-			center: [centroid.x, centroid.y],
-			radius: [rx, ry],
-			fillColor: 'pink',
+			center: [opt.centroid.x, opt.centroid.y],
+			radius: [opt.rx, opt.ry],
 			visible: true,
 			strokeWidth: 1,
 			strokeColor: 'darkgray'
 		});
 		this.poly.visible = true;
-		console.log(this.poly);
 	}
 }
-//
-// // Class: Path
-// // ---------------------------------------------------------------------------
-// // Description: Implementation of a path
-// export class AMES_Path extends AMES_Shape {
-// 	name = "Path";
-// 	shape_type = "Path";
-// 	bbox;
-// 	is_ames_path = true;
-//
-// 	constructor() {
-// 		super();
-// 		this.poly = new Path({
-// 			strokeColor: 'darkgray',
-// 			strokeWidth: 1,
-// 			visible: true,
-// 			fillColor: 'rgba(255, 0, 0, 0)'
-// 			// fullySelected: true
-// 		});
-// 	}
-//
-// 	update_bbox() {
-// 		this.bbox = new Path.Rectangle(this.poly.strokeBounds);
-// 		this.bbox.visible = true;
-// 		this.bbox.sendToBack();
-// 		this.bbox.fillColor = "lavender";
-// 		this.bbox.opacity = 0;
-// 	}
-//
-// 	make_path_helper() {
-// 		// If last point is very close to the previous point close the path
-// 		let thresh = 144; // 1f first and last pts are within 12px, seal curve
-// 		let n_segs = this.poly.segments.length;
-// 		if (n_segs > 2) { // Check there are at least 2 points in the line
-// 			let a = this.poly.segments[n_segs-1].point;
-// 			let b = this.poly.segments[0].point;
-// 			if (utils.lengthsq(a.x, a.y, b.x, b.y) < thresh)
-// 				this.poly.closed = true;
-// 		}
-// 		// Simplify, smooth & select path
-// 		this.poly.simplify();
-// 		this.poly.smooth();
-// 		this.poly.fullySelected = false;
-// 		this.pos = {'x': this.poly.position.x, 'y': this.poly.position.y};
-// 		console.log(this.poly.strokeBounds)
-// 		// on double tap open visual props
-// 		this.update_bbox();
-// 	}
-//
-// }
+
+// Class: Path
+// ---------------------------------------------------------------------------
+// Description: Implementation of a path
+export class AMES_Artwork_Path extends AMES_Artwork {
+	name = "Path";
+	shape_type = "Path";
+	artwork_type = "Path";
+	bbox;
+	is_ames_path = true;
+
+	constructor() {
+		super();
+		this.poly = new Path({
+			strokeColor: 'darkgray',
+			strokeWidth: 1,
+			visible: true,
+			fillColor: 'rgba(255, 0, 0, 0)'
+			// fullySelected: true
+		});
+	}
+
+	add_points(points) {
+		for (let i in points) {
+			this.poly.add(points[i]);
+		}
+	}
+
+	update_bbox() {
+		this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+		this.bbox.visible = true;
+		this.bbox.sendToBack();
+		this.bbox.fillColor = "lavender";
+		this.bbox.opacity = 0;
+	}
+
+	make_path_helper() {
+		// If last point is very close to the previous point close the path
+		let thresh = 144; // 1f first and last pts are within 12px, seal curve
+		let n_segs = this.poly.segments.length;
+		if (n_segs > 2) { // Check there are at least 2 points in the line
+			let a = this.poly.segments[n_segs-1].point;
+			let b = this.poly.segments[0].point;
+			if (utils.lengthsq(a.x, a.y, b.x, b.y) < thresh)
+				this.poly.closed = true;
+		}
+		// Simplify, smooth & select path
+		this.poly.simplify();
+		this.poly.smooth();
+		this.poly.fullySelected = false;
+		this.pos = {'x': this.poly.position.x, 'y': this.poly.position.y};
+		console.log(this.poly.strokeBounds)
+		// on double tap open visual props
+		this.update_bbox();
+	}
+
+}

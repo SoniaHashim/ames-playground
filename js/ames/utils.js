@@ -89,6 +89,12 @@ export class AMES_Utils {
 		if (btn) btn.style.backgroundColor = this.ACTIVE_COLOR;
 	}
 
+	static style_label(label) {
+		label.fontSize = this.FONT_SIZE;
+		label.fillColor = 'lightgray';
+		label.fontFamily = this.FONT;
+	}
+
 	// get_buttons(b)
 	// Returns the button given the value of the button b if it's defined in a btn list
 	static get_button(b) {
