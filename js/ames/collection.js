@@ -167,17 +167,18 @@ export class AMES_Collection {
 		if (n < 1) return;
 		if (this.shapes.length == 1) {
 			let og = this.shapes[0];
-			this.shapes = [];
-			for (let i = 0; i < n; i++) {
-				let a = new og.constructor();
-				Object.assign(a, og);
+			// this.shapes = [];
+			for (let i = 1; i < n; i++) {
+				let a = Object.create(og);
+				a.poly = null;
 				a.poly = og.poly.clone();
+				a.poly.style = og.poly.style;		
 				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
 				this.show(true);
 			}
-			og.remove();
+			console.log("setting count", );
 		} else {
 			// Increase copies using first and last
 		}

@@ -100,6 +100,10 @@ export class AMES_Artwork {
 		}
 	}
 
+	set_scaling(x) {
+		this.poly.scaling = x;
+	}
+
 	// set_scale(f)
 	// Description: Updates the scale of the shape by the given amount
 	set_scale(fx, fy) {
@@ -1032,23 +1036,33 @@ export class AMES_Polygon extends AMES_Artwork {
 
 		if (!opt.centroid) opt.centroid = ames.canvas_view.center;
 		if (!opt.nsides) opt.nsides = 3;
-		if (!opt.side_length) opt.side_length = 100;
+		if (!opt.side_length) opt.side_length = 50;
 
 		this.radius = this.get_radius_from_side_length(opt.side_length, opt.nsides);
+		this.centroid = opt.centroid;
 
 		this.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, this.radius);
 		this.poly.strokeWidth = 1;
 		this.poly.strokeColor = 'darkgray';
 	}
 
+	set_scaling(x) {
+		super.set_scaling(x);
+		this.radius *= x;
+	}
+
 	set_number_of_sides(nsides) {
-		console.log("set_number_of_sides", nsides);
 		let style = this.poly.style;
 		let position = this.poly.position;
 		this.poly.remove();
-		this.poly = new Path.RegularPolygon(this.poly.position, nsides, this.radius);
+
+		this.poly = new Path.RegularPolygon(this.centroid, nsides, this.radius);
 		this.poly.style = style;
-		this.poly.position = position;
+
+		if (nsides == 6) {
+			this.poly.rotate(-90);
+		}
+		// this.poly.position = position;
 	}
 
 	get_radius_from_side_length(side_length, nsides) {
@@ -1072,7 +1086,8 @@ export class AMES_Ellipse extends AMES_Artwork {
 		opt = opt || {};
 
 		if (!opt.centroid) opt.centroid = ames.canvas_view.center;
-		if (!opt.rx) opt.rx = 2;
+		if (!opt.r) opt.r = 2;
+		if (!opt.rx) opt.rx = opt.r;
 		if (!opt.ry) opt.ry = opt.rx;
 
 		this.poly = new Shape.Ellipse({
@@ -1083,6 +1098,8 @@ export class AMES_Ellipse extends AMES_Artwork {
 			strokeColor: 'darkgray'
 		});
 		this.poly.visible = true;
+		this.to_path(); 
+		this.poly.rotate(-90);
 	}
 }
 

@@ -47,8 +47,7 @@ export class AMES {
 	// Scrubber
 	scrubber;
 	// State & Timing
-	fps = 24;			// frames per second used by transformations
-	use_fps = true;
+	fps = 60;			// frames per second used by transformations
 	time = 0;			// time in system
 	t_delta = 0; 		// time between elapsed frames
 	dur = 10; 			// in seconds
@@ -817,13 +816,36 @@ export class AMES {
 
 		// Create polygon collection
 		let tri = new AMES_Polygon();
+		tri.poly.strokeColor = "blue";
+		tri.poly.strokeWidth = 1.5;
 		let poly_collection = new AMES_Collection(tri);
 		poly_collection.set_count(6);
 
 		// Create dot collection
 		let dot = new AMES_Ellipse();
+		dot.poly.fillColor = "blue";
+		dot.poly.strokeWidth = 0;
+
 		let dot_collection = new AMES_Collection(dot);
 		dot_collection.set_count(6)
+
+		// Create hue transformation function
+		let line0 = new AMES_Artwork_Path();
+		line0.add_points([new Point(275, 350), new Point(375, 275)]);
+		let tf_hue_dots = new AMES_Transformation({
+			"input": line0,
+			"target": dot_collection,
+			"mapping": "hue"
+		});
+		tf_hue_dots.transform();
+
+		let tf_hue_poly = new AMES_Transformation({
+			"input": line0,
+			"target": poly_collection,
+			"mapping": "hue"
+		});
+		tf_hue_poly.transform();
+
 
 		// Create motion path transformation function
 		let tf_motion_path = new AMES_Transformation({
@@ -831,23 +853,71 @@ export class AMES {
 			"target": dot_collection,
 			"mapping": "motion path"
 		});
+		tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
 
-		// Create number of sides transformation function
-		let line = new AMES_Artwork_Path();
-		line.add_points([new Point(200, 200), new Point(300, 100)]);
-
+		// Create number of sides transformation function using a line
+		let line1 = new AMES_Artwork_Path();
+		line1.add_points([new Point(100, 200), new Point(200, 100)]);
 		let tf_nsides_tri = new AMES_Transformation();
 		tf_nsides_tri.set_target(poly_collection);
-		tf_nsides_tri.set_input(line);
+		tf_nsides_tri.set_input(line1);
 		tf_nsides_tri.set_mapping({"type": "Polygon", "mapping": "number of sides"});
 
+		// Create static scaling transformation function using a line
+		let line2 = new AMES_Artwork_Path();
+		line2.add_points([new Point(100, 450), new Point(200, 250)]);
+		// line2.add_points([new Point(100, 450), new Point(200, 250)]);
+		// line2.add_points([new Point(100, 300), new Point(200, 250)]);
+		let tf_scale_tri = new AMES_Transformation({
+			"input": line2,
+			"target": poly_collection,
+			"mapping": "static scale"
+		});
+
 		tf_nsides_tri.transform();
+		tf_scale_tri.transform();
+
+		// let p = new AMES_Ellipse({"centroid": new Point(325, 300), "r": 20});
+
+		// Flare dots, create duplicate tranformation function
+		let line3 = new AMES_Artwork_Path();
+		line3.add_points([new Point(100, 550), new Point(200, 500)]);
+		let tf_duplicate_dots = new AMES_Transformation({
+			"input": line3,
+			"target": dot_collection,
+			"mapping": "duplicate each"
+		});
+		tf_duplicate_dots.loop = false;
+
+		// Create scaling animation using a cirlce in image space (ease in and out)
+		let circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50});
+		let quick_flare = new AMES_Artwork_Path();
+		quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+		let tf_scale_dots = new AMES_Transformation({
+			"input": quick_flare,
+			"target": dot_collection,
+			"mapping": "scale animation"
+		});
+		tf_scale_dots.loop = false;
+		// tf_scale_dots.tf_space_speed_factor = 1;
+		tf_scale_dots.tf_space_speed = tf_scale_dots.SPEED_XAXIS;
+		// // tf_scale_animation_dots.transform();
+		//
+		tf_motion_path.use_playback_points_to_trigger_transformation({
+			"tf": tf_duplicate_dots,
+			"condition": "x or y direction change"
+		});
+		//
+		tf_scale_dots.use_playback_points_to_trigger_transformation({
+			"tf": null,
+			"condition": "remove at end"
+		});
+		tf_duplicate_dots.use_playback_points_to_trigger_transformation({
+			"tf": tf_scale_dots,
+			"condition": "new instance"
+		});
 
 		tf_motion_path.transform();
-
-		// let tf_scale_tri = new AMES_Transformation();
-		// tf_scale_tri.set_target(poly_collection);
-		// tf_scale_tri.set_input(line);
 
 		//
 		// let obj_a = new AMES_Circle();
