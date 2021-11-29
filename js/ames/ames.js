@@ -817,15 +817,15 @@ export class AMES {
 		// Create polygon collection
 		let tri = new AMES_Polygon();
 		tri.poly.strokeColor = "blue";
-		tri.poly.strokeWidth = 1.5;
+		tri.poly.strokeWidth = 1.5
 		let poly_collection = new AMES_Collection(tri);
 		poly_collection.set_count(6);
-
+		//
 		// Create dot collection
 		let dot = new AMES_Ellipse();
 		dot.poly.fillColor = "blue";
 		dot.poly.strokeWidth = 0;
-
+		//
 		let dot_collection = new AMES_Collection(dot);
 		dot_collection.set_count(6)
 
@@ -854,7 +854,10 @@ export class AMES {
 			"mapping": "motion path"
 		});
 		tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
+		tf_motion_path.tf_space_speed_factor = 1; 
+		console.log("linear speed?", tf_motion_path.tf_space_speed == tf_motion_path.SPEED_LINEAR)
 
+		//
 		// Create number of sides transformation function using a line
 		let line1 = new AMES_Artwork_Path();
 		line1.add_points([new Point(100, 200), new Point(200, 100)]);
@@ -876,8 +879,9 @@ export class AMES {
 
 		tf_nsides_tri.transform();
 		tf_scale_tri.transform();
-
-		// let p = new AMES_Ellipse({"centroid": new Point(325, 300), "r": 20});
+		// tf_motion_path.transform();
+		//
+		// // let p = new AMES_Ellipse({"centroid": new Point(325, 300), "r": 20});
 
 		// Flare dots, create duplicate tranformation function
 		let line3 = new AMES_Artwork_Path();
@@ -894,27 +898,26 @@ export class AMES {
 		let quick_flare = new AMES_Artwork_Path();
 		quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
 		let tf_scale_dots = new AMES_Transformation({
-			"input": quick_flare,
+			"input": circle,
 			"target": dot_collection,
 			"mapping": "scale animation"
 		});
 		tf_scale_dots.loop = false;
-		// tf_scale_dots.tf_space_speed_factor = 1;
+		tf_scale_dots.tf_space_path_nsegments = 100;
 		tf_scale_dots.tf_space_speed = tf_scale_dots.SPEED_XAXIS;
 		// // tf_scale_animation_dots.transform();
 		//
 		tf_motion_path.use_playback_points_to_trigger_transformation({
 			"tf": tf_duplicate_dots,
-			"condition": "x or y direction change"
-		});
-		//
-		tf_scale_dots.use_playback_points_to_trigger_transformation({
-			"tf": null,
-			"condition": "remove at end"
+			"condition": "slope change"
 		});
 		tf_duplicate_dots.use_playback_points_to_trigger_transformation({
 			"tf": tf_scale_dots,
 			"condition": "new instance"
+		});
+		tf_scale_dots.use_playback_points_to_trigger_transformation({
+			"tf": null,
+			"condition": "remove at end"
 		});
 
 		tf_motion_path.transform();

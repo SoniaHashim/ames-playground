@@ -68,7 +68,7 @@ export class AMES_Transformation {
 	tf_mp;
 	tf_space_path_nsegments; 	// The number of frames used to interpret the path
 	tf_space_path_length_relative_scale	// Scale factor using average length
-	tf_space_speed_factor = .5;	// # of segments to traverse per frame
+	tf_space_speed_factor = 1;	// # of segments to traverse per frame
 	tf_space_speed; 		// How speed is represented (constant, linear, xaxis, yaxis, map)
 	SPEED_CONSTANT = 0;
 	SPEED_LINEAR = 1;
@@ -112,7 +112,7 @@ export class AMES_Transformation {
 		this.tf_space_speed = this.SPEED_CONSTANT;
 		// # of segments in the path,
 		// i.e. if speed is 1, # of frames at frame rate to traverse transform
-		this.tf_space_path_nsegments = 50;
+		this.tf_space_path_nsegments = 1000;
 		let path_length;
 		if (input.is_artwork) path_length = this.input.poly.length;
 		if (input.is_collection) {
@@ -298,7 +298,7 @@ export class AMES_Transformation {
 		}
 
 		if (this.mapping == this.SCALE) {
-			let my2 = this.linear_map(0, TR.x - TL.x, 0, 1, BL.y - TL.y);
+			let my2 = this.linear_map(0, 25, 0, 1, BL.y - TL.y);
 			this.set_tf_space({
 				"mx": null, "mx1": null, "mx2": null,
 				"my": "scaling", "my1": 1, "my2": 1+my2,
@@ -549,9 +549,11 @@ export class AMES_Transformation {
 
 		this.dx_direction = [];
 		this.dy_direction = [];
+		this.slope = [];
 
 		this.loop_count = [];
 		this.is_playing = [];
+		this.tween_helper_scale = [];
 
 		for (let i = 0; i < n; i++) {
 			this.loop_count[i] = 1;
@@ -560,6 +562,8 @@ export class AMES_Transformation {
 			this.v_total[i] = 0;
 			this.dx_direction[i] = 0;
 			this.dy_direction[i] = 0;
+			this.slope[i] = 1;
+			this.tween_helper_scale[i] = 1;
 		}
 	}
 
@@ -618,7 +622,7 @@ export class AMES_Transformation {
 		// Play or apply transformation
 		if (this.is_playable) {
 			// Cannot trigger an animation that is already playing
-			if (this.is_playing[idx] == 1) return;
+			// if (this.is_playing[idx] == 1) return;
 
 			// Reset playback trackers
 			this.dx_total[idx] = 0;
@@ -626,6 +630,8 @@ export class AMES_Transformation {
 			this.v_total[idx] = 0;
 			this.loop_count[idx] = 1;
 			this.is_playing[idx] = 1;
+			this.slope[a_idx] = 1;
+			this.tween_helper_scale[a_idx] = 1;
 
 			// Jump target to match transformation input start values
 			if (this.tf_space_absolute) {
@@ -656,6 +662,7 @@ export class AMES_Transformation {
 				}
 			} else {
 				this.is_playing[a_idx] = 0;
+				this.trigger_end(a, a_idx);
 				return;
 			}
 		}
@@ -666,14 +673,20 @@ export class AMES_Transformation {
 		let d = update[DELTA];
 		let t = update[DURATION];
 
+		// this.tween(a_idx, a, d, 1, state_idx);
+
+		// if (a_idx == 1) console.log((d.v/t).toFixed(4), d.v.toFixed(4), t.toFixed(4));
+
+		// let v = Math.sqrt(d.x*d.x + d.y*d.y) - d.v;
+		// let eps = 0.01
+		// console.log((-eps < v && v < 0) || (0 < v && v < eps));
+
 		if (this.mapping == this.DUPLICATE_EACH) {
 			this.tween(a_idx, a, d, 1, state_idx)
 		} else {
-			// OVERSHOOT BUG IS HERE - CEILING?
-			let nframes = Math.ceil(t / (1000/ames.fps));
-			this.tween(a_idx, a, d, nframes, state_idx);
-
 			let t_frame = 1000/ames.fps;
+			let nframes = Math.ceil(t / t_frame);
+			this.tween(a_idx, a, d, nframes, state_idx);
 
 			for (let n = 1;  n < nframes; n++) {
 				setTimeout(() => {
@@ -681,7 +694,6 @@ export class AMES_Transformation {
 				}, n*t_frame);
 			}
 		}
-
 
 		setTimeout(() => {
 			this.play_helper(state_idx + 1, a, a_idx);
@@ -696,7 +708,11 @@ export class AMES_Transformation {
 		if (this.mapping == this.MOTION_PATH)
 			a.poly.position = new Point(a.poly.position.x + d.x/f, a.poly.position.y + d.y/f);
 		if (this.mapping == this.SCALE) {
-			a.poly.scaling = 1+d.y/f;
+			// a.poly.scaling = 1+d.y/f;
+			let prev_sf = this.tween_helper_scale[a_idx];
+			let sf = this.tf_my1 + this.dy_total[a_idx];
+			a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx])/prev_sf;
+			this.tween_helper_scale[a_idx] = sf;
 		}
 		if (this.mapping == this.DUPLICATE_EACH) {
 			let eps = .001; let inc = this.dy_total[a_idx] - 1;
@@ -704,6 +720,7 @@ export class AMES_Transformation {
 				let new_a = Object.create(a);
 				new_a.poly = a.poly.clone();
 				this.dy_total[a_idx] = 0;
+				// if (a_idx == 1) console.log("making new instance", a_idx);
 				this.trigger_new_instance(new_a, a_idx);
 			}
 		}
@@ -724,6 +741,16 @@ export class AMES_Transformation {
 		}
 		this.transformation_functions_to_trigger.push(trigger);
 		this.check_playback_points = true;
+	}
+
+	trigger_end(a, a_idx) {
+		for (let x in this.transformation_functions_to_trigger) {
+			let tf = this.transformation_functions_to_trigger[x];
+			if (tf.condition == "remove at end") {
+				// if (a_idx == 1) console.log("remove at", a_idx);
+				a.poly.remove();
+			}
+		}
 	}
 
 	trigger_new_instance(a, a_idx) {
@@ -754,7 +781,9 @@ export class AMES_Transformation {
 		// Check conditions for change in direction
 		let x_direction_change = false;
 		let y_direction_change = false;
+		let slope_change = false;
 		let dir_x = 0; let dir_y = 0;
+
 		// Initialize conditions at the start of playback
 		if (state_idx == 0 && this.loop_count[a_idx] == 1) {
 			if (d.x/f > 0) dir_x = 1;
@@ -763,6 +792,8 @@ export class AMES_Transformation {
 			if (d.y/f > 0) dir_y = 1;
 			if (d.y/f < 0) dir_y = -1;
 			this.dy_direction[a_idx] = dir_y;
+			// Slope
+			this.slope[a_idx] = d.y/d.x;
 		} else {
 			// Check for and indicate change in x direction
 			dir_x = this.dx_direction[a_idx];
@@ -801,6 +832,14 @@ export class AMES_Transformation {
 				this.dy_direction[a_idx] = dir_y;
 				y_direction_change = true;
 			}
+
+			// Check for slope change
+			let m = d.y/d.x; let m_diff = m - this.slope[a_idx]; let m_eps = .001;
+			if (m_diff > m_eps || m_diff < -m_eps) {
+				slope_change = true;
+				this.slope[a_idx] = m;
+				// if (a_idx == 5) console.log("slope change", a_idx);
+			}
 		}
 
 		for (let x in this.transformation_functions_to_trigger) {
@@ -816,10 +855,7 @@ export class AMES_Transformation {
 				if (tf.condition == "y direction change" && y_direction_change) trigger_tf = true;
 				if (tf.condition == "x or y direction change" && (x_direction_change || y_direction_change)) trigger_tf = true;
 				if (tf.condition == "x and y direction change" && (x_direction_change && y_direction_change)) trigger_tf = true;
-			}
-
-			if (state_idx + 1 == this.tf_space_path_nsegments && tf.condition == "remove at end") {
-				a.poly.remove();
+				if (tf.condition == "slope change" && slope_change) trigger_tf = true;
 			}
 
 			if (trigger_tf) {
@@ -866,19 +902,21 @@ export class AMES_Transformation {
 		let nxt_i = state_idx + 1;
 
 		let d; let dx; let dy;
-		let delta;
+		let delta; let seg_change_value;
 
 		if (this.input.is_shape) {
 
 			d = this.get_delta_from_state(i, nxt_i);
+			seg_change_value = this.get_change_in_segment_at_state(i, nxt_i);
 			dx = d.x; dy = d.y;
 			d = Math.sqrt(d.x*d.x + d.y*d.y);
 		}
 
 		if (this.input.is_collection) {
-			d = []; let x = []; let y = [];
+			d = []; let x = []; let y = []; seg_change_value = [];
 			for (let in_idx = 0; in_idx < this.n_input; in_idx++) {
 				d[in_idx] = this.get_delta_from_state(i, nxt_i, in_idx);
+				seg_change_value[in_idx] = this.get_change_in_segment_at_state(i, nxt_i, in_idx);
 			}
 
 			x = d.map((m) => m.x);
@@ -888,17 +926,23 @@ export class AMES_Transformation {
 			dx = utils.interpolate_fast(x, a_idx);
 			dy = utils.interpolate_fast(y, a_idx);
 			d = utils.interpolate_fast(d, a_idx);
+			seg_change_value = utils.interpolate_fast(seg_change_value, a_idx);
 		}
 
-		delta = {"x": dx, "y": dy, "v": d};
+		let change_segment = false;
+		if (seg_change_value > 0.5) change_segment = true;
+		delta = {"x": dx, "y": dy, "v": d, "change_segment": change_segment};
 
-		let duration = (1000/ames.fps) * 1/this.tf_space_speed_factor;
+		let duration = 1000/ames.fps * (1/this.tf_space_speed_factor);
 		if (this.tf_space_speed == this.SPEED_CONSTANT) { duration = duration; }
-		if (this.tf_space_speed == this.SPEED_LINEAR) { duration *= Math.abs(d)*this.tf_space_path_length_relative_scale };
-		if (this.tf_space_speed == this.SPEED_XAXIS) { duration *= Math.abs(dx)*this.tf_space_path_length_relative_scale };
-		if (this.tf_space_speed == this.SPEED_YAXIS) { duration *= Math.abs(dy)*this.tf_space_path_length_relative_scale };
+		if (this.tf_space_speed == this.SPEED_LINEAR) { duration *= d };
+		if (this.tf_space_speed == this.SPEED_XAXIS) { duration *= Math.abs(dx) };
+		if (this.tf_space_speed == this.SPEED_YAXIS) { duration *= Math.abs(dy) };
 		if (this.tf_space_speed == this.SPEED_MAP) {} // TBD
 		if (duration == 0) duration = .001;
+
+		let rate = (delta.v) / duration; // This is actually the time per segment
+		// if (a_idx == 4) console.log(delta.v.toFixed(4), rate.toFixed(4));
 
 		return [delta, duration];
 	}
@@ -912,9 +956,24 @@ export class AMES_Transformation {
 		let l = in_artwork.length;
 
 		let prev_s = this.get_artwork_value_at_offset(in_artwork, i*l/this.tf_space_path_nsegments);
-		let nxt_s = this.get_artwork_value_at_offset(in_artwork, nxt_i*l/this.tf_space_path_nsegments)
+		let nxt_s = this.get_artwork_value_at_offset(in_artwork, nxt_i*l/this.tf_space_path_nsegments);
 
 		return nxt_s.subtract(prev_s);
+	}
+
+	get_change_in_segment_at_state(i, nxt_i, in_idx) {
+		let in_artwork;
+
+		if (this.input.is_artwork) in_artwork = this.input.poly;
+		if (this.input.is_collection) in_artwork = this.input.shapes[in_idx].poly;
+
+		let l = in_artwork.length;
+
+		let prev_loc = in_artwork.getLocationAt(i*l/this.tf_space_path_nsegments);
+		let nxt_loc = in_artwork.getLocationAt(nxt_i*l/this.tf_space_path_nsegments);
+
+		if (prev_loc && nxt_loc && prev_loc.curve != nxt_loc.curve) { return 1; }
+		return 0;
 	}
 
 	get_artwork_value_at_offset(artwork, off) {
