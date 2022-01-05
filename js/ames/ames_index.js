@@ -24,7 +24,7 @@ window.onload = function() {
 		return new Promise((resolve) => setTimeout(resolve, time));
 	}
 	sleep(500).then(() => {
-		console.log("Testing???")
-		ames.test();
+		let example = "starfield";
+		ames.example(example);
 	})
 }

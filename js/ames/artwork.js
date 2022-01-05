@@ -1036,9 +1036,9 @@ export class AMES_Polygon extends AMES_Artwork {
 
 		if (!opt.centroid) opt.centroid = ames.canvas_view.center;
 		if (!opt.nsides) opt.nsides = 3;
-		if (!opt.side_length) opt.side_length = 50;
+		if (!opt.radius) opt.radius = 25;
 
-		this.radius = this.get_radius_from_side_length(opt.side_length, opt.nsides);
+		this.radius = opt.radius;
 		this.centroid = opt.centroid;
 
 		this.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, this.radius);
@@ -1056,7 +1056,7 @@ export class AMES_Polygon extends AMES_Artwork {
 		let position = this.poly.position;
 		this.poly.remove();
 
-		this.poly = new Path.RegularPolygon(this.centroid, nsides, this.radius);
+		this.poly = new Path.RegularPolygon(position, nsides, this.radius);
 		this.poly.style = style;
 
 		if (nsides == 6) {
@@ -1098,7 +1098,7 @@ export class AMES_Ellipse extends AMES_Artwork {
 			strokeColor: 'darkgray'
 		});
 		this.poly.visible = true;
-		this.to_path(); 
+		this.to_path();
 		this.poly.rotate(-90);
 	}
 }

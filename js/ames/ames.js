@@ -97,11 +97,11 @@ export class AMES {
 
 		// Set up sidebar
 		this.idx_boxes = new Array();
-		this.setup_layers();
+		// this.setup_layers();
 
 		// Import icons
-		this.create_toolbar();
-		this.create_sidebar();
+		// this.create_toolbar();
+		// this.create_sidebar();
 		this.import_icons();
 
 	}
@@ -811,150 +811,317 @@ export class AMES {
 		// Warning: ames is not defined here
 	}
 
-	test() {
-		console.log("---AMES TEST LOG--------------------------------------");
+	example(str) {
+		if (str == "ngon") this.ngon();
+		if (str == "starfield") this.starfield();
+ 	}
 
-		// Create polygon collection
-		let tri = new AMES_Polygon();
-		tri.poly.strokeColor = "blue";
-		tri.poly.strokeWidth = 1.5
-		let poly_collection = new AMES_Collection(tri);
-		poly_collection.set_count(6);
+	starfield(step) {
+		if (step == null) step = 5;
+		console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
+
+		let oct;
+		if (step >= 0) {
+			oct = new AMES_Polygon({"nsides": 20});
+			oct.poly.strokeColor = "pink";
+		}
+
+		let poly_collection;
+		if (step >= 1) {
+			poly_collection = new AMES_Collection(oct);
+			poly_collection.set_count(10);
+		}
+
+		let tf_position; let line_position;
+		if (step >= 2) {
+			line_position = new AMES_Artwork_Path();
+			line_position.add_points([new Point(300, 550), new Point(750, 50)]);
+			tf_position = new AMES_Transformation({
+				"input": line_position,
+				"target": poly_collection,
+				"mapping": "position"
+			});
+			tf_position.transform();
+			poly_collection.show_box(false);
+		}
+
+		let tf_point_perturb; let lines_perturb;
+		if (step >= 3) {
+			let line1 = new AMES_Artwork_Path();
+			let line2 = new AMES_Artwork_Path();
+			line1.add_points([new Point(75, 100), new Point(75, 90)]);
+			line2.add_points([new Point(100, 100), new Point(100, 105)]);
+			lines_perturb = new AMES_Collection([line1, line2]);
+			tf_point_perturb = new AMES_Transformation({
+				"input": lines_perturb,
+				"target": poly_collection
+			});
+			tf_point_perturb.set_mapping({"type": "Vertex", "mapping": "relative position"});
+			tf_point_perturb.set_mapping_behavior("alternate");
+			tf_point_perturb.tf_space_absolute = false;
+
+			tf_position.show_tf_space(false);
+			line_position.poly.visible = false;
+
+			if (step == 3) tf_point_perturb.transform();
+		}
+
+		let tf_nsides;
+		if (step >= 4) {
+			let line_nsides = new AMES_Artwork_Path();
+			line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
+			tf_nsides = new AMES_Transformation();
+			tf_nsides.set_target(poly_collection);
+			tf_nsides.set_input(line_nsides);
+			tf_nsides.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+			tf_nsides.set_tf_space({"my1": 10, "my2": 28});
+			tf_nsides.show_tf_space(true);
+			// tf_nsides.transform();
+
+			tf_point_perturb.transform();
+		}
+
+		let tf_point_perturb_animation; let lines_perturb_animated;
+		if (step >= 5) {
+			let line1 = new AMES_Artwork_Path();
+			let line2 = new AMES_Artwork_Path();
+			line1.add_points([new Point(275, 100), new Point(275, 95)]);
+			line2.add_points([new Point(300, 100), new Point(300, 105)]);
+			lines_perturb_animated = new AMES_Collection([line1, line2]);
+			tf_point_perturb_animation = new AMES_Transformation({
+				"input": lines_perturb_animated,
+				"target": poly_collection
+			});
+			tf_point_perturb_animation.set_mapping({"type": "Vertex", "mapping": "relative animation"});
+			tf_point_perturb_animation.set_mapping_behavior("alternate");
+			tf_point_perturb_animation.tf_space_absolute = false;
+			tf_point_perturb_animation.tf_space_path_nsegments = 25;
+			tf_point_perturb_animation.tf_space_speed_factor = 1;
+			tf_point_perturb_animation.loop_max_count = 1;
+
+			tf_point_perturb.show_tf_space(false);
+			tf_point_perturb_animation.transform();
+		}
+
+	}
+
+
+	ngon(step) {
+		if (step == null) step = 15;
+		console.log("---AMES NGON EXAMPLE LOG--------------------------------");
+
+		project.activeLayer.removeChildren();
 		//
-		// Create dot collection
-		let dot = new AMES_Ellipse();
-		dot.poly.fillColor = "blue";
-		dot.poly.strokeWidth = 0;
-		//
-		let dot_collection = new AMES_Collection(dot);
-		dot_collection.set_count(6)
+		// let r = new Path.Rectangle(ames.canvas_view.center, new Size(2000, 1000));
+		// r.fillColor = "white"
+		// r.position = ames.canvas_view.center;
 
-		// Create hue transformation function
-		let line0 = new AMES_Artwork_Path();
-		line0.add_points([new Point(275, 350), new Point(375, 275)]);
-		let tf_hue_dots = new AMES_Transformation({
-			"input": line0,
-			"target": dot_collection,
-			"mapping": "hue"
-		});
-		tf_hue_dots.transform();
+		let tri;
+		if (step >= 0) {
+			// Create polygon collection
+			tri = new AMES_Polygon();
+			tri.poly.strokeColor = "blue";
+			tri.poly.strokeWidth = 1.5
+		}
 
-		let tf_hue_poly = new AMES_Transformation({
-			"input": line0,
-			"target": poly_collection,
-			"mapping": "hue"
-		});
-		tf_hue_poly.transform();
+		let poly_collection;
+		if (step >= 1) {
+			poly_collection = new AMES_Collection(tri);
+			poly_collection.set_count(6);
+		}
+
+		let dot; let dot_collection;
+		if (step >= 2) {
+			// Create dot collection
+			dot = new AMES_Ellipse();
+			dot.poly.fillColor = "blue";
+			dot.poly.strokeWidth = 0;
+			dot_collection = new AMES_Collection(dot);
+			dot_collection.set_count(6)
+		}
+
+		let tf_motion_path;
+		if (step >= 3) {
+			// Create motion path transformation function
+			tf_motion_path = new AMES_Transformation({
+				"input": poly_collection,
+				"target": dot_collection,
+				"mapping": "motion path"
+			});
+			tf_motion_path.tf_space_speed_factor = 1;
+			if (step == 3) tf_motion_path.transform();
+			if (step > 3) {
+				dot_collection.align();
+				poly_collection.align();
+
+				tf_motion_path.show_tf_space(false);
+				dot_collection.show_box(false);
+				poly_collection.show_box(false);
+			}
+		}
+
+		let line2; let tf_scale_tri;
+		if (step >= 4) {
+			// Create static scaling transformation function using a line
+			line2 = new AMES_Artwork_Path();
+			line2.add_points([new Point(100, 450), new Point(200, 250)]);
+			// line2.add_points([new Point(100, 450), new Point(200, 250)]);
+			// line2.add_points([new Point(100, 300), new Point(200, 250)]);
+			tf_scale_tri = new AMES_Transformation({
+				"input": line2,
+				"target": poly_collection,
+				"mapping": "static scale"
+			});
+			tf_scale_tri.transform();
+			if (step == 4) tf_motion_path.transform();
+		}
+
+		let line1; let tf_nsides_tri;
+		if (step >= 5) {
+			// Create number of sides transformation function using a line
+			line1 = new AMES_Artwork_Path();
+			line1.add_points([new Point(100, 200), new Point(200, 100)]);
+			tf_nsides_tri = new AMES_Transformation();
+			tf_nsides_tri.set_target(poly_collection);
+			tf_nsides_tri.set_input(line1);
+			tf_nsides_tri.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+			tf_nsides_tri.transform();
+			if (step == 5) tf_motion_path.transform();
+		}
+
+		if (step >= 6) {
+			tf_motion_path.tf_space_speed_factor = 1;
+			tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
+			if (step == 6) tf_motion_path.transform();
+		}
+
+		let line3; let tf_duplicate_dots;
+		if (step >= 7) {
+			line3 = new AMES_Artwork_Path();
+			line3.add_points([new Point(100, 550), new Point(200, 500)]);
+			tf_duplicate_dots = new AMES_Transformation({
+				"input": line3,
+				"target": dot_collection,
+				"mapping": "duplicate each"
+			});
+			tf_duplicate_dots.loop = false;
+			tf_motion_path.use_playback_points_to_trigger_transformation({
+				"tf": tf_duplicate_dots,
+				"condition": "slope change"
+			});
+			if (step == 7) tf_motion_path.transform();
+		}
+
+		let circle; let quick_flare; let tf_scale_dots;
+		if (step >= 8) {
+			// Create scaling animation using a cirlce in image space (ease in and out)
+			circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50});
+			quick_flare = new AMES_Artwork_Path();
+			quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+			tf_scale_dots = new AMES_Transformation({
+				"input": circle,
+				"target": dot_collection,
+				"mapping": "scale animation"
+			});
+			tf_scale_dots.loop = false;
+			tf_scale_dots.tf_space_path_nsegments = 100;
+			// tf_scale_dots.tf_space_speed = tf_scale_dots.SPEED_XAXIS;
+			tf_duplicate_dots.use_playback_points_to_trigger_transformation({
+				"tf": tf_scale_dots,
+				"condition": "new instance"
+			});
+			if (step == 8) tf_motion_path.transform();
+		}
+
+		if (step >= 9) {
+			tf_scale_dots.use_playback_points_to_trigger_transformation({
+				"tf": null,
+				"condition": "remove at end"
+			});
+			if (step == 9) tf_motion_path.transform();
+		}
 
 
-		// Create motion path transformation function
-		let tf_motion_path = new AMES_Transformation({
-			"input": poly_collection,
-			"target": dot_collection,
-			"mapping": "motion path"
-		});
-		tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
-		tf_motion_path.tf_space_speed_factor = 1; 
-		console.log("linear speed?", tf_motion_path.tf_space_speed == tf_motion_path.SPEED_LINEAR)
+		if (step >= 10) {
+			// Create hue transformation function
+			let line0 = new AMES_Artwork_Path();
+			line0.add_points([new Point(275, 350), new Point(375, 275)]);
+			let tf_hue_dots = new AMES_Transformation({
+				"input": line0,
+				"target": dot_collection,
+				"mapping": "hue"
+			});
+			tf_hue_dots.transform();
 
-		//
-		// Create number of sides transformation function using a line
-		let line1 = new AMES_Artwork_Path();
-		line1.add_points([new Point(100, 200), new Point(200, 100)]);
-		let tf_nsides_tri = new AMES_Transformation();
-		tf_nsides_tri.set_target(poly_collection);
-		tf_nsides_tri.set_input(line1);
-		tf_nsides_tri.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+			let tf_hue_poly = new AMES_Transformation({
+				"input": line0,
+				"target": poly_collection,
+				"mapping": "hue"
+			});
+			tf_hue_poly.transform();
 
-		// Create static scaling transformation function using a line
-		let line2 = new AMES_Artwork_Path();
-		line2.add_points([new Point(100, 450), new Point(200, 250)]);
-		// line2.add_points([new Point(100, 450), new Point(200, 250)]);
-		// line2.add_points([new Point(100, 300), new Point(200, 250)]);
-		let tf_scale_tri = new AMES_Transformation({
-			"input": line2,
-			"target": poly_collection,
-			"mapping": "static scale"
-		});
+			tf_motion_path.transform();
+		}
 
-		tf_nsides_tri.transform();
-		tf_scale_tri.transform();
-		// tf_motion_path.transform();
-		//
-		// // let p = new AMES_Ellipse({"centroid": new Point(325, 300), "r": 20});
+		if (step == -1) {
+			// Create scaling animation demo pt 1
+			let p1 = new AMES_Ellipse({"centroid": ames.canvas_view.center, "r": 25});
+			p1.poly.fillColor = "pink"; p1.poly.position = p1.poly.position.subtract(400, 0); p1.poly.strokeWidth = 0;
+			circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50}); circle.poly.strokeColor = "pink";
 
-		// Flare dots, create duplicate tranformation function
-		let line3 = new AMES_Artwork_Path();
-		line3.add_points([new Point(100, 550), new Point(200, 500)]);
-		let tf_duplicate_dots = new AMES_Transformation({
-			"input": line3,
-			"target": dot_collection,
-			"mapping": "duplicate each"
-		});
-		tf_duplicate_dots.loop = false;
+			let tf_scale_test1 = new AMES_Transformation({
+				"input": circle,
+				"target": p1,
+				"mapping": "scale animation"
+			});
+			tf_scale_test1.tf_space_path_nsegments = 100;
+			tf_scale_test1.transform();
+		}
 
-		// Create scaling animation using a cirlce in image space (ease in and out)
-		let circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50});
-		let quick_flare = new AMES_Artwork_Path();
-		quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
-		let tf_scale_dots = new AMES_Transformation({
-			"input": circle,
-			"target": dot_collection,
-			"mapping": "scale animation"
-		});
-		tf_scale_dots.loop = false;
-		tf_scale_dots.tf_space_path_nsegments = 100;
-		tf_scale_dots.tf_space_speed = tf_scale_dots.SPEED_XAXIS;
-		// // tf_scale_animation_dots.transform();
-		//
-		tf_motion_path.use_playback_points_to_trigger_transformation({
-			"tf": tf_duplicate_dots,
-			"condition": "slope change"
-		});
-		tf_duplicate_dots.use_playback_points_to_trigger_transformation({
-			"tf": tf_scale_dots,
-			"condition": "new instance"
-		});
-		tf_scale_dots.use_playback_points_to_trigger_transformation({
-			"tf": null,
-			"condition": "remove at end"
-		});
+		if (step == -2) {
+			// Create scaling animation demo pt 2
+			let p2 = new AMES_Ellipse({"centroid": ames.canvas_view.center, "r": 25});
+			p2.poly.fillColor = "orange"; 	p2.poly.position = p2.poly.position.add(400, 0); p2.poly.strokeWidth = 0;
+			quick_flare = new AMES_Artwork_Path(); quick_flare.poly.strokeColor = "orange";
+			quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+			let tf_scale_test2 = new AMES_Transformation({
+				"input": quick_flare,
+				"target": p2,
+				"mapping": "scale animation"
+			});
+			tf_scale_test2.tf_space_path_nsegments = 100;
+			tf_scale_test2.transform();
+		}
 
-		tf_motion_path.transform();
+		if (step == -3) {
+			// Create scaling animation using a cirlce in image space (ease in and out)
+			let p1 = new AMES_Ellipse({"centroid": ames.canvas_view.center, "r": 25});
+			p1.poly.fillColor = "pink"; p1.poly.position = p1.poly.position.subtract(400, 0); p1.poly.strokeWidth = 0;
 
-		//
-		// let obj_a = new AMES_Circle();
-		// obj_a.set_pos(new Point(200, 200));
-		// obj_a.poly.visible = true;
-		// obj_a.poly.radius = 25;
-		// obj_a.to_path();
-		// this.add_shape(obj_a);
-		//
-		// let artwork_duplicator = new AMES_List([obj_a], {"is_para_style_list": false, "is_duplicator": true});
-		// this.add_list(artwork_duplicator);
-		// for (let i = 0; i < 2; i++) artwork_duplicator.add_item();
-		//
-		// let obj_b = new AMES_Square();
-		// obj_b.set_pos(new Point(400, 400));
-		// obj_b.poly.visible = true;
-		// obj_b.poly.size = new Size(100, 100);
-		// obj_b.to_path();
-		// this.add_shape(obj_b);
-		//
-		// let obj_c = new AMES_Circle();
-		// obj_c.set_pos(new Point(550, 450));
-		// obj_c.poly.visible = true;
-		// obj_c.poly.radius = 50;
-		// obj_c.to_path();
-		// this.add_shape(obj_c);
-		//
-		// let transformation_list = new AMES_List([obj_b, obj_c], {"is_para_style_list": false});
-		// this.add_list(transformation_list);
-		//
-		// let animation = new AMES_Animation;
-		// this.add_animation(animation);
-		// animation.set_geometry_field('artwork', artwork_duplicator);
-		// animation.set_geometry_field('transformation', transformation_list);
+			let p2 = new AMES_Ellipse({"centroid": ames.canvas_view.center, "r": 25});
+			p2.poly.fillColor = "orange"; 	p2.poly.position = p2.poly.position.add(400, 0); p2.poly.strokeWidth = 0;
+
+
+			circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50}); circle.poly.strokeColor = "pink";
+			quick_flare = new AMES_Artwork_Path(); quick_flare.poly.strokeColor = "orange";
+			quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+
+			let tf_scale_test1 = new AMES_Transformation({
+				"input": circle,
+				"target": p1,
+				"mapping": "scale animation"
+			});
+			let tf_scale_test2 = new AMES_Transformation({
+				"input": quick_flare,
+				"target": p2,
+				"mapping": "scale animation"
+			});
+
+			tf_scale_test1.tf_space_path_nsegments = 100;
+			tf_scale_test2.tf_space_path_nsegments = 100;
+			tf_scale_test1.transform();
+			tf_scale_test2.transform();
+		}
 	}
 
 	// add_shape: adds given object as a shape

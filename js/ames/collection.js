@@ -172,7 +172,7 @@ export class AMES_Collection {
 				let a = Object.create(og);
 				a.poly = null;
 				a.poly = og.poly.clone();
-				a.poly.style = og.poly.style;		
+				a.poly.style = og.poly.style;
 				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
@@ -181,6 +181,13 @@ export class AMES_Collection {
 			console.log("setting count", );
 		} else {
 			// Increase copies using first and last
+		}
+	}
+
+	align() {
+		let og = this.shapes[0];
+		for (let i = 1; i < this.shapes.length; i++) {
+			this.shapes[i].poly.position = og.poly.position;
 		}
 	}
 
