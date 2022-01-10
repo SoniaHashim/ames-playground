@@ -5,7 +5,7 @@
 // Description: AMES editors to manipulate key data types
 // ----------------------------------------------------------------------------
 import {AMES_Utils as utils} from './utils.js'
-import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
+import {AMES_Artwork, AMES_Polygon, AMES_Ellipse, AMES_Artwork_Path} from './artwork.js'
 import {AMES_List} from './lists.js'
 
 // AMES_Editor
@@ -32,6 +32,7 @@ class AMES_Editor {
 			size: [e_width, e_height],
 			fillColor: utils.INACTIVE_COLOR,
 			strokeWidth: 1,
+			radius: 5,
 			strokeColor: utils.INACTIVE_S_COLOR,
 			opacity: 0.5
 		});
@@ -87,30 +88,36 @@ class AMES_Editor {
 	}
 
 	set_editor_position() {
-		if (this.pos_is_set) return;
-		this.pos_is_set = true;
-		let pos = this.obj.get_pos();
-		let b = this.obj.get_bbox();
-		if (b) {
-			b.strokeColor = 'green';
-			b.strokeWidth = 2;
-			b.visible - true;
-		} else {
-			this.box.position = pos; return;
-		}
-		let c = ames.canvas_view.bounds.center;
+		// if (this.pos_is_set) return;
+		// this.pos_is_set = true;
+		// let pos = this.obj.get_pos();
+		// let b = this.obj.get_bbox();
+		// if (b) {
+		// 	b.strokeColor = 'green';
+		// 	b.strokeWidth = 2;
+		// 	b.visible - true;
+		// } else {
+		// 	this.box.position = pos; return;
+		// }
+		// let c = ames.canvas_view.bounds.center;
+		//
+		// let x = b.width/2 + this.box.bounds.width/2 + 3*utils.ICON_OFFSET;
+		//
+		// // Adjust horizontal posiiton
+		// let d_left = b.leftCenter.getDistance(c, true);
+		// let d_right = b.rightCenter.getDistance(c, true);
+		// if (d_left < d_right) {
+		// 	x *= -1;
+		// }
+		//
+		// // Adjust position;
+		// this.box.position = pos.add(new Point(x, -20));
 
-		let x = b.width/2 + this.box.bounds.width/2 + 3*utils.ICON_OFFSET;
-
-		// Adjust horizontal posiiton
-		let d_left = b.leftCenter.getDistance(c, true);
-		let d_right = b.rightCenter.getDistance(c, true);
-		if (d_left < d_right) {
-			x *= -1;
-		}
-
-		// Adjust position;
-		this.box.position = pos.add(new Point(x, -20));
+		let bounds = this.box.bounds
+		let w = bounds.width/2 + utils.ICON_OFFSET*3 + 12.5;
+		let x = ames.toolbar.get_position().x + w;
+		let h = ames.canvas_view.size.height - 2*utils.ICON_OFFSET - bounds.height/2;
+		this.box.position = new Point(x, h);
 	}
 
 	// open: if true show editor; otherwise close
@@ -131,7 +138,7 @@ class AMES_Editor {
 	}
 }
 
-export class AMES_Animation_Editor extends AMES_Editor {
+export class AMES_Transformation_Editor extends AMES_Editor {
 	box_width;
 	e_height = 175;
 
@@ -145,16 +152,16 @@ export class AMES_Animation_Editor extends AMES_Editor {
 		this.geometry_field_info = {};
 		let x_off = 4*utils.ICON_OFFSET;
 		let y_off = utils.LAYER_HEIGHT*3.5;
-		this.make_link_button([x_off, y_off], 'artwork')
-		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'transformation')
+		this.make_link_button([x_off, y_off], 'target')
+		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'input')
 
 		// Create a play button
-		this.make_button(0, "play", "play");
-		this.make_button(0, "pause", "pause");
-		this.make_button(0, "rewind", "rewind");
-		this.make_button(0, "loop", "loop");
-		this.make_button(1, "axes", "set_transformation_axes");
-		this.make_button(1, "brush", "change_animation_property");
+		this.make_button(0, "play", "transform");
+		// this.make_button(0, "pause", "pause");
+		// this.make_button(0, "rewind", "rewind");
+		this.make_button(0, "loop", "loop", {"deactivate_required": true});
+		this.make_button(1, "axes", "toggle_show_tf", {"deactivate_required": true});
+		this.make_button(1, "brush", "change_transformation_property");
 
 		// Initialize editor position
 		this.set_editor_position();
@@ -170,9 +177,19 @@ export class AMES_Animation_Editor extends AMES_Editor {
 		btn.position = new Point(2*utils.ICON_OFFSET + this.n_btns[btn_row]*(utils.ICON_OFFSET + bw) + bw/2, by*2);
 		btn.visible = true;
 		btn.onClick = (e) => {
-			btn.strokeColor = utils.ACTIVE_S_COLOR;
-			btn.fillColor = utils.ACTIVE_S_COLOR;
-			this.obj[btn_function](args);
+			if (btn.active) {
+				btn.strokeColor = utils.INACTIVE_COLOR;
+				btn.fillColor = utils.INACTIVE_S_COLOR;
+				if (args.deactivate_required) {
+					console.log('deactivate', btn_function);
+					args.deactivate = true;
+					this.obj[btn_function](args)
+				}
+			} else {
+				btn.strokeColor = utils.ACTIVE_S_COLOR;
+				btn.fillColor = utils.ACTIVE_S_COLOR;
+				this.obj[btn_function](args);
+			}
 		}
 		this.n_btns[btn_row] += 1;
 		this.box.addChild(btn);
@@ -211,8 +228,8 @@ export class AMES_Animation_Editor extends AMES_Editor {
 		// When the link button is clicked activate constraint tool
 		link.onMouseDown = (e) => {
 			console.log("click animation link button", field);
-			ames.active_linking_animation = this.obj;
-			ames.animation_active_field = field;
+			ames.active_linking_transformation = this.obj;
+			ames.transformation_active_field = field;
 			ames.tools['Animation_Link'].activate();
 			// Little workaround... to start drawing line that defines constraint
 			link.strokeColor = utils.ACTIVE_S_COLOR;
@@ -257,10 +274,15 @@ export class AMES_Shape_Editor extends AMES_Editor {
 		this._make_subprop('all', 0, box);
 		// Create property buttons
 		let properties = utils.VIS_PROPS;
+		// Add nsides for Polygon
+		if (obj.artwork_type == "Polygon") {
+			properties.push("nsides");
+		}
+		let b_w;
 		for (let idx in properties) {
 			let p = properties[idx];
 			let button = ames.icons[p].clone();
-			let b_w = button.bounds.width;
+			b_w = button.bounds.width;
 			button.position = new Point(2*utils.ICON_OFFSET + idx*(utils.ICON_OFFSET + b_w) + b_w/2, by*2);
 			button.visible = true;
 
@@ -282,6 +304,58 @@ export class AMES_Shape_Editor extends AMES_Editor {
 			box.addChild(button);
 			this.props[p] = button;
 		}
+		// Add special slider for polygon (nsides)
+		if (obj.artwork_type == "Polygon") {
+			let p_text =  new Point(2*utils.ICON_OFFSET + properties.length*(utils.ICON_OFFSET + b_w) + b_w/2, by*2)
+			this.nsides = new PointText({
+				point: [p_text.x, p_text.y + utils.ICON_OFFSET],
+				content: obj.sides,
+				fillColor: utils.INACTIVE_S_COLOR,
+				fontFamily: utils.FONT,
+				fontSize: utils.FONT_SIZE,
+				visible: false
+			});
+
+			let total_drag = 0;
+			this.nsides.onMouseDown = (e) => {
+				ames.canvas.style.cursor = 'move';
+			}
+			this.nsides.onMouseDrag = (e) => {
+				// ames.canvas.style.cursor = null;
+				total_drag += e.event.movementX;
+				console.log(total_drag);
+				if (total_drag < 0) {
+					if (total_drag > 0) total_drag = 0;
+					ames.canvas.style.cursor = 'w-resize';
+				}
+				if (total_drag > 0) {
+					if (total_drag < 0) total_drag = 0;
+					ames.canvas.style.cursor = 'e-resize';
+				}
+				if (total_drag < -5) {
+					// Decrement nsides
+					if (obj.sides > 3) {
+						obj.set_number_of_sides(Number(obj.sides) - 1);
+						this.nsides.content = obj.sides;
+					}
+					total_drag = 0;
+				}
+				if (total_drag > 5) {
+					// Increase nsides
+					console.log("incremenet nsides to", obj.sides+1);
+					obj.set_number_of_sides(Number(obj.sides) + 1);
+					this.nsides.content = obj.sides;
+					total_drag = 0;
+				}
+			}
+			this.nsides.onMouseUp = (e) => {
+				ames.canvas.style.cursor = null;
+				total_drag = 0;
+			}
+
+			box.addChild(this.nsides);
+		}
+
 
 		this.box = box;
 		// Initialize editor
@@ -495,7 +569,8 @@ export class AMES_Shape_Editor extends AMES_Editor {
 
 	// _show_constraint
 	show_constraint(bool, p, sub_p) {
-		if (p == 'path') { console.log("here"); bool = false;}
+		if (p == 'path') { bool = false;}
+		if (p == 'nsides') { bool = false; }
 
 		for (let k in this.constraint_info) {
 			this.constraint_info[k].visible = bool;
@@ -739,15 +814,6 @@ export class AMES_List_Editor extends AMES_Shape_Editor {
 		}
 
 		this.constraint_info.rel_idx_val.content = rel_idx;
-	}
-
-	set_editor_position() {
-		super.set_editor_position();
-		// Adjust to be beneath shape editor
-		let px = this.obj.list_box.position.x + this.box.bounds.width/2 + this.obj.list_box.bounds.width/2 + 3*utils.ICON_OFFSET;
-		let py = this.obj.list_box.position.y + this.obj.list_box.bounds.height/2 + 40;
-
-		this.box.position = new Point(px, py);
 	}
 
 	// show_constraint: also include relative index information

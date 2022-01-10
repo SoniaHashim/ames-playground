@@ -119,7 +119,7 @@ export class AMES_List {
 	}
 
 	duplicate() {
-		console.log("duplicator: ", this.shapes);
+		console.log("duplicator: ", this.is_duplicator, this.shapes);
 		let original_shape = this.original_shapes[0];
 		if (this.is_duplicator) {
 			let shape = new AMES_Shape();

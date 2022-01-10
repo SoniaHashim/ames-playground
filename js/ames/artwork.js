@@ -6,6 +6,7 @@
 // ----------------------------------------------------------------------------
 
 import {AMES_Utils as utils} from './utils.js'
+import {AMES_Shape_Editor as AMES_Shape_Editor} from './editors.js'
 import {AMES_Constraint as constraints} from './constraints.js'
 
 // let cb_canvas_crosshair = (e) => {
@@ -212,7 +213,7 @@ export class AMES_Artwork {
 			if (p == 'strokeColor' || p == 'fillColor') {
 				if (!ames.colorpicker.visible) ames.colorpicker.visible = true;
 			} else {
-				if (ames.colorpicker.visible) ames.colorpicker.visible = false;
+				// if (ames.colorpicker.visible) ames.colorpicker.visible = false;
 			}
 
 			// Indicate active property and show subproperty buttons
@@ -472,7 +473,6 @@ export class AMES_Artwork {
 				shape.update_constraints();
 			}
 		}
-
 	}
 
 	_fill_cb(shape, cb_helpers, sub) {
@@ -554,9 +554,6 @@ export class AMES_Artwork {
 
 	_strokecolor_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
-			let p = ames.colorpicker.get_position();
-			ames.colorpicker.position = p;
-			ames.colorpicker.visible = true;
 			if (shape.poly) ames.colorpicker.load_color(shape.poly.strokeColor);
 
 			let color_function = (c) => {
@@ -565,7 +562,7 @@ export class AMES_Artwork {
 
 			if (sub == 'h') {
 				color_function = (c) => {
-					if (shape.poly.fillColor.saturation == 0) shape.poly.fillColor.saturation = 1;
+					if (shape.poly.strokeColor.saturation == 0) shape.poly.strokeColor.saturation = 1;
 					shape.poly.strokeColor.hue = c.hue;
 				};
 			}
@@ -839,14 +836,81 @@ export class AMES_Artwork {
 
 				// update visual aids
 				d.position = s.point;
+
 				let n_h1 = s.handleIn.add(s.point);
+				if (s.handleIn.x == 0 && s.handleIn.y == 0) {
+					n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+				}
 				let n_h2 = s.handleOut.add(s.point);
+				if (s.handleOut.x == 0 && s.handleOut.y == 0) {
+					n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+				}
 				d_h1.position = n_h1;
 				d_h2.position = n_h2;
 				p1.firstSegment.point = n_h1;
 				p1.lastSegment.point = s.point;
 				p2.firstSegment.point = s.point;
 				p2.lastSegment.point = n_h2;
+
+				// Edit the path by dragging the anchor point
+				d.onMouseDrag = (e) => {
+					s.point = e.point;
+					// update the manipulable dots and visual aids
+					d.position = e.point;
+					let n_h1 = s.handleIn.add(e.point);
+					let n_h2 = s.handleOut.add(e.point);
+					if (s.handleIn.x == 0 && s.handleIn.y == 0) {
+						n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+						if (s.previous.handleOut.length == 0) {
+							let prev_idx = i-1;
+							if (i == 0) prev_idx = this.poly.segments.length - 1;
+
+							let prev_controls = this.path_control_shapes[prev_idx];
+							let prev_d_h2 = prev_controls[2];
+							let prev_p2 = prev_controls[4];
+							let prev_h2 = s.previous.point.add(s.point.subtract(s.previous.point).normalize().multiply(8));
+
+							prev_d_h2.position = prev_h2;
+							prev_p2.lastSegment.point = prev_h2;
+
+						}
+					}
+					if (s.handleOut.x == 0 && s.handleOut.y == 0) {
+						n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+						if (s.next.handleIn.length == 0) {
+							let nxt_idx = i*1.0+1;
+							if (i == this.poly.segments.length - 1) nxt_idx = 0;
+
+							let nxt_controls = this.path_control_shapes[nxt_idx];
+
+							let nxt_d_h1 = nxt_controls[1];
+							let nxt_p1 = nxt_controls[3];
+							let nxt_h1 = s.next.point.add(s.point.subtract(s.next.point).normalize().multiply(8));
+
+							nxt_d_h1.position = nxt_h1;
+							nxt_p1.firstSegment.point = nxt_h1;
+						}
+					}
+					d_h1.position = n_h1;
+					d_h2.position = n_h2;
+					p1.firstSegment.point = n_h1;
+					p1.lastSegment.point = e.point;
+					p2.firstSegment.point = e.point;
+					p2.lastSegment.point = n_h2;
+				}
+
+				// create handles with manipulable dots at endpoints to manipulate the path
+				d_h1.onMouseDrag = (e) => {
+					s.handleIn = e.point.subtract(s.point);
+					p1.firstSegment.point = e.point;
+					d_h1.position = e.point;
+				}
+				d_h2.onMouseDrag = (e) => {
+					s.handleOut = e.point.subtract(s.point);
+					p2.lastSegment.point = e.point;
+					d_h2.position = e.point;
+				}
+
 
 				for(let i in controls) {
 					this._redraw_above_poly(controls[i]);
@@ -932,7 +996,7 @@ export class AMES_Artwork {
 	}
 
 	get_type() {
-		return this.shape_type;
+		return this.artwork_type;
 	}
 
 	set_name(n) {
@@ -986,18 +1050,43 @@ export class AMES_Artwork {
 			// make all other handlers void;
 			this.poly.onMouseDrag = null;
 
-			console.log("attaching interactivity?")
+			// console.log("attaching interactivity?")
 
-			if (this.is_ames_path) {
-				this.poly.onMouseDrag = (e) => {
-					let nearest_point_on_path = this.poly.getNearestPoint(e.point);
-					let path_offset = this.poly.getOffsetOf(nearest_point_on_path);
-					console.log("event point / point on path / path offset / path length:", e.point, nearest_point_on_path, path_offset, this.poly.length);
-					console.log("path offset at point:", path_offset / this.poly.length);
-					console.log("path curvature at point:", this.poly.getCurvatureAt(path_offset))
-				}
-			}
+			// if (this.is_ames_path) {
+			// 	this.poly.onMouseDrag = (e) => {
+			// 		let nearest_point_on_path = this.poly.getNearestPoint(e.point);
+			// 		let path_offset = this.poly.getOffsetOf(nearest_point_on_path);
+			// 		console.log("event point / point on path / path offset / path length:", e.point, nearest_point_on_path, path_offset, this.poly.length);
+			// 		console.log("path offset at point:", path_offset / this.poly.length);
+			// 		console.log("path curvature at point:", this.poly.getCurvatureAt(path_offset))
+			// 	}
+			// }
 		}
+	}
+
+	create_in_ames() {
+		this.name = this.get_type() + " (" + this.get_type_count() + ")";
+		this.increment_type_count();
+		this.create_control_shapes();
+		this.create_editor();
+		ames.add_obj(this);
+		this.make_interactive(true);
+	}
+
+	create_editor() {
+		this.editor = new AMES_Shape_Editor(this);
+		let bounds = this.editor.box.bounds
+		let w = bounds.width/2 + utils.ICON_OFFSET*3 + 12.5;
+		let x = ames.toolbar.get_position().x + w;
+		let h = ames.canvas_view.size.height - 2*utils.ICON_OFFSET - bounds.height/2;
+		this.editor.box.position = new Point(x, h);
+	}
+
+	clone(obj) {
+		obj = Object.assign(obj, this);
+		obj.poly = this.poly.clone();
+		obj.create_in_ames();
+		return obj;
 	}
 
 }
@@ -1024,9 +1113,11 @@ export class AMES_Artwork {
 // }
 
 export class AMES_Polygon extends AMES_Artwork {
+	static type_count = 1;
 	name = "Polygon";
 	shape_type = "Polygon";
 	artwork_type = "Polygon";
+	sides;
 	radius;
 	centroid;
 
@@ -1038,12 +1129,42 @@ export class AMES_Polygon extends AMES_Artwork {
 		if (!opt.nsides) opt.nsides = 3;
 		if (!opt.radius) opt.radius = 25;
 
+		this.sides = opt.nsides;
 		this.radius = opt.radius;
 		this.centroid = opt.centroid;
 
-		this.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, this.radius);
-		this.poly.strokeWidth = 1;
-		this.poly.strokeColor = 'darkgray';
+		if (!opt.clone) {
+			this.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, this.radius);
+			this.poly.strokeWidth = 1;
+			this.poly.strokeColor = 'darkgray';
+			this.to_path();
+			this.create_in_ames();
+		}
+
+		this.cbs['nsides'] = this._nsides_cb;
+	}
+
+	_clear_cb_helpers() {
+		super._clear_cb_helpers();
+		this.editor.nsides.visible = false;
+	}
+
+	_nsides_cb(shape, cb_helpers, sub) {
+		shape.editor.nsides.visible = true;
+	}
+
+	clone() {
+		let opt = {"clone": true}
+		let obj = new AMES_Polygon(opt);
+		return super.clone(obj)
+	}
+
+	get_type_count() {
+		return AMES_Polygon.type_count;
+	}
+
+	increment_type_count() {
+		AMES_Polygon.type_count += 1;
 	}
 
 	set_scaling(x) {
@@ -1063,6 +1184,7 @@ export class AMES_Polygon extends AMES_Artwork {
 			this.poly.rotate(-90);
 		}
 		// this.poly.position = position;
+		this.sides = nsides;
 	}
 
 	get_radius_from_side_length(side_length, nsides) {
@@ -1075,6 +1197,7 @@ export class AMES_Polygon extends AMES_Artwork {
 // ---------------------------------------------------------------------------
 // Description: Implementation of a circle / ellipse
 export class AMES_Ellipse extends AMES_Artwork {
+	static type_count = 1;
 	name = "Ellipse"
 	shape_type = "Ellipse";
 	artwork_type = "Ellipse";
@@ -1090,38 +1213,78 @@ export class AMES_Ellipse extends AMES_Artwork {
 		if (!opt.rx) opt.rx = opt.r;
 		if (!opt.ry) opt.ry = opt.rx;
 
-		this.poly = new Shape.Ellipse({
-			center: [opt.centroid.x, opt.centroid.y],
-			radius: [opt.rx, opt.ry],
-			visible: true,
-			strokeWidth: 1,
-			strokeColor: 'darkgray'
-		});
-		this.poly.visible = true;
-		this.to_path();
-		this.poly.rotate(-90);
+		if (!opt.clone) {
+			this.poly = new Shape.Ellipse({
+				center: [opt.centroid.x, opt.centroid.y],
+				radius: [opt.rx, opt.ry],
+				visible: true,
+				strokeWidth: 1,
+				strokeColor: 'darkgray'
+			});
+			this.poly.visible = true;
+			this.to_path();
+			this.poly.rotate(-90);
+			this.create_in_ames();
+		}
 	}
+
+	clone() {
+		let opt = {"clone": true}
+		let obj = new AMES_Ellipse(opt);
+		return super.clone(obj)
+	}
+
+	get_type_count() {
+		return AMES_Ellipse.type_count;
+	}
+
+	increment_type_count() {
+		AMES_Ellipse.type_count += 1;
+	}
+
 }
 
 // Class: Path
 // ---------------------------------------------------------------------------
 // Description: Implementation of a path
 export class AMES_Artwork_Path extends AMES_Artwork {
+	static type_count = 1;
 	name = "Path";
 	shape_type = "Path";
 	artwork_type = "Path";
 	bbox;
 	is_ames_path = true;
 
-	constructor() {
+	constructor(opt) {
 		super();
-		this.poly = new Path({
-			strokeColor: 'darkgray',
-			strokeWidth: 1,
-			visible: true,
-			fillColor: 'rgba(255, 0, 0, 0)'
-			// fullySelected: true
-		});
+		opt = opt || {};
+		if (!opt.clone) {
+			this.poly = new Path({
+				strokeColor: 'darkgray',
+				strokeWidth: 1,
+				visible: true,
+				fillColor: 'rgba(255, 0, 0, 0)'
+			});
+		}
+
+	}
+
+	clone() {
+		let opt = {"clone": true};
+		let obj = new AMES_Artwork_Path(opt);
+		return super.clone(obj)
+	}
+
+	finish_creating_path() {
+		this.create_in_ames();
+	}
+
+	get_type_count() {
+		return AMES_Artwork_Path.type_count;
+	}
+
+	increment_type_count() {
+		AMES_Artwork_Path.type_count += 1;
 	}
 
 	add_points(points) {

@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 
 
-console.log("Growth mindset & learning opportunities")
+console.log("Growth mindset & learning opportunities: I believe in this project and I believe in myself.")
 paper.install(window);
 window.ames;
 import {AMES} from './ames.js'
@@ -24,7 +24,8 @@ window.onload = function() {
 		return new Promise((resolve) => setTimeout(resolve, time));
 	}
 	sleep(500).then(() => {
-		let example = "starfield";
-		ames.example(example);
+		ames.test();
+		// let example = "starfield";
+		// ames.example(example);
 	})
 }

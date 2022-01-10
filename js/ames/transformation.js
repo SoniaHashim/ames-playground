@@ -39,8 +39,10 @@
 // ----------------------------------------------------------------------------
 
 import {AMES_Utils as utils} from './utils.js'
+import {AMES_Transformation_Editor} from './editors.js'
 
 export class AMES_Transformation {
+	static count = 1;
 	target; 				// artwork or collection of artwork impacted
 	input;					// artwork or collection driving the transformation
 	mapping;				// transformation function (e.g. translation or scale vs index)
@@ -86,7 +88,7 @@ export class AMES_Transformation {
 	SPEED_MAP = 4;
 
 	// opt
-	loop = true;
+	loop = false;
 	LOOP_INFINITY = -1;
 	loop_max_count = 100;
 	check_playback_points = true;
@@ -96,14 +98,30 @@ export class AMES_Transformation {
 	start_state_idx = 0;
 
 	constructor(opt) {
-		this.name = "Transformation " + AMES_Transformation.count;
+		this.name = "Transformation" + " (" + AMES_Transformation.count + ")";
+		AMES_Transformation.count += 1;
 		opt = opt || {};
 		this.tf_space_setup_visuals();
 		if (opt.input) this.set_input(opt.input);
 		if (opt.target) this.set_target(opt.target);
 		if (opt.mapping) this.set_mapping(opt.mapping);
 
+		this.create_in_ames();
+	}
 
+	create_in_ames() {
+		console.log("create tf in ames");
+		this.create_editor();
+		ames.add_obj(this);
+	}
+
+	create_editor() {
+		this.editor = new AMES_Transformation_Editor(this);
+		let bounds = this.editor.box.bounds
+		let w = bounds.width/2 + utils.ICON_OFFSET*3 + 12.5;
+		let x = ames.toolbar.get_position().x + w;
+		let h = ames.canvas_view.size.height - 2*utils.ICON_OFFSET - bounds.height/2;
+		this.editor.box.position = new Point(x, h);
 	}
 
 	// set_input_artwork
@@ -217,7 +235,7 @@ export class AMES_Transformation {
 			}
 		}
 		// If the mapping changed update the transfromation space or throw err
- 		if (!changed_mapping) console.log("Transformation: Invalid mapping");
+ 		if (!changed_mapping) { console.log("Transformation: Invalid mapping"); return false }
 		else this.set_tf_space_to_defaults();
 
 		// Indicate if transformation property is a playbale mapping
@@ -233,6 +251,8 @@ export class AMES_Transformation {
 			this.is_playable = true;
 			this.tf_space_path_nsegments = 1;
 		}
+
+		return true;
 	}
 
 	set_mapping_behavior(behavior) {
@@ -547,6 +567,73 @@ export class AMES_Transformation {
 		}
 	}
 
+	_clear_cb_helpers() {
+		this.show_tf_space(false);
+	}
+
+	loop(args) {
+		if (args.deactivate) {
+			this.loop = false;
+		} else {
+			this.loop = true;
+		}
+	}
+
+	toggle_show_tf(args) {
+		if (args.deactivate) {
+			this.show_tf_space(false);
+		} else {
+			this.set_mapping("position");
+			this.show_tf_space(true);
+		}
+	}
+
+	set_geometry_field(field, obj) {
+		if (field == "input") {
+			this.set_input(obj);
+		}
+
+		if (field == "target") {
+			this.set_target(obj);
+		}
+
+		// this.show_tf_space(false);
+	}
+
+	change_transformation_property(args) {
+
+		if (args.deactivate) {
+
+		} else {
+			let isValid = false;
+			let str = "";
+			for (let i in this.mappings) {
+				str += this.mappings[i];
+				str += ", ";
+			}
+			for (let i in this.typed_mappings) {
+				str += this.typed_mappings[i].mapping_type + ": " + this.typed_mappings[i].mapping;
+				if (i < this.typed_mappings.length - 1) str += ", ";
+			}
+			let property;
+			while (!isValid) {
+				property = prompt("Enter the property that the transformation represents: " + str);
+				// No input, deactivate
+				if (!property) {
+					return;
+				}
+				property = property.split(": ")
+				if (property.length == 1) {
+					isValid = this.set_mapping(property[0]);
+				} else {
+					isValid = this.set_mapping({"type": property[0], "mapping": property[1]});
+				}
+			}
+			console.log("Changing transformation space", property);
+		}
+
+	}
+
 	// apply
 	//
 	// Applies a transformation that represents a procedural relationship in
@@ -695,7 +782,6 @@ export class AMES_Transformation {
 					strokeWidth: 1
 				});
 				nPath.visible = false;
-
 				let n1Path = new Path.Line({
 					segments: [p1, p1.add(n1.multiply(20))],
 					strokeColor: "red",

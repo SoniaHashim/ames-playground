@@ -9,7 +9,7 @@ var _ames = require("./ames.js");
 // Description: Main execution space for ames on DOM load, attaches UX handler
 // to global scope. Global scope includes paper object
 // ---------------------------------------------------------------------------
-console.log("Growth mindset & learning opportunities");
+console.log("Growth mindset & learning opportunities: I believe in this project and I believe in myself.");
 paper.install(window);
 window.ames;
 // Set up before DOM is ready
@@ -26,6 +26,7 @@ window.onload = function () {
   }
 
   sleep(500).then(function () {
-    ames.test();
+    ames.test(); // let example = "starfield";
+    // ames.example(example);
   });
 };

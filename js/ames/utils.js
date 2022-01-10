@@ -6,10 +6,10 @@
 // ---------------------------------------------------------------------------
 export class AMES_Utils {
 	// General ui format elements
-	static ACTIVE_COLOR = 'lavender';
+	static ACTIVE_COLOR = '#800020';
 	static INACTIVE_COLOR = 'white';
 	static INACTIVE_DARK_COLOR = 'whitesmoke';
-	static INACTIVE_S_COLOR = 'darkgray';
+	static INACTIVE_S_COLOR = '#838383';
 	static ACTIVE_S_COLOR = 'black';
 	static SHAPE_PATH_COLOR = 'dodgerblue';
 	static SHAPE_HIGHLIGHT_COLOR = 'aqua';
@@ -48,7 +48,8 @@ export class AMES_Utils {
 		"fillColor": ["h", "s", "v", "a"],
 		"strokeWidth": ["w"],
 		"strokeColor": ["h", "s", "v", "a"],
-		"path" : []
+		"path" : [],
+		"nsides": []
 	}
 
 	static shape_btns = {
@@ -111,8 +112,9 @@ export class AMES_Utils {
 		ames.canvas.style.cursor = 'crosshair';
 	}
 
-	static make_dot(p, color) {
-		let d = new Path.Circle(p, 2.5);
+	static make_dot(p, color, radius) {
+		if (!radius) radius = 2.5;
+		let d = new Path.Circle(p, radius);
 		if (!color) color = this.SHAPE_PATH_COLOR;
 		d.fillColor = color;
 		return d;

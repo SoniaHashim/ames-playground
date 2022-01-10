@@ -25,10 +25,13 @@
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_Shape} from './shapes.js'
+import {AMES_List_Editor} from './editors.js'
 import {AMES_Artwork} from './artwork.js'
 
 export class AMES_Collection {
 	name = "Collection";
+	type = "Collection";
+	static type_count = 1;
 	is_geometry = true;
 	is_list = true;
 	is_collection = true;
@@ -69,6 +72,7 @@ export class AMES_Collection {
 	list_constraints = [];
 	offset_mode = false;
 	is_para_style_list = true;
+	is_duplicator = false;
 
 	constructor(artwork, opt) {
 
@@ -77,11 +81,12 @@ export class AMES_Collection {
 		if (opt.is_para_style_list) this.is_para_style_list = opt.is_para_style_list;
 		if (opt.is_duplicator) this.is_duplicator = opt.is_duplicator;
 
+
 		this.box = new Group();
 		let n_list = ames.n_lists;
 		this.name = "Collection " + ames.n_lists;
 
-		if (Array.isArray(artwork)) {
+		if (Array.isArray(artwork) && artwork.length > 1) {
 			this.count = artwork.length;
 			this.is_duplicator = false;
 			// Sort shapes by x_position
@@ -93,7 +98,7 @@ export class AMES_Collection {
 		} else {
 			this.is_duplicator = true;
 			this.count = 1;
-			this.add_to_collection(artwork);
+			this.add_to_collection(artwork[0]);
 		}
 		this.original = artwork;
 
@@ -116,6 +121,37 @@ export class AMES_Collection {
 		}
 
 		this.active_obj = this.shapes[0];
+		this.create_in_ames();
+	}
+
+	get_type() {
+		return this.type;
+	}
+
+	get_type_count() {
+		return AMES_Collection.type_count;
+	}
+
+	increment_type_count() {
+		AMES_Collection.type_count += 1;
+	}
+
+	create_in_ames() {
+		this.name = this.get_type() + " (" + this.get_type_count() + ")";
+		this.increment_type_count();
+		// this.create_control_shapes();
+		this.create_editor();
+		ames.add_obj(this);
+		this.make_interactive(true);
+	}
+
+	create_editor() {
+		this.editor = new AMES_List_Editor(this);
+		let bounds = this.editor.box.bounds
+		let w = bounds.width/2 + utils.ICON_OFFSET*3 + 12.5;
+		let x = ames.toolbar.get_position().x + w;
+		let h = ames.canvas_view.size.height - 2*utils.ICON_OFFSET - bounds.height/2;
+		this.editor.box.position = new Point(x, h);
 	}
 
 	update_offset_mode() {
@@ -145,19 +181,16 @@ export class AMES_Collection {
 	}
 
 	duplicate() {
-		console.log("duplicator: ", this.shapes);
+		console.log("duplicator: ", this.is_duplicator, this.shapes);
 		let original_shape = this.original[0];
+		// if (!this.bottom) this.bottom = original_shape;
 		if (this.is_duplicator) {
-			let shape = new AMES_Shape();
-			Object.assign(shape, original_shape);
-			shape.editor = null;
-			shape.poly = original_shape.poly.clone();
-			console.log("...made new shape: ", shape);
-			ames.add_shape(shape);
-			console.log("...new shape editor:", shape.editor);
+			// TO DO: insertion order bug. Having trouble changing relative ordering of shapes. 
+			let shape = original_shape.clone();
 			this.shapes.push(shape);
-			console.log("...new list contains: ", this.shapes);
-			shape.set_pos(new Point(10, 10), true);
+
+			ames.hide_editors(this);
+			this.editor.show(true);
 			this.show(true);
 		}
 	}
@@ -288,9 +321,9 @@ export class AMES_Collection {
 	show_box(bool) {
 		// Highlight list and update bbox if necessary
 		this.list_box.visible = bool;
-		this.label_box.visible = bool;
-		this.label_count.visible = bool;
-		this.text_count.visible = bool;
+		if (this.label_box) this.label_box.visible = bool;
+		if (this.label_count) this.label_count.visible = bool;
+		if (this.text_count) this.text_count.visible = bool;
 	}
 
 	update_show_box() {

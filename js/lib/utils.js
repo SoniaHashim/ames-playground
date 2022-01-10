@@ -59,6 +59,13 @@ var AMES_Utils = /*#__PURE__*/function () {
       var btn = this.get_button(b);
       console.log(btn);
       if (btn) btn.style.backgroundColor = this.ACTIVE_COLOR;
+    }
+  }, {
+    key: "style_label",
+    value: function style_label(label) {
+      label.fontSize = this.FONT_SIZE;
+      label.fillColor = 'lightgray';
+      label.fontFamily = this.FONT;
     } // get_buttons(b)
     // Returns the button given the value of the button b if it's defined in a btn list
 
@@ -82,8 +89,9 @@ var AMES_Utils = /*#__PURE__*/function () {
     }
   }, {
     key: "make_dot",
-    value: function make_dot(p, color) {
-      var d = new Path.Circle(p, 2.5);
+    value: function make_dot(p, color, radius) {
+      if (!radius) radius = 2.5;
+      var d = new Path.Circle(p, radius);
       if (!color) color = this.SHAPE_PATH_COLOR;
       d.fillColor = color;
       return d;
@@ -139,6 +147,69 @@ var AMES_Utils = /*#__PURE__*/function () {
       }
 
       return r;
+    } // interpolate: Lagrange interpolation over polynomial given by y = f(x),
+    // where data = [y0, y1, ... yn] and idx is the relative idx of the
+    // desired queried result or an array of indices [i0, i1, ... in]
+    // ref: https://www.geeksforgeeks.org/lagranges-interpolation/
+
+  }, {
+    key: "interpolate_fast",
+    value: function interpolate_fast(data, idx) {
+      var n = data.length;
+      var m = null;
+      if (Array.isArray(idx)) m = idx.length;
+      var r = 0;
+      if (n == 1) r = data[0];
+      var v = 0;
+
+      if (m) {
+        r = [];
+        if (n == 1) v = data[0];
+
+        for (var k = 0; k < m; k++) {
+          r.push(v);
+        }
+      }
+
+      var t;
+
+      for (var i = 0; i < n; i++) {
+        if (!m) {
+          t = data[i];
+        }
+
+        if (m) {
+          t = [];
+
+          for (var _k = 0; _k < m; _k++) {
+            t[_k] = data[i];
+          }
+        }
+
+        for (var j = 0; j < n; j++) {
+          if (j != i) {
+            if (!m) {
+              t = t * (idx - j) / (i - j);
+            }
+
+            if (m) {
+              for (var _k2 = 0; _k2 < m; _k2++) {
+                t[_k2] = t[_k2] * (idx[_k2] - j) / (i - j);
+              }
+            }
+          }
+        }
+
+        if (!m) r += t;
+
+        if (m) {
+          for (var _k3 = 0; _k3 < m; _k3++) {
+            r[_k3] += t[_k3];
+          }
+        }
+      }
+
+      return r;
     }
   }]);
 
@@ -147,13 +218,13 @@ var AMES_Utils = /*#__PURE__*/function () {
 
 exports.AMES_Utils = AMES_Utils;
 
-_defineProperty(AMES_Utils, "ACTIVE_COLOR", 'lavender');
+_defineProperty(AMES_Utils, "ACTIVE_COLOR", '#800020');
 
 _defineProperty(AMES_Utils, "INACTIVE_COLOR", 'white');
 
 _defineProperty(AMES_Utils, "INACTIVE_DARK_COLOR", 'whitesmoke');
 
-_defineProperty(AMES_Utils, "INACTIVE_S_COLOR", 'darkgray');
+_defineProperty(AMES_Utils, "INACTIVE_S_COLOR", '#838383');
 
 _defineProperty(AMES_Utils, "ACTIVE_S_COLOR", 'black');
 
@@ -212,7 +283,8 @@ _defineProperty(AMES_Utils, "SUB_PROPS", {
   "fillColor": ["h", "s", "v", "a"],
   "strokeWidth": ["w"],
   "strokeColor": ["h", "s", "v", "a"],
-  "path": []
+  "path": [],
+  "nsides": []
 });
 
 _defineProperty(AMES_Utils, "shape_btns", {

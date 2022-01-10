@@ -5,11 +5,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.AMES_List_Editor = exports.AMES_Shape_Editor = exports.AMES_Animation_Editor = void 0;
+exports.AMES_List_Editor = exports.AMES_Shape_Editor = exports.AMES_Transformation_Editor = void 0;
 
 var _utils = require("./utils.js");
 
-var _shapes = require("./shapes.js");
+var _artwork = require("./artwork.js");
 
 var _lists = require("./lists.js");
 
@@ -67,6 +67,7 @@ var AMES_Editor = /*#__PURE__*/function () {
       size: [e_width, e_height],
       fillColor: _utils.AMES_Utils.INACTIVE_COLOR,
       strokeWidth: 1,
+      radius: 5,
       strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
       opacity: 0.5
     });
@@ -132,32 +133,35 @@ var AMES_Editor = /*#__PURE__*/function () {
   _createClass(AMES_Editor, [{
     key: "set_editor_position",
     value: function set_editor_position() {
-      if (this.pos_is_set) return;
-      this.pos_is_set = true;
-      var pos = this.obj.get_pos();
-      var b = this.obj.get_bbox();
-
-      if (b) {
-        b.strokeColor = 'green';
-        b.strokeWidth = 2;
-        b.visible - true;
-      } else {
-        this.box.position = pos;
-        return;
-      }
-
-      var c = ames.canvas_view.bounds.center;
-      var x = b.width / 2 + this.box.bounds.width / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET; // Adjust horizontal posiiton
-
-      var d_left = b.leftCenter.getDistance(c, true);
-      var d_right = b.rightCenter.getDistance(c, true);
-
-      if (d_left < d_right) {
-        x *= -1;
-      } // Adjust position;
-
-
-      this.box.position = pos.add(new Point(x, -20));
+      // if (this.pos_is_set) return;
+      // this.pos_is_set = true;
+      // let pos = this.obj.get_pos();
+      // let b = this.obj.get_bbox();
+      // if (b) {
+      // 	b.strokeColor = 'green';
+      // 	b.strokeWidth = 2;
+      // 	b.visible - true;
+      // } else {
+      // 	this.box.position = pos; return;
+      // }
+      // let c = ames.canvas_view.bounds.center;
+      //
+      // let x = b.width/2 + this.box.bounds.width/2 + 3*utils.ICON_OFFSET;
+      //
+      // // Adjust horizontal posiiton
+      // let d_left = b.leftCenter.getDistance(c, true);
+      // let d_right = b.rightCenter.getDistance(c, true);
+      // if (d_left < d_right) {
+      // 	x *= -1;
+      // }
+      //
+      // // Adjust position;
+      // this.box.position = pos.add(new Point(x, -20));
+      var bounds = this.box.bounds;
+      var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
+      var x = ames.toolbar.get_position().x + w;
+      var h = ames.canvas_view.size.height - 2 * _utils.AMES_Utils.ICON_OFFSET - bounds.height / 2;
+      this.box.position = new Point(x, h);
     } // open: if true show editor; otherwise close
 
   }, {
@@ -184,15 +188,15 @@ var AMES_Editor = /*#__PURE__*/function () {
   return AMES_Editor;
 }();
 
-var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
-  _inherits(AMES_Animation_Editor, _AMES_Editor);
+var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
+  _inherits(AMES_Transformation_Editor, _AMES_Editor);
 
-  var _super = _createSuper(AMES_Animation_Editor);
+  var _super = _createSuper(AMES_Transformation_Editor);
 
-  function AMES_Animation_Editor(obj) {
+  function AMES_Transformation_Editor(obj) {
     var _this2;
 
-    _classCallCheck(this, AMES_Animation_Editor);
+    _classCallCheck(this, AMES_Transformation_Editor);
 
     _this2 = _super.call(this, obj);
 
@@ -208,22 +212,24 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     var x_off = 4 * _utils.AMES_Utils.ICON_OFFSET;
     var y_off = _utils.AMES_Utils.LAYER_HEIGHT * 3.5;
 
-    _this2.make_link_button([x_off, y_off], 'artwork');
+    _this2.make_link_button([x_off, y_off], 'target');
 
-    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'transformation'); // Create a play button
+    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'input'); // Create a play button
 
 
-    _this2.make_button(0, "play", "play");
+    _this2.make_button(0, "play", "transform"); // this.make_button(0, "pause", "pause");
+    // this.make_button(0, "rewind", "rewind");
 
-    _this2.make_button(0, "pause", "pause");
 
-    _this2.make_button(0, "rewind", "rewind");
+    _this2.make_button(0, "loop", "loop", {
+      "deactivate_required": true
+    });
 
-    _this2.make_button(0, "loop", "loop");
+    _this2.make_button(1, "axes", "toggle_show_tf", {
+      "deactivate_required": true
+    });
 
-    _this2.make_button(1, "axes", "set_transformation_axes");
-
-    _this2.make_button(1, "brush", "change_animation_property"); // Initialize editor position
+    _this2.make_button(1, "brush", "change_transformation_property"); // Initialize editor position
 
 
     _this2.set_editor_position();
@@ -231,7 +237,7 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     return _this2;
   }
 
-  _createClass(AMES_Animation_Editor, [{
+  _createClass(AMES_Transformation_Editor, [{
     key: "make_button",
     value: function make_button(btn_row, icon_name, btn_function, args) {
       var _this3 = this;
@@ -246,10 +252,22 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
       btn.visible = true;
 
       btn.onClick = function (e) {
-        btn.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-        btn.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+        if (btn.active) {
+          btn.strokeColor = _utils.AMES_Utils.INACTIVE_COLOR;
+          btn.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
 
-        _this3.obj[btn_function](args);
+          if (args.deactivate_required) {
+            console.log('deactivate', btn_function);
+            args.deactivate = true;
+
+            _this3.obj[btn_function](args);
+          }
+        } else {
+          btn.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+          btn.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+
+          _this3.obj[btn_function](args);
+        }
       };
 
       this.n_btns[btn_row] += 1;
@@ -292,8 +310,8 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
       link.onMouseDown = function (e) {
         console.log("click animation link button", field);
-        ames.active_linking_animation = _this4.obj;
-        ames.animation_active_field = field;
+        ames.active_linking_transformation = _this4.obj;
+        ames.transformation_active_field = field;
         ames.tools['Animation_Link'].activate(); // Little workaround... to start drawing line that defines constraint
 
         link.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
@@ -319,10 +337,10 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     }
   }]);
 
-  return AMES_Animation_Editor;
+  return AMES_Transformation_Editor;
 }(AMES_Editor);
 
-exports.AMES_Animation_Editor = AMES_Animation_Editor;
+exports.AMES_Transformation_Editor = AMES_Transformation_Editor;
 
 var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
   _inherits(AMES_Shape_Editor, _AMES_Editor2);
@@ -354,12 +372,18 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
     _this5._make_subprop('all', 0, box); // Create property buttons
 
 
-    var properties = _utils.AMES_Utils.VIS_PROPS;
+    var properties = _utils.AMES_Utils.VIS_PROPS; // Add nsides for Polygon
+
+    if (obj.artwork_type == "Polygon") {
+      properties.push("nsides");
+    }
+
+    var b_w;
 
     var _loop = function _loop(idx) {
       var p = properties[idx];
       var button = ames.icons[p].clone();
-      var b_w = button.bounds.width;
+      b_w = button.bounds.width;
       button.position = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + idx * (_utils.AMES_Utils.ICON_OFFSET + b_w) + b_w / 2, by * 2);
       button.visible = true; // create subproperty boxes
 
@@ -383,6 +407,65 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
     for (var idx in properties) {
       _loop(idx);
+    } // Add special slider for polygon (nsides)
+
+
+    if (obj.artwork_type == "Polygon") {
+      var p_text = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + properties.length * (_utils.AMES_Utils.ICON_OFFSET + b_w) + b_w / 2, by * 2);
+      _this5.nsides = new PointText({
+        point: [p_text.x, p_text.y + _utils.AMES_Utils.ICON_OFFSET],
+        content: obj.sides,
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: false
+      });
+      var total_drag = 0;
+
+      _this5.nsides.onMouseDown = function (e) {
+        ames.canvas.style.cursor = 'move';
+      };
+
+      _this5.nsides.onMouseDrag = function (e) {
+        // ames.canvas.style.cursor = null;
+        total_drag += e.event.movementX;
+        console.log(total_drag);
+
+        if (total_drag < 0) {
+          if (total_drag > 0) total_drag = 0;
+          ames.canvas.style.cursor = 'w-resize';
+        }
+
+        if (total_drag > 0) {
+          if (total_drag < 0) total_drag = 0;
+          ames.canvas.style.cursor = 'e-resize';
+        }
+
+        if (total_drag < -5) {
+          // Decrement nsides
+          if (obj.sides > 3) {
+            obj.set_number_of_sides(Number(obj.sides) - 1);
+            _this5.nsides.content = obj.sides;
+          }
+
+          total_drag = 0;
+        }
+
+        if (total_drag > 5) {
+          // Increase nsides
+          console.log("incremenet nsides to", obj.sides + 1);
+          obj.set_number_of_sides(Number(obj.sides) + 1);
+          _this5.nsides.content = obj.sides;
+          total_drag = 0;
+        }
+      };
+
+      _this5.nsides.onMouseUp = function (e) {
+        ames.canvas.style.cursor = null;
+        total_drag = 0;
+      };
+
+      box.addChild(_this5.nsides);
     }
 
     _this5.box = box; // Initialize editor
@@ -629,7 +712,10 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
     key: "show_constraint",
     value: function show_constraint(bool, p, sub_p) {
       if (p == 'path') {
-        console.log("here");
+        bool = false;
+      }
+
+      if (p == 'nsides') {
         bool = false;
       }
 
@@ -904,16 +990,6 @@ var AMES_List_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
       }
 
       this.constraint_info.rel_idx_val.content = rel_idx;
-    }
-  }, {
-    key: "set_editor_position",
-    value: function set_editor_position() {
-      _get(_getPrototypeOf(AMES_List_Editor.prototype), "set_editor_position", this).call(this); // Adjust to be beneath shape editor
-
-
-      var px = this.obj.list_box.position.x + this.box.bounds.width / 2 + this.obj.list_box.bounds.width / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET;
-      var py = this.obj.list_box.position.y + this.obj.list_box.bounds.height / 2 + 40;
-      this.box.position = new Point(px, py);
     } // show_constraint: also include relative index information
 
   }, {

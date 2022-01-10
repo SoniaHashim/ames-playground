@@ -48,9 +48,9 @@
 
 			canvas {
 				width: 100%;
-				height: 94vh;
+				height: 99vh;
 				/* margin-top: .125rem; */
-				/* border: solid black .075rem; */
+				/* border: solid white .075rem; */
 				/* position: absolute;  */
 			}
 
@@ -68,25 +68,20 @@
 	</head>
 	<body>
 		<!-- IMPORT SCRIPTS -->
-
-		<script src="./js/bootstrap.bundle.min.js"></script>
+		<script src="./js/bootstrap.min.js"></script>
 		<script src="./js/paper-full.min.js"></script>
+		<!-- <script src="./js/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+		<script src="./js/paper/dist/paper-full.min.js"></script>
+		<script type="module" src="./js/ames/ames_index.js"></script> -->
 
-		<!-- TOGGLE  -->
-		<script src="./js/bundle.js"></script>
-		<!-- <script type="module" src="./js/ames/ames_index.js"></script> -->
+		<!-- NAVBAR -->
 
-		<!-- CHANGE BACK TO 100?  -->
-		<div class="container-fluid min-vh-75" id="main">
-
+		<div class="container-fluid min-vh-100" id="main">
 
 			<div class="row">
 				<div class="col-13 main">
 					<canvas id="animation-canvas"></canvas>
 				</div>
-				<!-- <div class="col-2" id="sidebar">
-					<canvas id="layers-canvas" style="background-color:white"></canvas>
-				</div> -->
 			</div>
 
 			<img id="colorwheel" src='media/colorwheel.png'>

@@ -229,7 +229,7 @@ var AMES_List = /*#__PURE__*/function () {
   }, {
     key: "duplicate",
     value: function duplicate() {
-      console.log("duplicator: ", this.shapes);
+      console.log("duplicator: ", this.is_duplicator, this.shapes);
       var original_shape = this.original_shapes[0];
 
       if (this.is_duplicator) {

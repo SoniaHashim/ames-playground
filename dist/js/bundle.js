@@ -8,7 +8,9 @@ exports.AMES = void 0;
 
 var _utils = require("./utils.js");
 
-var _shapes = require("./shapes.js");
+var _viewfoil = require("./viewfoil.js");
+
+var _artwork = require("./artwork.js");
 
 var _editors = require("./editors.js");
 
@@ -16,7 +18,11 @@ var _constraints = require("./constraints.js");
 
 var _lists = require("./lists.js");
 
+var _collection = require("./collection.js");
+
 var _animations = require("./animations.js");
+
+var _transformation = require("./transformation.js");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -31,6 +37,28 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 // ames.canvas_cy;
 // ames.animations;
 var AMES = /*#__PURE__*/function () {
+  // loop() {
+  // 	this.is_looping = !this.is_looping;
+  // }
+  // get_time_from_scrubber() {
+  // 	let sc_x = this.scrubber.position.x;
+  // 	let t = (sc_x - this.min_sc) / (this.max_sc - this.min_sc);
+  // 	return t;
+  // }
+  //
+  // update_scrubber_to_time() {
+  // 	let sc_x = (this.time * (this.max_sc - this.min_sc)) + this.min_sc;
+  // 	return sc_x;
+  // }
+  //
+  // set_time(t) {
+  // 	this.time = t;
+  // 	this.adjust_t_delta;
+  // }
+  //
+  // get_duration(x) {
+  // 	return 1000;
+  // }
   // Constructor for ames (empty)
   function AMES() {// Warning: ames is not defined here
 
@@ -109,6 +137,7 @@ var AMES = /*#__PURE__*/function () {
     // Views & controls
     // Scrubber
     // State & Timing
+    // frames per second used by transformations
     // time in system
     // time between elapsed frames
     // in seconds
@@ -141,22 +170,49 @@ var AMES = /*#__PURE__*/function () {
         'is_duplicator': true
       });
       this.tools['Constraint'] = this.init_constraint_tool();
-      this.tools['Animation'] = this.init_animation_tool();
+      this.tools['Transformation'] = this.init_create_transformation_tool();
       this.tools['Animation_Link'] = this.init_animation_link_tool(); // Activate canvas
 
       this.canvas_view._project.activate(); // Set up sidebar
 
 
-      this.idx_boxes = new Array();
-      this.setup_layers(); // Import icons
+      this.idx_boxes = new Array(); // this.setup_layers();
+      // Import icons
 
       this.create_toolbar();
       this.create_sidebar();
       this.import_icons();
     }
   }, {
+    key: "test",
+    value: function test() {
+      // let a = new AMES_Ellipse();
+      // a.poly.strokeColor = "pink";
+      // let b = new AMES_Ellipse();
+      // b.poly.sendToBack();
+      var a_triangle = new _artwork.AMES_Polygon();
+      var a_square = new _artwork.AMES_Polygon({
+        centroid: new Point(200, 200),
+        nsides: 4,
+        radius: 50
+      });
+      var a_dot = new _artwork.AMES_Ellipse({
+        centroid: new Point(500, 500),
+        rx: 5,
+        ry: 5
+      });
+      var a_ellipse = new _artwork.AMES_Ellipse({
+        centroid: new Point(750, 500),
+        rx: 50,
+        ry: 150
+      });
+      var t = new _transformation.AMES_Transformation();
+    }
+  }, {
     key: "create_toolbar",
     value: function create_toolbar() {
+      var _this = this;
+
       var toolbar = new Group();
       toolbar.n_btns = 0;
       toolbar.active_btn = null;
@@ -170,27 +226,37 @@ var AMES = /*#__PURE__*/function () {
         return p;
       };
 
-      toolbar.activate_btn = function (btn_name) {};
+      toolbar.activate_btn = function (btn_name) {
+        _this.toolbar.active_btn = btn_name;
+        _this.toolbar.btns[btn_name].children[0].fillColor = "black"; // console.log(this.toolbar.active_btn);
+      };
 
-      toolbar.deactivate_btn = function (btn_name) {};
+      toolbar.deactivate_btn = function (btn_name) {
+        // console.log("deactivate button", this.toolbar.active_btn);
+        if (_this.toolbar.active_btn == btn_name) _this.toolbar.active_btn = null;
+        _this.toolbar.btns[btn_name].children[0].fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+      };
 
       toolbar.create_btn = function (btn_name, i_name, cb) {
         var btn = new Group();
         var btn_i = ames.icons[i_name].clone();
         var p = ames.toolbar.get_position();
-        btn_i.position = new Point(p.x, p.y - 25 * ames.toolbar.n_btns);
+        btn_i.position = new Point(p.x, p.y - 27.5 * ames.toolbar.n_btns);
         btn_i.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
         btn_i.scaling = 1.25;
         btn_i.visible = true;
         var btn_position = btn_i.position;
-        var btn_r = new Path.Rectangle(ames.canvas_view.center, new Size(25, 25));
+        var btn_r = new Path.Rectangle({
+          position: ames.canvas_view.center,
+          size: new Size(25, 25),
+          radius: 15
+        });
         btn_r.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
         btn_r.position = btn_i.position;
         btn_r.strokeWidth = 1;
         btn_r.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
         btn.addChildren([btn_r, btn_i]);
         btn.position = btn_i.position;
-        console.log(btn.position);
 
         btn.onClick = function (e) {
           cb();
@@ -198,7 +264,6 @@ var AMES = /*#__PURE__*/function () {
 
         ames.toolbar.n_btns += 1;
         ames.toolbar.btns[btn_name] = btn;
-        console.log('Toolbar Buttons', ames.toolbar.n_btns, ames.toolbar.children);
         toolbar.position = toolbar.get_position();
         ames.ux.push(btn);
       };
@@ -210,7 +275,6 @@ var AMES = /*#__PURE__*/function () {
           });
         };
 
-        console.log(ames.toolbar);
         ames.toolbar.create_btn(btn_name, i_name, tool_cb);
       };
 
@@ -220,14 +284,17 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "create_sidebar",
     value: function create_sidebar() {
-      var _this = this;
+      var _this2 = this;
 
       var sidebar = new Group();
       this.create_color_picker();
       var w = _utils.AMES_Utils.SIDEBAR_WIDTH;
-      console.log("SIDEBAR_WIDTH", w);
       var h = _utils.AMES_Utils.SIDEBAR_HEIGHT;
-      var r = new Path.Rectangle(ames.canvas_view.center, new Size(w, h));
+      var r = new Path.Rectangle({
+        position: ames.canvas_view.center,
+        size: new Size(w, h),
+        radius: 5
+      });
       r.position = new Point(0, 0);
       r.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
       this.ux.push(r);
@@ -241,7 +308,11 @@ var AMES = /*#__PURE__*/function () {
         position: [r.position.x, r.position.y - r.bounds.height / 2]
       });
       ames_text.position = new Point(0, -h / 2 + 1.5 * ames_text.bounds.height);
-      var ames_box = new Path.Rectangle(r.position, new Size(w, 3 * ames_text.bounds.height));
+      var ames_box = new Path.Rectangle({
+        position: r.position,
+        size: new Size(w, 3 * ames_text.bounds.height),
+        radius: 0
+      });
       ames_box.position = ames_text.position;
       ames_box.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
       ames_box.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR; // Add ux show / hide carets
@@ -257,7 +328,7 @@ var AMES = /*#__PURE__*/function () {
           button.visible = false;
 
           button.onClick = function (e) {
-            _this.show_ux(true);
+            _this2.show_ux(true);
 
             button.visible = false;
             sidebar.children[_utils.AMES_Utils.UX_HIDE_IDX].visible = true;
@@ -271,11 +342,10 @@ var AMES = /*#__PURE__*/function () {
           button.visible = true;
 
           button.onClick = function (e) {
-            _this.show_ux(false);
+            _this2.show_ux(false);
 
             button.visible = false;
             sidebar.children[_utils.AMES_Utils.UX_SHOW_IDX].visible = true;
-            console.log("make visible...", sidebar.children[_utils.AMES_Utils.UX_SHOW_IDX]);
           };
 
           sidebar.insertChild(_utils.AMES_Utils.UX_HIDE_IDX, button);
@@ -300,8 +370,6 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "show_ux",
     value: function show_ux(bool) {
-      console.log("Toggle show_ux", bool);
-
       for (var idx in this.ux) {
         this.ux[idx].visible = bool;
       }
@@ -310,7 +378,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "import_icons",
     value: function import_icons() {
-      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen"];
+      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen", "card-list", "nsides", "asterisk"];
 
       for (var idx in icons) {
         this.import_icon(icons[idx]);
@@ -331,13 +399,15 @@ var AMES = /*#__PURE__*/function () {
         if (n == 'dotted-circle') ames.toolbar.create_tool_btn('Circle', n);
         if (n == 'dotted-square') ames.toolbar.create_tool_btn('Square', n);
         if (n == 'vector-pen') ames.toolbar.create_tool_btn('Path', n);
+        if (n == 'card-list') ames.toolbar.create_tool_btn('Collection', n);
+        if (n == 'asterisk') ames.toolbar.create_tool_btn('Transformation', n);
       });
     } // icon_caret: use caret to expand & contract layers controls
 
   }, {
     key: "icon_caret",
     value: function icon_caret(i_name) {
-      var _this2 = this;
+      var _this3 = this;
 
       ames.sidebar.add_caret(i_name); // CHANGE - Delete everything below this line
 
@@ -347,7 +417,7 @@ var AMES = /*#__PURE__*/function () {
         var n = _utils.AMES_Utils.L_CONTROLS[idx];
         var box = ames.obj_boxes[n];
 
-        var caret = _this2.icons[i_name].clone();
+        var caret = _this3.icons[i_name].clone();
 
         var caret_w = caret.bounds.width;
         caret.scaling = 0.65;
@@ -362,7 +432,7 @@ var AMES = /*#__PURE__*/function () {
           caret.visible = true;
 
           caret.onClick = function (e) {
-            _this2.expand_layers(n, true);
+            _this3.expand_layers(n, true);
 
             caret.visible = false;
             box.children[collapse_idx].visible = true;
@@ -374,7 +444,7 @@ var AMES = /*#__PURE__*/function () {
           caret.visible = false;
 
           caret.onClick = function (e) {
-            _this2.expand_layers(n, false);
+            _this3.expand_layers(n, false);
 
             caret.visible = false;
             box.children[expand_idx].visible = true;
@@ -625,7 +695,7 @@ var AMES = /*#__PURE__*/function () {
 
       colorwheel.on('load', function () {
         // ames.layers_view._project.activate();
-        colorwheel.scaling = 0.2;
+        colorwheel.scaling = 0.18;
         ames.colorwheel = colorwheel; // Create color picker
 
         var colorpicker = new Group();
@@ -641,7 +711,11 @@ var AMES = /*#__PURE__*/function () {
 
 
         var r_dim = 100;
-        var r = new Path.Rectangle(colorpicker.position, new Size(r_dim, r_dim));
+        var r = new Path.Rectangle({
+          position: colorpicker.position,
+          size: new Size(r_dim, r_dim),
+          radius: 2.5
+        });
         r.position = colorpicker.position.add(new Point(140, -12));
         r.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
         r.fillColor = 'white';
@@ -673,7 +747,7 @@ var AMES = /*#__PURE__*/function () {
             strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR
           });
 
-          var dot = _utils.AMES_Utils.make_dot(new Point(dot_start, y + 2 * _utils.AMES_Utils.ICON_OFFSET));
+          var dot = _utils.AMES_Utils.make_dot(new Point(dot_start, y + 2 * _utils.AMES_Utils.ICON_OFFSET), null, 4);
 
           dot.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
 
@@ -745,12 +819,12 @@ var AMES = /*#__PURE__*/function () {
         var lightness = make_slider(lightness_y, 'brightness', set_lightness, end);
         var lightness_dot = lightness[0];
         var lightness_slider = lightness[1];
-        var lightness_label = lightness[2]; // Color wheel radius is 73
+        var lightness_label = lightness[2]; // Color wheel radius is 65
 
-        var radius = 73;
+        var radius = 65;
         var gwheel = new Path.Circle({
-          center: [cwheel.position.x, cwheel.position.y],
-          radius: 73,
+          center: [cwheel.position.x, cwheel.position.y - 1],
+          radius: 66,
           fillColor: 'black',
           opacity: 0
         });
@@ -857,12 +931,12 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "pause",
     value: function pause() {
-      var _this3 = this;
+      var _this4 = this;
 
       this.is_playing = false; // Pause animations
 
       var _loop2 = function _loop2(k) {
-        var a = _this3.animations[k];
+        var a = _this4.animations[k];
         a.curr_tw.stop();
         setTimeout(function () {
           a.curr_tw.start();
@@ -875,73 +949,385 @@ var AMES = /*#__PURE__*/function () {
       }
     }
   }, {
-    key: "loop",
-    value: function loop() {
-      this.is_looping = !this.is_looping;
+    key: "example",
+    value: function example(str) {
+      if (str == "ngon") this.ngon();
+      if (str == "starfield") this.starfield();
     }
   }, {
-    key: "get_time_from_scrubber",
-    value: function get_time_from_scrubber() {
-      var sc_x = this.scrubber.position.x;
-      var t = (sc_x - this.min_sc) / (this.max_sc - this.min_sc);
-      return t;
-    }
-  }, {
-    key: "update_scrubber_to_time",
-    value: function update_scrubber_to_time() {
-      var sc_x = this.time * (this.max_sc - this.min_sc) + this.min_sc;
-      return sc_x;
-    }
-  }, {
-    key: "set_time",
-    value: function set_time(t) {
-      this.time = t;
-      this.adjust_t_delta;
-    }
-  }, {
-    key: "get_duration",
-    value: function get_duration(x) {
-      return 1000;
-    }
-  }, {
-    key: "test",
-    value: function test() {
-      var obj_a = new _shapes.AMES_Circle();
-      obj_a.set_pos(new Point(200, 200));
-      obj_a.poly.visible = true;
-      obj_a.poly.radius = 25;
-      obj_a.to_path();
-      this.add_shape(obj_a);
-      var artwork_duplicator = new _lists.AMES_List([obj_a], {
-        "is_para_style_list": false,
-        "is_duplicator": true
-      });
-      this.add_list(artwork_duplicator);
+    key: "starfield",
+    value: function starfield(step) {
+      if (step == null) step = 5;
+      console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
+      if (step != 5) dproject.activeLayer.removeChildren();
+      var oct;
 
-      for (var i = 0; i < 2; i++) {
-        artwork_duplicator.add_item();
+      if (step >= 0) {
+        oct = new _artwork.AMES_Polygon({
+          "nsides": 20
+        });
+        oct.poly.strokeColor = "pink";
       }
 
-      var obj_b = new _shapes.AMES_Square();
-      obj_b.set_pos(new Point(400, 400));
-      obj_b.poly.visible = true;
-      obj_b.poly.size = new Size(100, 100);
-      obj_b.to_path();
-      this.add_shape(obj_b);
-      var obj_c = new _shapes.AMES_Circle();
-      obj_c.set_pos(new Point(550, 450));
-      obj_c.poly.visible = true;
-      obj_c.poly.radius = 50;
-      obj_c.to_path();
-      this.add_shape(obj_c);
-      var transformation_list = new _lists.AMES_List([obj_b, obj_c], {
-        "is_para_style_list": false
-      });
-      this.add_list(transformation_list);
-      var animation = new _animations.AMES_Animation();
-      this.add_animation(animation);
-      animation.set_geometry_field('artwork', artwork_duplicator);
-      animation.set_geometry_field('transformation', transformation_list);
+      var poly_collection;
+
+      if (step >= 1) {
+        poly_collection = new _collection.AMES_Collection(oct);
+        poly_collection.set_count(10);
+      }
+
+      var tf_position;
+      var line_position;
+
+      if (step >= 2) {
+        line_position = new _artwork.AMES_Artwork_Path();
+        line_position.add_points([new Point(300, 550), new Point(1050, 50)]);
+        tf_position = new _transformation.AMES_Transformation({
+          "input": line_position,
+          "target": poly_collection,
+          "mapping": "position"
+        });
+        tf_position.transform();
+        poly_collection.show_box(false);
+      }
+
+      var tf_point_perturb;
+      var lines_perturb;
+
+      if (step >= 3) {
+        var line1 = new _artwork.AMES_Artwork_Path();
+        var line2 = new _artwork.AMES_Artwork_Path();
+        line1.add_points([new Point(75, 100), new Point(75, 90)]);
+        line2.add_points([new Point(100, 100), new Point(100, 105)]);
+        lines_perturb = new _collection.AMES_Collection([line1, line2]);
+        tf_point_perturb = new _transformation.AMES_Transformation({
+          "input": lines_perturb,
+          "target": poly_collection
+        });
+        tf_point_perturb.set_mapping({
+          "type": "Vertex",
+          "mapping": "relative position"
+        });
+        tf_point_perturb.set_mapping_behavior("alternate");
+        tf_point_perturb.tf_space_absolute = false;
+        tf_position.show_tf_space(false);
+        line_position.poly.visible = false;
+        if (step == 3) tf_point_perturb.transform();
+      }
+
+      var tf_nsides;
+
+      if (step >= 4) {
+        var line_nsides = new _artwork.AMES_Artwork_Path();
+        line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
+        tf_nsides = new _transformation.AMES_Transformation();
+        tf_nsides.set_target(poly_collection);
+        tf_nsides.set_input(line_nsides);
+        tf_nsides.set_mapping({
+          "type": "Polygon",
+          "mapping": "number of sides"
+        });
+        tf_nsides.set_tf_space({
+          "my1": 10,
+          "my2": 28
+        });
+        tf_nsides.show_tf_space(true);
+        tf_nsides.transform();
+        tf_point_perturb.transform();
+      }
+
+      var tf_point_perturb_animation;
+      var lines_perturb_animated;
+
+      if (step >= 5) {
+        var _line = new _artwork.AMES_Artwork_Path();
+
+        var _line2 = new _artwork.AMES_Artwork_Path();
+
+        _line.add_points([new Point(275, 100), new Point(275, 95)]);
+
+        _line2.add_points([new Point(300, 100), new Point(300, 105)]);
+
+        lines_perturb_animated = new _collection.AMES_Collection([_line, _line2]);
+        tf_point_perturb_animation = new _transformation.AMES_Transformation({
+          "input": lines_perturb_animated,
+          "target": poly_collection
+        });
+        tf_point_perturb_animation.set_mapping({
+          "type": "Vertex",
+          "mapping": "relative animation"
+        });
+        tf_point_perturb_animation.set_mapping_behavior("alternate");
+        tf_point_perturb_animation.tf_space_absolute = false;
+        tf_point_perturb_animation.tf_space_path_nsegments = 25;
+        tf_point_perturb_animation.tf_space_speed_factor = 1;
+        tf_point_perturb_animation.loop_max_count = 1;
+        tf_point_perturb.show_tf_space(false);
+        tf_point_perturb_animation.transform();
+      }
+    }
+  }, {
+    key: "ngon",
+    value: function ngon(step) {
+      if (step == null) step = 15;
+      console.log("---AMES NGON EXAMPLE LOG--------------------------------"); // for example walkthrough - strips all other
+
+      project.activeLayer.removeChildren();
+      var tri;
+
+      if (step >= 0) {
+        // Create polygon collection
+        tri = new _artwork.AMES_Polygon();
+        tri.poly.strokeColor = "blue";
+        tri.poly.strokeWidth = 1.5;
+      }
+
+      var poly_collection;
+
+      if (step >= 1) {
+        poly_collection = new _collection.AMES_Collection(tri);
+        poly_collection.set_count(6);
+      }
+
+      var dot;
+      var dot_collection;
+
+      if (step >= 2) {
+        // Create dot collection
+        dot = new _artwork.AMES_Ellipse();
+        dot.poly.fillColor = "blue";
+        dot.poly.strokeWidth = 0;
+        dot_collection = new _collection.AMES_Collection(dot);
+        dot_collection.set_count(6);
+      }
+
+      var tf_motion_path;
+
+      if (step >= 3) {
+        // Create motion path transformation function
+        tf_motion_path = new _transformation.AMES_Transformation({
+          "input": poly_collection,
+          "target": dot_collection,
+          "mapping": "motion path"
+        });
+        tf_motion_path.tf_space_speed_factor = 1;
+        if (step == 3) tf_motion_path.transform();
+
+        if (step > 3) {
+          dot_collection.align();
+          poly_collection.align();
+          tf_motion_path.show_tf_space(false);
+          dot_collection.show_box(false);
+          poly_collection.show_box(false);
+        }
+      }
+
+      var line2;
+      var tf_scale_tri;
+
+      if (step >= 4) {
+        // Create static scaling transformation function using a line
+        line2 = new _artwork.AMES_Artwork_Path();
+        line2.add_points([new Point(100, 450), new Point(200, 250)]); // line2.add_points([new Point(100, 450), new Point(200, 250)]);
+        // line2.add_points([new Point(100, 300), new Point(200, 250)]);
+
+        tf_scale_tri = new _transformation.AMES_Transformation({
+          "input": line2,
+          "target": poly_collection,
+          "mapping": "static scale"
+        });
+        tf_scale_tri.transform();
+        if (step == 4) tf_motion_path.transform();
+      }
+
+      var line1;
+      var tf_nsides_tri;
+
+      if (step >= 5) {
+        // Create number of sides transformation function using a line
+        line1 = new _artwork.AMES_Artwork_Path();
+        line1.add_points([new Point(100, 200), new Point(200, 100)]);
+        tf_nsides_tri = new _transformation.AMES_Transformation();
+        tf_nsides_tri.set_target(poly_collection);
+        tf_nsides_tri.set_input(line1);
+        tf_nsides_tri.set_mapping({
+          "type": "Polygon",
+          "mapping": "number of sides"
+        });
+        tf_nsides_tri.transform();
+        if (step == 5) tf_motion_path.transform();
+      }
+
+      if (step >= 6) {
+        tf_motion_path.tf_space_speed_factor = 1;
+        tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
+        if (step == 6) tf_motion_path.transform();
+      }
+
+      var line3;
+      var tf_duplicate_dots;
+
+      if (step >= 7) {
+        line3 = new _artwork.AMES_Artwork_Path();
+        line3.add_points([new Point(100, 550), new Point(200, 500)]);
+        tf_duplicate_dots = new _transformation.AMES_Transformation({
+          "input": line3,
+          "target": dot_collection,
+          "mapping": "duplicate each"
+        });
+        tf_duplicate_dots.loop = false;
+        tf_motion_path.use_playback_points_to_trigger_transformation({
+          "tf": tf_duplicate_dots,
+          "condition": "slope change"
+        });
+        if (step == 7) tf_motion_path.transform();
+      }
+
+      var circle;
+      var quick_flare;
+      var tf_scale_dots;
+
+      if (step >= 8) {
+        // Create scaling animation using a cirlce in image space (ease in and out)
+        circle = new _artwork.AMES_Ellipse({
+          "centroid": new Point(325, 150),
+          "r": 50
+        });
+        quick_flare = new _artwork.AMES_Artwork_Path();
+        quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+        tf_scale_dots = new _transformation.AMES_Transformation({
+          "input": circle,
+          "target": dot_collection,
+          "mapping": "scale animation"
+        });
+        tf_scale_dots.loop = false;
+        tf_scale_dots.tf_space_path_nsegments = 100; // tf_scale_dots.tf_space_speed = tf_scale_dots.SPEED_XAXIS;
+
+        tf_duplicate_dots.use_playback_points_to_trigger_transformation({
+          "tf": tf_scale_dots,
+          "condition": "new instance"
+        });
+        if (step == 8) tf_motion_path.transform();
+      }
+
+      if (step >= 9) {
+        tf_scale_dots.use_playback_points_to_trigger_transformation({
+          "tf": null,
+          "condition": "remove at end"
+        });
+        if (step == 9) tf_motion_path.transform();
+      }
+
+      if (step >= 10) {
+        // Create hue transformation function
+        var line0 = new _artwork.AMES_Artwork_Path();
+        line0.add_points([new Point(275, 350), new Point(375, 275)]);
+        var tf_hue_dots = new _transformation.AMES_Transformation({
+          "input": line0,
+          "target": dot_collection,
+          "mapping": "hue"
+        });
+        tf_hue_dots.transform();
+        var tf_hue_poly = new _transformation.AMES_Transformation({
+          "input": line0,
+          "target": poly_collection,
+          "mapping": "hue"
+        });
+        tf_hue_poly.transform();
+        tf_motion_path.transform();
+      }
+
+      if (step == -1) {
+        // Create scaling animation demo pt 1
+        var p1 = new _artwork.AMES_Ellipse({
+          "centroid": ames.canvas_view.center,
+          "r": 25
+        });
+        p1.poly.fillColor = "pink";
+        p1.poly.position = p1.poly.position.subtract(400, 0);
+        p1.poly.strokeWidth = 0;
+        circle = new _artwork.AMES_Ellipse({
+          "centroid": new Point(325, 150),
+          "r": 50
+        });
+        circle.poly.strokeColor = "pink";
+        var tf_scale_test1 = new _transformation.AMES_Transformation({
+          "input": circle,
+          "target": p1,
+          "mapping": "scale animation"
+        });
+        tf_scale_test1.tf_space_path_nsegments = 100;
+        tf_scale_test1.transform();
+      }
+
+      if (step == -2) {
+        // Create scaling animation demo pt 2
+        var p2 = new _artwork.AMES_Ellipse({
+          "centroid": ames.canvas_view.center,
+          "r": 25
+        });
+        p2.poly.fillColor = "orange";
+        p2.poly.position = p2.poly.position.add(400, 0);
+        p2.poly.strokeWidth = 0;
+        quick_flare = new _artwork.AMES_Artwork_Path();
+        quick_flare.poly.strokeColor = "orange";
+        quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+        var tf_scale_test2 = new _transformation.AMES_Transformation({
+          "input": quick_flare,
+          "target": p2,
+          "mapping": "scale animation"
+        });
+        tf_scale_test2.tf_space_path_nsegments = 100;
+        tf_scale_test2.transform();
+      }
+
+      if (step == -3) {
+        // Create scaling animation using a cirlce in image space (ease in and out)
+        var _p = new _artwork.AMES_Ellipse({
+          "centroid": ames.canvas_view.center,
+          "r": 25
+        });
+
+        _p.poly.fillColor = "pink";
+        _p.poly.position = _p.poly.position.subtract(400, 0);
+        _p.poly.strokeWidth = 0;
+
+        var _p2 = new _artwork.AMES_Ellipse({
+          "centroid": ames.canvas_view.center,
+          "r": 25
+        });
+
+        _p2.poly.fillColor = "orange";
+        _p2.poly.position = _p2.poly.position.add(400, 0);
+        _p2.poly.strokeWidth = 0;
+        circle = new _artwork.AMES_Ellipse({
+          "centroid": new Point(325, 150),
+          "r": 50
+        });
+        circle.poly.strokeColor = "pink";
+        quick_flare = new _artwork.AMES_Artwork_Path();
+        quick_flare.poly.strokeColor = "orange";
+        quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
+
+        var _tf_scale_test = new _transformation.AMES_Transformation({
+          "input": circle,
+          "target": _p,
+          "mapping": "scale animation"
+        });
+
+        var _tf_scale_test2 = new _transformation.AMES_Transformation({
+          "input": quick_flare,
+          "target": _p2,
+          "mapping": "scale animation"
+        });
+
+        _tf_scale_test.tf_space_path_nsegments = 100;
+        _tf_scale_test2.tf_space_path_nsegments = 100;
+
+        _tf_scale_test.transform();
+
+        _tf_scale_test2.transform();
+      }
     } // add_shape: adds given object as a shape
 
   }, {
@@ -978,14 +1364,15 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "add_animation",
     value: function add_animation(x) {
-      this.n_aobjs += 1;
-      x.editor = new _editors.AMES_Animation_Editor(x);
+      this.n_aobjs += 1; // x.editor = new AMES_Animation_Editor(x);
+
       this.add_obj(x, _utils.AMES_Utils.L_CONTROLS[2]);
       this.aobjs[x.name] = x;
     }
   }, {
     key: "hide_editors",
     value: function hide_editors(obj) {
+      console.log("hide editors?");
       obj = obj || {};
 
       for (var i in this.objs) {
@@ -997,155 +1384,152 @@ var AMES = /*#__PURE__*/function () {
           }
         }
       } // ames.colorpicker.visible = false;
+      // if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
 
-
-      if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
     }
   }, {
     key: "add_obj",
     value: function add_obj(x, t_obj) {
-      var _this4 = this;
+      this.objs[x.name] = x; // Hide all open editors
 
-      // Hide all open editors
-      this.hide_editors(x);
-      var n = x.name;
-      var box_idx;
-
-      if (t_obj == _utils.AMES_Utils.L_CONTROLS[0]) {
-        box_idx = this.l_shape_idx;
-        this.l_shape_idx += 1;
-      }
-
-      if (t_obj == _utils.AMES_Utils.L_CONTROLS[1]) {
-        // this.n_lists += 1;
-        // let n_list = this.n_lists - 1;
-        // n = "List " + n_list + " (" + x.get_name() + ") ";
-        box_idx = this.l_shape_idx + this.l_list_idx;
-        this.l_list_idx += 1;
-      }
-
-      if (t_obj == _utils.AMES_Utils.L_CONTROLS[2]) {
-        box_idx = this.l_shape_idx + this.l_list_idx + this.l_aobj_idx;
-        this.l_aobj_idx += 1;
-      } // Add obj
-
-
-      this.objs[n] = x; // Create obj box in layers view
-      // Activate layers project
-
-      var w = 250; // Create a new layers ui box
-
-      var box = new Group();
-      box.position = new Point(0, 0);
-      var by = _utils.AMES_Utils.LAYER_HEIGHT; // Background rectangle
-
-      var rect = new Shape.Rectangle({
-        point: [0, 0],
-        size: [w, by],
-        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-        strokeWidth: 1,
-        fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
-        opacity: 1
-      }); // Object name
-
-      var n_text = new PointText({
-        point: [2 * _utils.AMES_Utils.ICON_OFFSET, by / 2 + _utils.AMES_Utils.FONT_SIZE / 2],
-        content: n,
-        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-        fontFamily: _utils.AMES_Utils.FONT,
-        fontSize: _utils.AMES_Utils.FONT_SIZE
-      }); // Remove icon
-
-      var trash = ames.icons['trash'].clone();
-      var trash_w = trash.bounds.width;
-      trash.visible = true;
-      trash.position = new Point(w - trash_w / 2 - _utils.AMES_Utils.ICON_OFFSET, by / 2); // Visibility icons
-
-      var eye = ames.icons['eye'].clone();
-      var eye_slash = ames.icons['eye-slash'].clone();
-      var eye_w = eye.bounds.width;
-      eye.visible = true;
-      eye_slash.visible = false;
-      var eye_pos = new Point(w - trash_w - eye_w / 2 - 2 * _utils.AMES_Utils.ICON_OFFSET, by / 2);
-      eye.position = eye_pos;
-      eye_slash.position = eye_pos; // Add children to box
-
-      box.addChild(rect);
-      box.addChild(n_text);
-      box.addChild(trash);
-      box.addChild(eye);
-      box.addChild(eye_slash); // Set active box to false
-
-      box.is_active_box = true; // Add box to ames controls
-
-      this.idx_boxes.splice(box_idx, 0, n);
-      this.obj_boxes[n] = box;
-      if (t_obj == _utils.AMES_Utils.L_CONTROLS[2]) console.log("adding animation box?", box_idx, box); // Insert box & update the locations of the other boxes
-
-      var ny = box_idx * by + by / 2 + box_idx * .5;
-      box.position = new Point(w / 2, ny);
-      var n_boxes = this.idx_boxes.length;
-
-      for (var i = box_idx + 1; i < n_boxes; i++) {
-        var b_name = this.idx_boxes[i];
-        this.obj_boxes[b_name].position.y += by + .5;
-      } // Click on layers obj box selects the object
-
-
-      box.onClick = function (e) {
-        // if the point is not a click on the children return .
-        for (var idx in box.children) {
-          if (idx != 0 && box.children[idx].bounds.contains(e.point)) return;
-        }
-
-        if (box.is_active_box) {
-          // deactivate object
-          _this4.deactivate_obj(n);
-
-          delete _this4.active_objs[n];
-        } else {
-          // activate object
-          _this4.activate_obj(n);
-
-          _this4.active_objs[n] = x;
-        }
-
-        box.is_active_box = !box.is_active_box;
-      }; // Remove object on clicking the trash can
-
-
-      trash.onClick = function (e) {
-        // Box has to be active to delete an object
-        if (box.is_active_box) {
-          _this4.remove_obj(n, t_obj);
-        }
-      }; // Toggle visibility on clicking the eye
-
-
-      eye.onClick = function (e) {
-        // Box has to be active to toggle visibility
-        if (!box.is_active_box) return;
-        eye.visible = false;
-        eye_slash.visible = true;
-        x.show(false); // Remove from active objs until visible
-
-        delete _this4.active_objs[x.name];
-      };
-
-      eye_slash.onClick = function (e) {
-        // Box has to be active to toggle visibility
-        if (!box.is_active_box) return;
-        eye_slash.visible = false;
-        eye.visible = true;
-        x.show(true); // Add back to active objs
-        // Remove from active objects
-
-        _this4.active_objs[x.name] = x;
-      }; // start objects as active
-
-
-      this.activate_obj(n);
-      this.active_objs[n] = x;
+      this.hide_editors(x); // let n = x.name;
+      // let box_idx;
+      // if (t_obj == utils.L_CONTROLS[0]) {
+      // 	box_idx = this.l_shape_idx;
+      // 	this.l_shape_idx += 1;
+      // }
+      // if (t_obj == utils.L_CONTROLS[1]) {
+      // 	// this.n_lists += 1;
+      // 	// let n_list = this.n_lists - 1;
+      // 	// n = "List " + n_list + " (" + x.get_name() + ") ";
+      // 	box_idx = this.l_shape_idx + this.l_list_idx;
+      // 	this.l_list_idx += 1;
+      // }
+      // if (t_obj == utils.L_CONTROLS[2]) {
+      // 	box_idx = this.l_shape_idx + this.l_list_idx + this.l_aobj_idx;
+      // 	this.l_aobj_idx += 1;
+      // }
+      //
+      // // Add obj
+      // this.objs[n] = x;
+      //
+      // // Create obj box in layers view
+      //
+      // // Activate layers project
+      // let w = 250;
+      //
+      // // Create a new layers ui box
+      // let box = new Group();
+      // box.position = new Point(0,0);
+      // let by = utils.LAYER_HEIGHT;
+      // // Background rectangle
+      // let rect = new Shape.Rectangle({
+      // 	point: [0, 0],
+      // 	size: [w, by],
+      // 	strokeColor: utils.INACTIVE_S_COLOR,
+      // 	strokeWidth: 1,
+      // 	fillColor: utils.INACTIVE_DARK_COLOR,
+      // 	opacity: 1
+      // });
+      // // Object name
+      // let n_text = new PointText({
+      // 	point: [2*utils.ICON_OFFSET, by/2 + utils.FONT_SIZE/2],
+      // 	content: n,
+      // 	fillColor: utils.INACTIVE_S_COLOR,
+      // 	fontFamily: utils.FONT,
+      // 	fontSize: utils.FONT_SIZE
+      // });
+      //
+      // // Remove icon
+      // let trash = ames.icons['trash'].clone();
+      // let trash_w = trash.bounds.width;
+      // trash.visible = true;
+      // trash.position = new Point(w-trash_w/2-utils.ICON_OFFSET, by/2);
+      //
+      // // Visibility icons
+      // let eye = ames.icons['eye'].clone();
+      // let eye_slash = ames.icons['eye-slash'].clone();
+      // let eye_w = eye.bounds.width;
+      // eye.visible = true;
+      // eye_slash.visible = false;
+      // let eye_pos = new Point(w-trash_w-eye_w/2-2*utils.ICON_OFFSET, by/2);
+      // eye.position = eye_pos;
+      // eye_slash.position = eye_pos;
+      //
+      // // Add children to box
+      // box.addChild(rect);
+      // box.addChild(n_text);
+      // box.addChild(trash);
+      // box.addChild(eye);
+      // box.addChild(eye_slash);
+      //
+      // // Set active box to false
+      // box.is_active_box = true;
+      //
+      // // Add box to ames controls
+      // this.idx_boxes.splice(box_idx, 0, n);
+      // this.obj_boxes[n] = box;
+      // if (t_obj == utils.L_CONTROLS[2]) console.log("adding animation box?", box_idx, box);
+      //
+      // // Insert box & update the locations of the other boxes
+      // let ny = box_idx*by + by/2 + box_idx*.5;
+      // box.position = new Point(w/2, ny);
+      // let n_boxes = this.idx_boxes.length;
+      // for (let i = box_idx + 1; i < n_boxes; i++) {
+      // 	let b_name = this.idx_boxes[i];
+      // 	this.obj_boxes[b_name].position.y += (by+.5);
+      // }
+      //
+      // // Click on layers obj box selects the object
+      // box.onClick = (e) => {
+      // 	// if the point is not a click on the children return .
+      // 	for (let idx in box.children) {
+      // 		if (idx != 0 && box.children[idx].bounds.contains(e.point)) return;
+      // 	}
+      // 	if (box.is_active_box) {
+      // 		// deactivate object
+      // 		this.deactivate_obj(n);
+      // 		delete this.active_objs[n];
+      // 	} else {
+      // 		// activate object
+      // 		this.activate_obj(n);
+      // 		this.active_objs[n] = x;
+      // 	}
+      // 	box.is_active_box = !box.is_active_box;
+      // };
+      //
+      // // Remove object on clicking the trash can
+      // trash.onClick = (e) => {
+      // 	// Box has to be active to delete an object
+      // 	if (box.is_active_box) {
+      // 		this.remove_obj(n, t_obj);
+      // 	}
+      // };
+      //
+      // // Toggle visibility on clicking the eye
+      // eye.onClick = (e) => {
+      // 	// Box has to be active to toggle visibility
+      // 	if (!box.is_active_box) return;
+      // 	eye.visible = false;
+      // 	eye_slash.visible = true;
+      // 	x.show(false);
+      // 	// Remove from active objs until visible
+      // 	delete this.active_objs[x.name];
+      // }
+      // eye_slash.onClick = (e) => {
+      // 	// Box has to be active to toggle visibility
+      // 	if (!box.is_active_box) return;
+      // 	eye_slash.visible = false;
+      // 	eye.visible = true;
+      // 	x.show(true);
+      // 	// Add back to active objs
+      // 	// Remove from active objects
+      // 	this.active_objs[x.name] = x;
+      // }
+      //
+      // // start objects as active
+      // this.activate_obj(n);
+      // this.active_objs[n] = x;
     } // active_obj: Activates layers box and enables object selection
 
   }, {
@@ -1153,16 +1537,14 @@ var AMES = /*#__PURE__*/function () {
     value: function activate_obj(n) {
       var x = this.objs[n];
       x.make_interactive(true);
-      x.show_editor(true); // Activate layers box
-
-      var box = this.obj_boxes[n];
-      box.children[_utils.AMES_Utils.L_IDX_BOX].fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
-      box.children[_utils.AMES_Utils.L_IDX_BOX].strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-      box.children[_utils.AMES_Utils.L_IDX_NAME].fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-
-      for (var idx in _utils.AMES_Utils.L_IDX_ICONS) {
-        box.children[_utils.AMES_Utils.L_IDX_ICONS[idx]].fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-      }
+      x.show_editor(true); // // Activate layers box
+      // let box = this.obj_boxes[n];
+      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
+      // box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
+      // box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
+      // for (let idx in utils.L_IDX_ICONS) {
+      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
+      // }
     } // deactivate_obj: Deactivates layers box and disables object selection
 
   }, {
@@ -1170,16 +1552,14 @@ var AMES = /*#__PURE__*/function () {
     value: function deactivate_obj(n) {
       var x = this.objs[n];
       x.make_interactive(false);
-      x.show_editor(false); // Deactivate layers box
-
-      var box = this.obj_boxes[n];
-      box.children[_utils.AMES_Utils.L_IDX_BOX].fillColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
-      box.children[_utils.AMES_Utils.L_IDX_BOX].strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-      box.children[_utils.AMES_Utils.L_IDX_NAME].fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-
-      for (var idx in _utils.AMES_Utils.L_IDX_ICONS) {
-        box.children[_utils.AMES_Utils.L_IDX_ICONS[idx]].fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-      }
+      x.show_editor(false); // // Deactivate layers box
+      // let box = this.obj_boxes[n];
+      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
+      // box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
+      // box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
+      // for (let idx in utils.L_IDX_ICONS) {
+      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
+      // }
     }
   }, {
     key: "remove_obj",
@@ -1270,8 +1650,8 @@ var AMES = /*#__PURE__*/function () {
       // Set center point of circle and scale to desired radius
 
       var cb_start_square = function cb_start_square(e) {
-        if (!_this5.on_canvas(e)) return;
-        x = new _shapes.AMES_Square();
+        if (_this5.on_ux(e)) return;
+        x = new _artwork.AMES_Polygon();
 
         if (x.poly) {
           x.set_pos(e.point);
@@ -1284,16 +1664,14 @@ var AMES = /*#__PURE__*/function () {
       var cb_scale_circle = function cb_scale_circle(e) {
         if (!x) return;
         var s = e.point.getDistance(x.poly.position) + 2;
-        x.poly.size = new Size(s, s);
+        x.set_scale(s / 10, s / 10);
       };
 
       var cb_finish_square = function cb_finish_square(e) {
         if (!x) return;
         square_tool.onMouseDrag = null;
         x.to_path();
-        x.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
-
-        _this5.add_shape(x);
+        x.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR; // this.add_shape(x);
 
         x = null;
       };
@@ -1313,8 +1691,8 @@ var AMES = /*#__PURE__*/function () {
       // Set center point of circle and scale to desired radius
 
       var cb_start_circle = function cb_start_circle(e) {
-        if (!_this6.on_canvas(e)) return;
-        c = new _shapes.AMES_Circle();
+        if (_this6.on_ux(e)) return;
+        c = new _artwork.AMES_Ellipse();
 
         if (c.poly) {
           c.set_pos(e.point);
@@ -1326,16 +1704,15 @@ var AMES = /*#__PURE__*/function () {
 
       var cb_scale_circle = function cb_scale_circle(e) {
         if (!c) return;
-        c.poly.radius = e.point.getDistance(c.poly.position) + 2;
+        var s = e.point.getDistance(c.poly.position) + 2;
+        c.set_scale(s, s);
       };
 
       var cb_finish_circle = function cb_finish_circle(e) {
         if (!c) return;
         circle_tool.onMouseDrag = null;
         c.to_path();
-        c.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
-
-        _this6.add_shape(c);
+        c.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR; // this.add_shape(c);
 
         c = null;
       };
@@ -1361,7 +1738,6 @@ var AMES = /*#__PURE__*/function () {
       var helper_shapes = [];
 
       var make_segment_controls = function make_segment_controls(s, e) {
-        console.log('make seg controls?', s);
         var h1 = s.handleIn.add(s.point);
         var h2 = s.handleOut.add(s.point);
         p1 = _utils.AMES_Utils.make_line(h1, s.point);
@@ -1422,8 +1798,8 @@ var AMES = /*#__PURE__*/function () {
 
 
       var cb_start_path = function cb_start_path(e) {
-        if (!_this7.on_canvas(e)) return;
-        x = new _shapes.AMES_Path();
+        if (_this7.on_ux(e)) return;
+        x = new _artwork.AMES_Artwork_Path();
         path_tool.onMouseDown = cb_add_point;
         path_tool.onMouseDrag = cb_adjust_handle;
         cb_add_point(e);
@@ -1433,15 +1809,19 @@ var AMES = /*#__PURE__*/function () {
       // Add point to line
 
       var cb_add_point = function cb_add_point(e) {
-        // If point is close enough to previous point or first point
+        if (_this7.on_ux(e)) {
+          path_tool.clean_tool(true);
+          return;
+        } // If point is close enough to previous point or first point
         // finish path and reset tool
+
+
         if (x.poly.segments.length >= 2) {
           // Make closed path and reset
           if (_utils.AMES_Utils.lengthsq(x.poly.firstSegment.point, e.point) < thresh) {
             console.log("closed path");
             x.poly.closed = true;
-
-            _this7.add_shape(x);
+            x.finish_creating_path(); // this.add_shape(x);
 
             path_tool.clean_tool();
             return;
@@ -1450,8 +1830,7 @@ var AMES = /*#__PURE__*/function () {
 
           if (_utils.AMES_Utils.lengthsq(x.poly.lastSegment.point, e.point) < thresh) {
             console.log("open path");
-
-            _this7.add_shape(x);
+            x.finish_creating_path(); // this.add_shape(x);
 
             path_tool.clean_tool();
             return;
@@ -1510,7 +1889,7 @@ var AMES = /*#__PURE__*/function () {
       var select_helpers = {}; // Start rectangle to make list
 
       var cb_start_list = function cb_start_list(e) {
-        console.log("start list");
+        if (_this8.on_ux(e)) return;
         lbox = new Path.Rectangle(e.point, 10);
         lbox.strokeColor = _utils.AMES_Utils.ACTIVE_COLOR;
         lbox.strokeWidth = 1;
@@ -1532,10 +1911,10 @@ var AMES = /*#__PURE__*/function () {
 
         var lbox_bbox = lbox.strokeBounds;
 
-        for (var i in _this8.active_objs) {
-          var s = _this8.active_objs[i];
+        for (var i in _this8.objs) {
+          var s = _this8.objs[i];
 
-          if (s.is_shape) {
+          if (s.is_artwork) {
             var s_bbox = s.get_bbox(); // If bbox contains shape...
 
             if (lbox_bbox.contains(s_bbox)) {
@@ -1560,7 +1939,7 @@ var AMES = /*#__PURE__*/function () {
 
 
       var cb_make_list = function cb_make_list(e) {
-        console.log("make list");
+        console.log("make list", selected_shapes);
         var shapes = [];
 
         for (var k in selected_shapes) {
@@ -1568,111 +1947,12 @@ var AMES = /*#__PURE__*/function () {
         }
 
         if (shapes.length != 0) {
-          var list = new _lists.AMES_List(shapes, opt);
-
-          _this8.add_list(list);
-        } // clean tool shapes
-
-
-        for (var i in select_helpers) {
-          var s = select_helpers[i];
-          s.remove();
-        }
-
-        lbox.remove();
-        s_dot.remove();
-        e_dot.remove();
-        lbox = null;
-        s_dot = null;
-        e_dot = null;
-        selected_shapes = {};
-        select_helpers = [];
-      };
-
-      list_tool.onMouseDown = cb_start_list;
-      list_tool.onMouseDrag = cb_select_shapes;
-      list_tool.onMouseUp = cb_make_list;
-      return list_tool;
-    } // init_duplicator_tool: creates a duplicator using underlying active shapes
-
-  }, {
-    key: "init_duplicator_tool",
-    value: function init_duplicator_tool() {
-      var _this9 = this;
-
-      var list_tool = new Tool();
-      var TL = 1;
-      var TR = 2;
-      var BR = 3;
-      var BL = 0;
-      var lbox;
-      var s_dot;
-      var e_dot;
-      var selected_shapes = {};
-      var select_helpers = {}; // Start rectangle to make list
-
-      var cb_start_list = function cb_start_list(e) {
-        console.log("start list");
-        lbox = new Path.Rectangle(e.point, 10);
-        lbox.strokeColor = _utils.AMES_Utils.ACTIVE_COLOR;
-        lbox.strokeWidth = 1;
-        lbox.dashArray = [3, 1]; // Create boundary dots
-
-        s_dot = _utils.AMES_Utils.make_dot(lbox.segments[TL].point, _utils.AMES_Utils.ACTIVE_COLOR);
-        e_dot = _utils.AMES_Utils.make_dot(lbox.segments[BR].point, _utils.AMES_Utils.ACTIVE_COLOR);
-      }; // Increase rectangle size and highlight activated shapes that the
-      // selection rectangle to make a list contains
-
-
-      var cb_select_shapes = function cb_select_shapes(e) {
-        console.log("select shapes");
-        if (!lbox) return;
-        lbox.segments[BR].point = e.point;
-        lbox.segments[TR].point.x = e.point.x;
-        lbox.segments[BL].point.y = e.point.y;
-        e_dot.position = e.point; // From active shapes select shapes
-
-        var lbox_bbox = lbox.strokeBounds;
-
-        for (var i in _this9.active_objs) {
-          var s = _this9.active_objs[i];
-
-          if (s.is_shape) {
-            var s_bbox = s.get_bbox(); // If bbox contains shape...
-
-            if (lbox_bbox.contains(s_bbox)) {
-              // If shape is not in selected shape...
-              if (!selected_shapes[s.name]) {
-                // Add it to the selected shapes and highlight it
-                selected_shapes[s.name] = s;
-                select_helpers[s.name] = _utils.AMES_Utils.make_rect(s_bbox, _utils.AMES_Utils.ACTIVE_COLOR);
-              }
-            } else {
-              // Otherwise if it was selected...
-              if (selected_shapes[s.name]) {
-                select_helpers[s.name].remove(); // Remove it from the selected shapes
-
-                delete selected_shapes[s.name];
-                delete select_helpers[s.name];
-              }
-            }
+          if (shapes.length == 1) {
+            console.log("shapes length = 1", shapes);
+            opt.is_duplicator = true;
           }
-        }
-      }; // If active shapes are selected, make a list using those forms
 
-
-      var cb_make_list = function cb_make_list(e) {
-        console.log("make list");
-        var shapes = [];
-
-        for (var k in selected_shapes) {
-          shapes.push(selected_shapes[k]);
-        }
-
-        if (shapes.length != 0) {
-          var list = new _lists.AMES_Duplicator(shapes);
-
-          _this9.add_list(list);
+          var list = new _collection.AMES_Collection(shapes, opt);
         } // clean tool shapes
 
 
@@ -1681,9 +1961,9 @@ var AMES = /*#__PURE__*/function () {
           s.remove();
         }
 
-        lbox.remove();
-        s_dot.remove();
-        e_dot.remove();
+        if (lbox) lbox.remove();
+        if (s_dot) s_dot.remove();
+        if (e_dot) e_dot.remove();
         lbox = null;
         s_dot = null;
         e_dot = null;
@@ -1695,11 +1975,95 @@ var AMES = /*#__PURE__*/function () {
       list_tool.onMouseDrag = cb_select_shapes;
       list_tool.onMouseUp = cb_make_list;
       return list_tool;
-    }
+    } // // init_duplicator_tool: creates a duplicator using underlying active shapes
+    // init_duplicator_tool() {
+    // 	let list_tool = new Tool();
+    // 	let TL = 1; let TR = 2; let BR = 3; let BL = 0;
+    // 	let lbox; let s_dot; let e_dot;
+    // 	let selected_shapes = {};
+    // 	let select_helpers = {};
+    //
+    // 	// Start rectangle to make list
+    // 	let cb_start_list = (e) => {
+    // 		console.log("start list");
+    //
+    // 		lbox = new Path.Rectangle(e.point, 10);
+    // 		lbox.strokeColor = utils.ACTIVE_COLOR;
+    // 		lbox.strokeWidth = 1;
+    // 		lbox.dashArray = [3,1];
+    //
+    // 		// Create boundary dots
+    // 		s_dot = utils.make_dot(lbox.segments[TL].point, utils.ACTIVE_COLOR);
+    // 		e_dot = utils.make_dot(lbox.segments[BR].point, utils.ACTIVE_COLOR);
+    // 	}
+    //
+    // 	// Increase rectangle size and highlight activated shapes that the
+    // 	// selection rectangle to make a list contains
+    // 	let cb_select_shapes = (e) => {
+    // 		console.log("select shapes");
+    // 		if (!lbox) return;
+    // 		lbox.segments[BR].point = e.point;
+    // 		lbox.segments[TR].point.x = e.point.x;
+    // 		lbox.segments[BL].point.y = e.point.y;
+    // 		e_dot.position = e.point;
+    //
+    // 		// From active shapes select shapes
+    // 		let lbox_bbox = lbox.strokeBounds;
+    //
+    // 		for (let i in this.active_objs) {
+    // 			let s = this.active_objs[i];
+    // 			if (s.is_shape) {
+    // 				let s_bbox = s.get_bbox();
+    // 				// If bbox contains shape...
+    // 				if (lbox_bbox.contains(s_bbox)) {
+    // 					// If shape is not in selected shape...
+    // 					if (!selected_shapes[s.name]) {
+    // 						// Add it to the selected shapes and highlight it
+    // 						selected_shapes[s.name] = s;
+    // 						select_helpers[s.name] = utils.make_rect(s_bbox, utils.ACTIVE_COLOR);
+    // 					}
+    // 				} else {
+    // 					// Otherwise if it was selected...
+    // 					if (selected_shapes[s.name]) {
+    // 						select_helpers[s.name].remove();
+    // 						// Remove it from the selected shapes
+    // 						delete selected_shapes[s.name];
+    // 						delete select_helpers[s.name];
+    // 					}
+    // 				}
+    // 			}
+    // 		}
+    // 	}
+    //
+    // 	// If active shapes are selected, make a list using those forms
+    // 	let cb_make_list = (e) => {
+    // 		console.log("make list");
+    // 		let shapes = [];
+    // 		for (let k in selected_shapes) shapes.push(selected_shapes[k]);
+    // 		if (shapes.length !=0 ) {
+    // 			let list = new AMES_Duplicator(shapes);
+    // 		}
+    //
+    // 		// clean tool shapes
+    // 		for (let i in select_helpers) {
+    // 			let s = select_helpers[i];
+    // 			s.remove();
+    // 		}
+    // 		lbox.remove(); s_dot.remove(); e_dot.remove();
+    // 		lbox = null; s_dot = null; e_dot = null;
+    // 		selected_shapes = {}; select_helpers = [];
+    // 	}
+    //
+    // 	list_tool.onMouseDown = cb_start_list;
+    // 	list_tool.onMouseDrag = cb_select_shapes;
+    // 	list_tool.onMouseUp = cb_make_list;
+    // 	return list_tool;
+    // }
+
   }, {
     key: "init_constraint_tool",
     value: function init_constraint_tool() {
-      var _this10 = this;
+      var _this9 = this;
 
       var constraint_tool = new Tool();
       var line;
@@ -1730,9 +2094,9 @@ var AMES = /*#__PURE__*/function () {
 
       var cb_start_constraint = function cb_start_constraint(e) {
         clean_constraint_tool();
-        if (!_this10.on_canvas(e)) return;
+        if (!_this9.on_canvas(e)) return;
 
-        if (!_this10.active_objs[_this10.c_relative.name]) {
+        if (!_this9.active_objs[_this9.c_relative.name]) {
           return;
         } // console.log("The relative is " + ames.c_relative.name);
 
@@ -1751,7 +2115,7 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_select_obj = function cb_select_obj(e) {
-        if (!_this10.active_objs[_this10.c_relative.name]) {
+        if (!_this9.active_objs[_this9.c_relative.name]) {
           clean_constraint_tool();
           return;
         }
@@ -1763,9 +2127,9 @@ var AMES = /*#__PURE__*/function () {
 
         point_in_box = false; // If end point is the bounding box of an active object
 
-        for (var k in _this10.active_objs) {
+        for (var k in _this9.active_objs) {
           // Snap the endpoint to the closest bounding box corner
-          var obj = _this10.active_objs[k];
+          var obj = _this9.active_objs[k];
 
           if (obj != ames.c_relative) {
             if (obj.contains(e.point)) {
@@ -1839,7 +2203,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_animation_link_tool",
     value: function init_animation_link_tool() {
-      var _this11 = this;
+      var _this10 = this;
 
       var animation_link_tool = new Tool();
       var line;
@@ -1863,14 +2227,12 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_start_animation_link = function cb_start_animation_link(e) {
+        if (_this10.on_ux(e)) return;
         clean_animation_link_tool();
         console.log("starting animation link connection?");
-        if (!_this11.on_canvas(e)) return;
-        console.log("...on canvas"); // console.log("The relative is " + ames.c_relative.name);
-
-        line_start = _this11.active_linking_animation.editor.geometry_field_info[_this11.animation_active_field].link.position;
+        line_start = _this10.active_linking_transformation.editor.geometry_field_info[_this10.transformation_active_field].link.position;
+        console.log("line_start", line_start);
         line = new Path.Line(line_start, e.point);
-        console.log("animation link line_start and line", line_start, line);
         line.strokeWidth = 1;
         line.dashArray = [3, 1];
         line.strokeColor = _utils.AMES_Utils.ACTIVE_COLOR;
@@ -1880,11 +2242,7 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_select_obj = function cb_select_obj(e) {
-        if (!_this11.active_objs[_this11.active_linking_animation.name]) {
-          clean_animation_link_tool();
-          return;
-        }
-
+        //line.lastSegment.point = e.point;
         if (!line) {
           clean_animation_link_tool();
           return;
@@ -1892,9 +2250,9 @@ var AMES = /*#__PURE__*/function () {
 
         point_in_box = false; // If end point is the bounding box of an active object
 
-        for (var k in _this11.active_objs) {
+        for (var k in _this10.objs) {
           // Snap the endpoint to the closest bounding box corner
-          var obj = _this11.active_objs[k];
+          var obj = _this10.objs[k];
 
           if (obj.is_geometry) {
             if (obj.contains(e.point)) {
@@ -1933,14 +2291,14 @@ var AMES = /*#__PURE__*/function () {
 
       var cb_enable_animation_link = function cb_enable_animation_link(e) {
         // Set animation geometry field as specified
-        var geometry_field_info = ames.active_linking_animation.editor.geometry_field_info[ames.animation_active_field];
+        var geometry_field_info = ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field];
         var link = geometry_field_info.link;
         var link_remove = geometry_field_info.link_remove;
 
         if (curr_obj) {
-          var rel = ames.active_linking_animation;
-          ames.active_linking_animation.set_geometry_field(ames.animation_active_field, curr_obj);
-          ames.active_linking_animation.editor.geometry_field_info[ames.animation_active_field].label.content = curr_obj.name;
+          var rel = ames.active_linking_transformation;
+          ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, curr_obj);
+          ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = curr_obj.name;
           link.visible = false;
           link_remove.visible = true;
         } // Turn off constraint tool
@@ -1959,7 +2317,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "init_animation_tool",
     value: function init_animation_tool() {
-      var _this12 = this;
+      var _this11 = this;
 
       var animation_tool = new Tool();
 
@@ -1967,16 +2325,14 @@ var AMES = /*#__PURE__*/function () {
       };
 
       var cb_make_animation = function cb_make_animation(e) {
-        if (_this12.on_canvas(e)) {
+        if (_this11.on_canvas(e)) {
           // Create box and show animation editor
           var a = new _animations.AMES_Animation();
-
-          _this12.add_animation(a);
         }
       };
 
       var cb_deactivate_tool = function cb_deactivate_tool(e) {
-        _this12.switch_tool({
+        _this11.switch_tool({
           b: "Animation",
           deactivate: true
         });
@@ -1985,6 +2341,29 @@ var AMES = /*#__PURE__*/function () {
       animation_tool.onMouseDown = cb_make_animation;
       animation_tool.onMouseUp = cb_deactivate_tool;
       return animation_tool;
+    }
+  }, {
+    key: "init_create_transformation_tool",
+    value: function init_create_transformation_tool() {
+      var _this12 = this;
+
+      var create_transformation_tool = new Tool();
+
+      var cb_make_transformation_function = function cb_make_transformation_function(e) {
+        if (_this12.on_ux(e)) return;
+        var tf = new _transformation.AMES_Transformation();
+      };
+
+      var cb_deactivate_tool = function cb_deactivate_tool(e) {
+        _this12.switch_tool({
+          b: "Transformation",
+          deactivate: true
+        });
+      };
+
+      create_transformation_tool.onMouseDown = cb_make_transformation_function;
+      create_transformation_tool.onMouseUp = cb_deactivate_tool;
+      return create_transformation_tool;
     } // on_canvas: determines if event fired is on the animation canvas
 
   }, {
@@ -1995,13 +2374,30 @@ var AMES = /*#__PURE__*/function () {
       var p = new Point(a, b);
       return this.canvas_view.bounds.contains(p);
     }
+  }, {
+    key: "on_ux",
+    value: function on_ux(e) {
+      var on_ux = false;
+
+      for (var idx in this.ux) {
+        var x = this.ux[idx];
+        var bounds = x.bounds;
+        if (x.strokeBounds) bounds = x.strokeBounds;
+
+        if (bounds.contains(e.point)) {
+          on_ux = true;
+        }
+      }
+
+      return on_ux;
+    }
   }]);
 
   return AMES;
 }();
 
 exports.AMES = AMES;
-},{"./animations.js":3,"./constraints.js":4,"./editors.js":5,"./lists.js":6,"./shapes.js":7,"./utils.js":8}],2:[function(require,module,exports){
+},{"./animations.js":3,"./artwork.js":4,"./collection.js":5,"./constraints.js":6,"./editors.js":7,"./lists.js":8,"./transformation.js":10,"./utils.js":11,"./viewfoil.js":12}],2:[function(require,module,exports){
 "use strict";
 
 var _ames = require("./ames.js");
@@ -2013,7 +2409,7 @@ var _ames = require("./ames.js");
 // Description: Main execution space for ames on DOM load, attaches UX handler
 // to global scope. Global scope includes paper object
 // ---------------------------------------------------------------------------
-console.log("Growth mindset & learning opportunities");
+console.log("Growth mindset & learning opportunities: I believe in this project and I believe in myself.");
 paper.install(window);
 window.ames;
 // Set up before DOM is ready
@@ -2030,7 +2426,8 @@ window.onload = function () {
   }
 
   sleep(500).then(function () {
-    ames.test();
+    ames.test(); // let example = "starfield";
+    // ames.example(example);
   });
 };
 },{"./ames.js":1}],3:[function(require,module,exports){
@@ -2042,8 +2439,6 @@ Object.defineProperty(exports, "__esModule", {
 exports.AMES_Animation = exports.AMES_Animation_Test = void 0;
 
 var _utils = require("./utils.js");
-
-require("regenerator-runtime/runtime");
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
@@ -2057,6 +2452,8 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+// TOGGLE FOR BUILD
+// import 'regenerator-runtime/runtime'
 var AMES_Animation_Test = /*#__PURE__*/function () {
   function AMES_Animation_Test() {
     _classCallCheck(this, AMES_Animation_Test);
@@ -3048,7 +3445,2522 @@ var AMES_Axes = /*#__PURE__*/function () {
 
   return AMES_Axes;
 }();
-},{"./utils.js":8,"regenerator-runtime/runtime":9}],4:[function(require,module,exports){
+},{"./utils.js":11}],4:[function(require,module,exports){
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.AMES_Artwork_Path = exports.AMES_Ellipse = exports.AMES_Polygon = exports.AMES_Artwork = void 0;
+
+var _utils = require("./utils.js");
+
+var _editors = require("./editors.js");
+
+var _constraints = require("./constraints.js");
+
+function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
+
+function _superPropBase(object, property) { while (!Object.prototype.hasOwnProperty.call(object, property)) { object = _getPrototypeOf(object); if (object === null) break; } return object; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+// let cb_canvas_crosshair = (e) => {
+// 	ames.canvas.style.cursor = 'crosshair';
+// }
+// Class: Artwork
+// ----------------------------------------------------------------------------
+// Description: Basic artwork representation with visual & temporal properties
+var AMES_Artwork = /*#__PURE__*/function () {
+  function AMES_Artwork() {
+    _classCallCheck(this, AMES_Artwork);
+
+    _defineProperty(this, "name", "Shape");
+
+    _defineProperty(this, "is_geometry", true);
+
+    _defineProperty(this, "is_shape", true);
+
+    _defineProperty(this, "is_artwork", true);
+
+    _defineProperty(this, "obj_type", "shape");
+
+    _defineProperty(this, "visible", false);
+
+    _defineProperty(this, "pos", {
+      x: ames.canvas_cy,
+      y: ames.canvas_cy
+    });
+
+    _defineProperty(this, "scale", {
+      x: 1,
+      y: 1
+    });
+
+    _defineProperty(this, "rotation", 0);
+
+    _defineProperty(this, "visual_props", {
+      'Position': this.pos,
+      'Scale': this.scale
+    });
+
+    _defineProperty(this, "poly", void 0);
+
+    _defineProperty(this, "is_selected", false);
+
+    _defineProperty(this, "path_control_shapes", []);
+
+    _defineProperty(this, "scale_control_shapes", {
+      'scale_box': null,
+      'scale_dots': null
+    });
+
+    _defineProperty(this, "rotation_control_shapes", {});
+
+    _defineProperty(this, "vis_control_shapes", {
+      'path': false
+    });
+
+    _defineProperty(this, "cbs", {
+      'position': this._position_cb,
+      'scale': this._scale_cb,
+      'rotation': this._rotation_cb,
+      'fillColor': this._fill_cb,
+      'strokeWidth': this._strokewidth_cb,
+      'strokeColor': this._strokecolor_cb,
+      'path': this._path_cb
+    });
+
+    _defineProperty(this, "cb_helpers", {
+      'shapes': []
+    });
+
+    _defineProperty(this, "lists", {});
+
+    _defineProperty(this, "c_inbound", {
+      "position": {
+        "all": {},
+        "x": {},
+        "y": {}
+      },
+      "scale": {
+        "all": {},
+        "x": {},
+        "y": {}
+      },
+      "rotation": {
+        "all": {},
+        "t": {}
+      },
+      "fillColor": {
+        "all": {},
+        "h": {},
+        "s": {},
+        "v": {},
+        "a": {}
+      },
+      "strokeWidth": {
+        "all": {},
+        "w": {}
+      },
+      "strokeColor": {
+        "all": {},
+        "h": {},
+        "s": {},
+        "v": {},
+        "a": {}
+      },
+      "path": {}
+    });
+
+    _defineProperty(this, "c_outbound", {
+      "position": {
+        "all": {},
+        "x": {},
+        "y": {}
+      },
+      "scale": {
+        "all": {},
+        "x": {},
+        "y": {}
+      },
+      "rotation": {
+        "all": {},
+        "t": {}
+      },
+      "fillColor": {
+        "all": {},
+        "h": {},
+        "s": {},
+        "v": {},
+        "a": {}
+      },
+      "strokeWidth": {
+        "all": {},
+        "w": {}
+      },
+      "strokeColor": {
+        "all": {},
+        "h": {},
+        "s": {},
+        "v": {},
+        "a": {}
+      },
+      "path": {}
+    });
+  }
+
+  _createClass(AMES_Artwork, [{
+    key: "add_list",
+    value: // add_list: adds list to track which lists the shape is in so updates to the shape
+    // can update the list helper shapes
+    function add_list(list) {
+      this.lists[list.name] = list;
+    } // set_pos(pt, is_delta)
+    // Description: Updates the position of the shape to the pt specified or by
+    // the vector specified if is_delta is true
+
+  }, {
+    key: "set_pos",
+    value: function set_pos(p, is_delta) {
+      if (is_delta) {
+        this.pos.x += p.x;
+        this.pos.y += p.y;
+        if (this.poly) this.poly.position.add(p);
+
+        if (this.rotation_control_shapes.line) {
+          this.rotation_control_shapes.line.position = this.rotation_control_shapes.line.position.add(p);
+        }
+      } else {
+        this.pos.x = p.x;
+        this.pos.y = p.y;
+        var npos = new Point(p.x, p.y);
+        if (this.poly) this.poly.position = new Point(this.pos.x, this.pos.y);
+
+        if (this.rotation_control_shapes.line) {
+          this.rotation_control_shapes.line.segments[0].point = this.poly.position.add(this.rotation_control_shapes.a_offset);
+        }
+      }
+    }
+  }, {
+    key: "set_scaling",
+    value: function set_scaling(x) {
+      this.poly.scaling = x;
+    } // set_scale(f)
+    // Description: Updates the scale of the shape by the given amount
+
+  }, {
+    key: "set_scale",
+    value: function set_scale(fx, fy) {
+      // this.scale.x = fx*this.scale.x;
+      // this.scale.y = fy*this.scale.y;
+      var sx = 1;
+      var sy = 1;
+
+      if (fx) {
+        sx = fx / this.scale.x;
+        this.scale.x = fx;
+      }
+
+      if (fy) {
+        sy = fy / this.scale.y;
+        this.scale.y = fy;
+      }
+
+      if (this.poly) this.poly.scale(sx, sy);
+
+      if (this.rotation_control_shapes.line) {
+        this.rotation_control_shapes.a_offset = this.rotation_control_shapes.a_offset.multiply(sx, sy);
+      }
+    }
+  }, {
+    key: "set_rotation",
+    value: function set_rotation(theta, anchor) {
+      this.rotation += theta;
+
+      if (this.poly) {
+        // if (this.rotation_control_shapes.da) {
+        // 	anchor = this.rotation_control_shapes.da.position;
+        // }
+        if (!anchor) anchor = this.rotation_control_shapes.line.segments[0].point;
+
+        if (anchor) {
+          this.poly.rotate(theta, anchor);
+          if (this.rotation_control_shapes.line) this.rotation_control_shapes.line.rotate(theta, anchor);
+        } else {
+          this.poly.rotate(theta);
+        }
+      }
+    } // draw_shape()
+    // Description: Default shows not implemented
+
+  }, {
+    key: "draw_shape",
+    value: function draw_shape() {
+      console.log("draw_shape not implemented for " + this.name);
+    }
+  }, {
+    key: "get_bbox",
+    value: function get_bbox() {
+      if (this.poly) {
+        var bbox = this.poly.bounds;
+        if (this.poly.strokeBounds) bbox = this.poly.strokeBounds;
+        return bbox;
+      }
+
+      ;
+      return;
+    }
+  }, {
+    key: "get_pos",
+    value: // get_pos: returns the position of this shape
+    function get_pos() {
+      return this.poly.position;
+    } // is_inside(p)
+    // Description: Checks if the point p is within the bounding box of shape
+
+  }, {
+    key: "contains",
+    value: function contains(p) {
+      if (this.poly) {
+        var bounds = this.poly.strokeBounds;
+        if (!bounds) bounds = this.poly.bounds;
+        return p.isInside(bounds);
+      }
+
+      return;
+    } // manipulate: enable interaction on a given property with opt sub properties
+
+  }, {
+    key: "manipulate",
+    value: function manipulate(p, sub) {
+      // Change active property in lists containing shape to match
+      for (var i in this.lists) {
+        if (this.lists[i].active_prop != p) {
+          if (!this.lists[i].is_list_control) {
+            this.lists[i].manipulate(p, sub);
+            return;
+          }
+        } else {
+          if (sub && this.lists[i].active_sub_p != sub) {
+            if (!this.lists[i].is_list_control) {
+              this.lists[i].manipulate_helper(sub);
+              return;
+            }
+          }
+        }
+      }
+
+      this._clear_cb_helpers(); // Turn off the active property
+
+
+      if (this.active_prop) {
+        // Remove subproperty buttons
+        this.editor.show_subprops(this.active_prop, false);
+        this.editor.select_prop(this.active_prop, false);
+        this.editor.show_constraint(false);
+      } // If the new propety is not the property just turned off, turn it on
+
+
+      if (this.active_prop != p) {
+        // Turn off selection toggle and hide path control shapes
+        this.attach_interactivity(false);
+        this.show_path_control_shapes(false);
+        this.active_prop = p;
+        var sub_p = 'all';
+        this.active_sub_p = sub_p;
+
+        if (p == 'strokeColor' || p == 'fillColor') {
+          if (!ames.colorpicker.visible) ames.colorpicker.visible = true;
+        } else {// if (ames.colorpicker.visible) ames.colorpicker.visible = false;
+        } // Indicate active property and show subproperty buttons
+
+
+        this.editor.show_subprops(p, true);
+        this.editor.select_prop(p, true);
+        this.editor.show_constraint(true, p, sub_p); // Activate new propety callback
+
+        this.cbs[p](this, this.cb_helpers);
+      } else {
+        // Turn selection toggle back on
+        this.attach_interactivity(true); // Deactivate property and subproperty
+
+        this.active_prop = null;
+        this.active_sub_p = null;
+      }
+    }
+  }, {
+    key: "manipulate_helper",
+    value: function manipulate_helper(sub) {
+      // Change active property in lists containing shape to match
+      for (var i in this.lists) {
+        if (this.lists[i].active_prop != this.active_prop) {
+          this.lists[i].manipulate(this.active_prop, sub);
+          return;
+        } else {
+          if (sub && this.lists[i].active_sub_p != sub) {
+            this.lists[i].manipulate_helper(sub);
+            return;
+          }
+        }
+      }
+
+      this._clear_cb_helpers();
+
+      this.active_sub_p = sub;
+      this.editor.select_subprop(sub, true);
+      this.editor.show_constraint(true, this.active_prop, sub);
+      this.cbs[this.active_prop](this, this.cb_helpers, sub);
+    }
+  }, {
+    key: "update_constraints",
+    value: function update_constraints() {
+      var p = this.active_prop;
+      var s = this.active_sub_p;
+      if (!s) s = 'all';
+
+      _constraints.AMES_Constraint.update_constraints(p, s, this);
+
+      for (var i in this.lists) {
+        this.lists[i].update_constraints();
+      }
+
+      for (var _i in ames.lists) {
+        ames.lists[_i].update_show_box_bounds();
+      }
+    }
+  }, {
+    key: "notify_lists_shape_is_active",
+    value: function notify_lists_shape_is_active() {
+      for (var i in this.lists) {
+        this.lists[i].set_active_obj(this);
+      }
+    }
+  }, {
+    key: "_clear_cb_helpers",
+    value: function _clear_cb_helpers() {
+      var shapes = this.cb_helpers['shapes'];
+      var n_shapes = this.cb_helpers['shapes'].length;
+
+      for (var idx = 0; idx < n_shapes; idx++) {
+        var s = shapes[idx];
+        s.remove();
+      }
+
+      if (this.cb_helpers['color_target']) {
+        var f = this.cb_helpers['color_target'];
+        ames.colorpicker.color_target = null;
+      }
+
+      if (this.cb_helpers['path']) this.show_path_control_shapes(false);
+      if (this.cb_helpers['scale']) this.show_scale_control_shapes(false);
+      if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
+      this.cb_helpers = {};
+      this.cb_helpers['shapes'] = [];
+    }
+  }, {
+    key: "_position_cb",
+    value: function _position_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        shape.poly.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+          shape.notify_lists_shape_is_active();
+          var pos = shape.poly.position;
+          var offset = pos.subtract(e.point);
+          if (sub && sub == 'x') cb_helpers['y'] = pos.y;
+          if (sub && sub == 'y') cb_helpers['x'] = pos.x;
+          cb_helpers['offset'] = offset;
+        };
+
+        shape.poly.onMouseDrag = function (e) {
+          var offset = cb_helpers['offset'];
+          var point = e.point.add(offset);
+          if (sub && sub == 'x') point.y = cb_helpers['y'];
+          if (sub && sub == 'y') point.x = cb_helpers['x'];
+          if (offset) shape.set_pos(point); // Update constraints
+
+          shape.update_constraints();
+        };
+      }
+    }
+  }, {
+    key: "_scale_cb",
+    value: function _scale_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        (function () {
+          shape.update_scale_control_shapes();
+          shape.show_scale_control_shapes(true);
+          cb_helpers['scale'] = true;
+          var scale_box = shape.scale_control_shapes.scale_box;
+          var scale_dots = shape.scale_control_shapes.scale_dots;
+
+          shape.poly.onMouseDown = function (e) {
+            ames.hide_editors(shape);
+            shape.show_all_editors();
+          };
+
+          var bbox = shape.get_bbox();
+          var corners = [bbox.bottomLeft, bbox.topLeft, bbox.topRight, bbox.bottomRight];
+          var TL = 1;
+          var TR = 2;
+          var BR = 3;
+          var BL = 0;
+          var dot_pairs = [TR, BR, BL, TL];
+          var bf = 1;
+          var pf = 1;
+
+          var _loop = function _loop(d_idx) {
+            var d = scale_dots[d_idx];
+            d.replaceWith(d.insertBelow(scale_box));
+            var d_pair = scale_dots[dot_pairs[d_idx]];
+            var scale_start_x = 1;
+            var scale_start_y = 1;
+
+            d.onMouseDown = function (e) {
+              shape.notify_lists_shape_is_active();
+              pf = 1;
+              scale_start_x = shape.scale.x;
+              scale_start_y = shape.scale.y; // Set relative scale to 1 (current size is scale 1)
+
+              var b = shape.poly.position.subtract(d.position);
+              bf = b.length;
+              if (sub == 'x') bf = b.x;
+              if (sub == 'y') bf = b.y;
+            };
+
+            d.onMouseDrag = function (e) {
+              var p = shape.poly.position.subtract(e.point);
+              var f = p.length / bf;
+              var fx = scale_start_x * p.x / bf;
+              var fy = scale_start_y * p.y / bf; // Scale shape and box
+
+              if (sub == 'x') {
+                f = p.x / bf; // shape.set_scale((1/pf)*f, 1);
+
+                shape.set_scale(fx, null);
+                scale_box.scale(1 / pf * f, 1);
+              } else if (sub == 'y') {
+                f = p.y / bf; // shape.set_scale(1, (1/pf)*f);
+
+                shape.set_scale(null, fy);
+                scale_box.scale(1, 1 / pf * f);
+              } else {
+                // shape.set_scale((1/pf)*f, (1/pf)*f);
+                shape.set_scale(scale_start_x * f, scale_start_y * f); // console.log(f);
+
+                scale_box.scale(1 / pf * f, 1 / pf * f);
+              } // console.log(f);
+
+
+              pf = f; // Update dot position and scale_box
+
+              d.position = scale_box.segments[d_idx].point;
+
+              for (var n = 0; n < 4; n++) {
+                scale_dots[n].position = scale_box.segments[n].point;
+              } // Update constraints
+
+
+              shape.update_constraints();
+            };
+          };
+
+          for (var d_idx = 0; d_idx < 4; d_idx++) {
+            _loop(d_idx);
+          }
+        })();
+      }
+    }
+  }, {
+    key: "_rotation_cb",
+    value: function _rotation_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        // Draw rotation guide
+        shape.update_rotation_control_shapes(); // Set dt to be at the top of the current bounding box of the shape
+
+        var bbox = shape.get_bbox();
+        shape.rotation_control_shapes.line.segments[1].point = bbox.topCenter;
+        shape.rotation_control_shapes.dt.position = bbox.topCenter;
+        shape.show_rotation_control_shapes(true);
+        cb_helpers['rotation'] = true;
+        var line = shape.rotation_control_shapes.line;
+        var da = shape.rotation_control_shapes.da;
+        var dt = shape.rotation_control_shapes.dt;
+        var anchor = da.position;
+        var x_base = dt.position.subtract(da.position);
+        var prev_ro = 0;
+
+        var get_rotation_a = function get_rotation_a(p, anchor) {
+          var r_vec = p.subtract(anchor);
+          var total_ro = x_base.getDirectedAngle(r_vec);
+          var a = total_ro - prev_ro;
+          prev_ro = prev_ro + a;
+          return a;
+        };
+
+        shape.poly.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+        }; // Update anchor point for rotation
+
+
+        da.onMouseDrag = function (e) {
+          da.position = e.point; // Update line
+
+          line.firstSegment.point = e.point; // Update x_base and total rotation using new reference
+
+          anchor = da.position;
+          x_base = dt.position.subtract(anchor);
+          prev_ro = 0;
+          shape.rotation_control_shapes.a_offset = e.point.subtract(shape.poly.position);
+          console.log(shape.rotation_control_shapes.a_offset);
+          console.log(da.position);
+        }; // Rotate based on angle between subsequent rays created by dragging
+
+
+        var ro;
+        var asum = 0;
+
+        dt.onMouseDown = function (e) {
+          shape.notify_lists_shape_is_active();
+          ro = dt.position;
+          prev_ro = shape.poly.rotation;
+          x_base = dt.position.subtract(da.position);
+        }; // Update rotation
+
+
+        dt.onMouseDrag = function (e) {
+          anchor = shape.rotation_control_shapes.da.position;
+          var a = get_rotation_a(e.point, anchor);
+          shape.set_rotation(a, anchor); // shape.poly.rotate(a, anchor);
+          // Rotate line
+          // line.rotate(a, anchor);
+          // asum += a;
+          // console.log(asum);
+          // Update line segment to match dt
+
+          dt.position = e.point;
+          line.lastSegment.point = dt.position; // Update constraints
+
+          shape.update_constraints();
+        };
+      }
+    }
+  }, {
+    key: "_fill_cb",
+    value: function _fill_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        if (shape.poly) ames.colorpicker.load_color(shape.poly.fillColor);
+
+        var color_function = function color_function(c) {
+          shape.poly.fillColor = c;
+        };
+
+        if (sub == 'h') {
+          color_function = function color_function(c) {
+            if (shape.poly.fillColor.saturation == 0) shape.poly.fillColor.saturation = 1;
+            shape.poly.fillColor.hue = c.hue;
+          };
+        }
+
+        if (sub == 's') {
+          color_function = function color_function(c) {
+            shape.poly.fillColor.saturation = c.saturation;
+          };
+        }
+
+        if (sub == 'v') {
+          color_function = function color_function(c) {
+            shape.poly.fillColor.brightness = c.brightness;
+          };
+        }
+
+        if (sub == 'a') {
+          color_function = function color_function(c) {
+            shape.poly.fillColor.alpha = c.alpha;
+          };
+        }
+
+        var shape_color_target = function shape_color_target(c) {
+          color_function(c);
+          shape.update_constraints();
+        };
+
+        ames.colorpicker.color_target = shape_color_target;
+
+        shape.poly.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+          shape.notify_lists_shape_is_active();
+          ames.colorpicker.color_target = shape_color_target;
+        };
+
+        cb_helpers['color_target'] = ames.colorpicker.color_target;
+      }
+    }
+  }, {
+    key: "_strokewidth_cb",
+    value: function _strokewidth_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        var yo;
+        var w;
+
+        shape.poly.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+          shape.notify_lists_shape_is_active();
+          yo = e.point.y;
+          w = shape.poly.strokeWidth;
+        };
+
+        shape.poly.onMouseDrag = function (e) {
+          // console.log(.1*(yo - e.point.y));
+          var nw = w + .1 * (yo - e.point.y);
+
+          if (nw <= 0) {
+            shape.poly.strokeWidth = 0;
+          } else {
+            shape.poly.strokeWidth = nw;
+          } // Update constraints
+
+
+          shape.update_constraints();
+        };
+      }
+    }
+  }, {
+    key: "_strokecolor_cb",
+    value: function _strokecolor_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        if (shape.poly) ames.colorpicker.load_color(shape.poly.strokeColor);
+
+        var color_function = function color_function(c) {
+          shape.poly.strokeColor = c;
+        };
+
+        if (sub == 'h') {
+          color_function = function color_function(c) {
+            if (shape.poly.strokeColor.saturation == 0) shape.poly.strokeColor.saturation = 1;
+            shape.poly.strokeColor.hue = c.hue;
+          };
+        }
+
+        if (sub == 's') {
+          color_function = function color_function(c) {
+            shape.poly.strokeColor.saturation = c.saturation;
+          };
+        }
+
+        if (sub == 'v') {
+          color_function = function color_function(c) {
+            shape.poly.fillColor.brightness = c.brightness;
+          };
+        }
+
+        if (sub == 'a') {
+          color_function = function color_function(c) {
+            shape.poly.fillColor.alpha = c.alpha;
+          };
+        }
+
+        var shape_color_target = function shape_color_target(c) {
+          color_function(c);
+          shape.update_constraints();
+        };
+
+        ames.colorpicker.color_target = shape_color_target;
+
+        shape.poly.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+          shape.notify_lists_shape_is_active();
+          ames.colorpicker.color_target = shape_color_target;
+        };
+
+        cb_helpers['color_target'] = ames.colorpicker.color_target;
+      }
+    }
+  }, {
+    key: "_path_cb",
+    value: function _path_cb(shape, cb_helpers, sub) {
+      if (shape.poly) {
+        shape.update_path_control_shapes();
+        shape.show_path_control_shapes(true);
+        cb_helpers['path'] = true;
+
+        shape.onMouseDown = function (e) {
+          ames.hide_editors(shape);
+          shape.show_all_editors();
+        };
+      }
+    } // create_control_shapes: create all control shapes
+
+  }, {
+    key: "create_control_shapes",
+    value: function create_control_shapes() {
+      this._create_path_control_shapes();
+
+      this._create_scale_box();
+
+      this._create_rotation_shapes();
+    } // create_rotation_shapes: create rotation control shapes
+
+  }, {
+    key: "_create_rotation_shapes",
+    value: function _create_rotation_shapes() {
+      var shape = this;
+
+      if (shape.poly) {
+        var tc = shape.poly.bounds.topCenter;
+        if (shape.strokeBounds) tc = shape.poly.strokeBounds.topCenter;
+
+        var line = _utils.AMES_Utils.make_line(shape.poly.position, tc);
+
+        var da = _utils.AMES_Utils.make_dot(shape.poly.position);
+
+        var dt = _utils.AMES_Utils.make_dot(tc);
+
+        da.scaling = 1.5;
+        da.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
+        da.strokeColor = _utils.AMES_Utils.SHAPE_PATH_COLOR;
+        da.strokeWidth = 2;
+        line.visible = false;
+        da.visible = false;
+        dt.visible = false;
+        this.rotation_control_shapes.line = line;
+        this.rotation_control_shapes.da = da;
+        this.rotation_control_shapes.a_offset = new Point(0, 0);
+        this.rotation_control_shapes.dt = dt;
+      }
+    } // create_scale_box: scale control shapes
+
+  }, {
+    key: "_create_scale_box",
+    value: function _create_scale_box() {
+      var shape = this;
+
+      if (shape.poly) {
+        var bbox = shape.get_bbox();
+
+        var scale_box = _utils.AMES_Utils.make_rect(bbox, _utils.AMES_Utils.SHAPE_PATH_COLOR); // cb_helpers['shapes'].push(scale_box)
+
+
+        var corners = [bbox.bottomLeft, bbox.topLeft, bbox.topRight, bbox.bottomRight];
+        var TL = 1;
+        var TR = 2;
+        var BR = 3;
+        var BL = 0;
+        var dot_pairs = [TR, BR, BL, TL];
+        var scale_dots = [];
+
+        for (var c in corners) {
+          var d = _utils.AMES_Utils.make_dot(corners[c]);
+
+          scale_dots.push(d.clone());
+          d.remove();
+        }
+
+        scale_box.visible = false;
+
+        for (var i = 0; i < 4; i++) {
+          scale_dots[i].visible = false;
+        }
+
+        this.scale_control_shapes.scale_box = scale_box;
+        this.scale_control_shapes.scale_dots = scale_dots;
+      }
+    } // create_path_control_shapes: create path control objects
+
+  }, {
+    key: "_create_path_control_shapes",
+    value: function _create_path_control_shapes() {
+      var _this = this;
+
+      var _loop2 = function _loop2(i) {
+        var s = _this.poly.segments[i]; // Create manipulable dots on the anchor point and handle endpoints
+        // as well as handles connecting the anchor to the handle points
+
+        var h1 = s.handleIn.add(s.point);
+        var h2 = s.handleOut.add(s.point);
+
+        var p1 = _utils.AMES_Utils.make_line(h1, s.point);
+
+        var p2 = _utils.AMES_Utils.make_line(s.point, h2);
+
+        var d = _utils.AMES_Utils.make_square_dot(s.point);
+
+        var d_h1 = _utils.AMES_Utils.make_dot(h1);
+
+        var d_h2 = _utils.AMES_Utils.make_dot(h2); // Edit the path by dragging the anchor point
+
+
+        d.onMouseDrag = function (e) {
+          s.point = e.point; // update the manipulable dots and visual aids
+
+          d.position = e.point;
+          var n_h1 = s.handleIn.add(e.point);
+          var n_h2 = s.handleOut.add(e.point);
+          d_h1.position = n_h1;
+          d_h2.position = n_h2;
+          p1.firstSegment.point = n_h1;
+          p1.lastSegment.point = e.point;
+          p2.firstSegment.point = e.point;
+          p2.lastSegment.point = n_h2;
+        }; // create handles with manipulable dots at endpoints to manipulate the path
+
+
+        d_h1.onMouseDrag = function (e) {
+          s.handleIn = e.point.subtract(s.point);
+          p1.firstSegment.point = e.point;
+          d_h1.position = e.point;
+        };
+
+        d_h2.onMouseDrag = function (e) {
+          s.handleOut = e.point.subtract(s.point);
+          p2.lastSegment.point = e.point;
+          d_h2.position = e.point;
+        };
+
+        var controls = [d, d_h1, d_h2, p1, p2];
+
+        for (var x in controls) {
+          controls[x].visible = false;
+        }
+
+        _this.path_control_shapes.push(controls);
+      };
+
+      // for every segment in the path
+      for (var i in this.poly.segments) {
+        _loop2(i);
+      }
+    } // show_editor: if true open editor; otherwise close;
+
+  }, {
+    key: "show_editor",
+    value: function show_editor(bool) {
+      if (this.editor) {
+        this.editor.show(bool);
+
+        if (!bool) {
+          if (this.active_prop) this.manipulate(this.active_prop);
+        }
+      }
+    }
+  }, {
+    key: "show_all_editors",
+    value: function show_all_editors() {
+      if (this.editor && !this.editor.is_visible) {
+        this.editor.show(true);
+      }
+
+      for (var i in this.lists) {
+        if (this.lists[i].editor && !this.lists[i].editor.is_visible) this.lists[i].editor.show(true);
+      }
+    } // select: if true, select object and opens editor; otherwise deselect and close
+
+  }, {
+    key: "select",
+    value: function select(bool) {
+      if (this.poly) {
+        // this.poly.fullySelected = bool;
+        this.is_selected = bool;
+      }
+    }
+  }, {
+    key: "update_control_shapes",
+    value: function update_control_shapes() {
+      if (this.vis_control_shapes.path) this.update_path_control_shapes();
+      if (this.vis_control_shapes.scale) this.update_scale_control_shapes();
+      if (this.vis_control_shapes.rotation) this.update_rotation_control_shapes();
+    }
+  }, {
+    key: "_redraw_above_poly",
+    value: function _redraw_above_poly(s) {
+      s = s.insertAbove(this.poly);
+    }
+  }, {
+    key: "update_rotation_control_shapes",
+    value: function update_rotation_control_shapes() {
+      this.rotation_control_shapes.dt.position = this.rotation_control_shapes.line.segments[1].point;
+      this.rotation_control_shapes.da.position = this.rotation_control_shapes.line.segments[0].point;
+
+      this._redraw_above_poly(this.rotation_control_shapes.line);
+
+      this._redraw_above_poly(this.rotation_control_shapes.dt);
+
+      this._redraw_above_poly(this.rotation_control_shapes.da);
+    }
+  }, {
+    key: "update_scale_control_shapes",
+    value: function update_scale_control_shapes() {
+      var TL = 1;
+      var TR = 2;
+      var BR = 3;
+      var BL = 0; // update scale dot positions and corners of scale box
+
+      var bbox = this.get_bbox();
+      var sbox_tl = this.scale_control_shapes.scale_box.segments[TL].point;
+      var sbox_tr = this.scale_control_shapes.scale_box.segments[TR].point;
+      var sbox_bl = this.scale_control_shapes.scale_box.segments[BL].point;
+      var sbox_br = this.scale_control_shapes.scale_box.segments[BR].point; // If not flipped in x...
+
+      var l;
+      var r;
+      var t;
+      var b;
+
+      if (sbox_tl.x <= sbox_tr.x) {
+        // Set left and right coord to bbox left and right
+        l = bbox.topLeft.x;
+        r = bbox.topRight.x;
+      } else {
+        // Otherwise flip in x
+        l = bbox.topRight.x;
+        r = bbox.topLeft.x;
+      } // If not flipped in y...
+
+
+      if (sbox_tl.y <= sbox_bl.y) {
+        // Set top and bottom coord to bbox top and bottom
+        t = bbox.topLeft.y;
+        b = bbox.bottomLeft.y;
+      } else {
+        // Otherwise flip
+        t = bbox.bottomLeft.y;
+        b = bbox.topLeft.y;
+      }
+
+      this.scale_control_shapes.scale_box.segments[TL].point = new Point(l, t);
+      this.scale_control_shapes.scale_box.segments[TR].point = new Point(r, t);
+      this.scale_control_shapes.scale_box.segments[BL].point = new Point(l, b);
+      this.scale_control_shapes.scale_box.segments[BR].point = new Point(r, b);
+
+      this._redraw_above_poly(this.scale_control_shapes.scale_box);
+
+      for (var n = 0; n < 4; n++) {
+        this.scale_control_shapes.scale_dots[n].position = this.scale_control_shapes.scale_box.segments[n].point;
+
+        this._redraw_above_poly(this.scale_control_shapes.scale_dots[n]);
+      }
+    }
+  }, {
+    key: "update_path_control_shapes",
+    value: function update_path_control_shapes() {
+      var _this2 = this;
+
+      var _loop3 = function _loop3(i) {
+        var controls = _this2.path_control_shapes[i];
+        var s = _this2.poly.segments[i];
+
+        if (controls) {
+          // update & show path control shapes
+          var d = controls[0];
+          var d_h1 = controls[1];
+          var d_h2 = controls[2];
+          var p1 = controls[3];
+          var p2 = controls[4]; // update visual aids
+
+          d.position = s.point;
+          var n_h1 = s.handleIn.add(s.point);
+
+          if (s.handleIn.x == 0 && s.handleIn.y == 0) {
+            n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+          }
+
+          var n_h2 = s.handleOut.add(s.point);
+
+          if (s.handleOut.x == 0 && s.handleOut.y == 0) {
+            n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+          }
+
+          d_h1.position = n_h1;
+          d_h2.position = n_h2;
+          p1.firstSegment.point = n_h1;
+          p1.lastSegment.point = s.point;
+          p2.firstSegment.point = s.point;
+          p2.lastSegment.point = n_h2; // Edit the path by dragging the anchor point
+
+          d.onMouseDrag = function (e) {
+            s.point = e.point; // update the manipulable dots and visual aids
+
+            d.position = e.point;
+            var n_h1 = s.handleIn.add(e.point);
+            var n_h2 = s.handleOut.add(e.point);
+
+            if (s.handleIn.x == 0 && s.handleIn.y == 0) {
+              n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+
+              if (s.previous.handleOut.length == 0) {
+                var prev_idx = i - 1;
+                if (i == 0) prev_idx = _this2.poly.segments.length - 1;
+                var prev_controls = _this2.path_control_shapes[prev_idx];
+                var prev_d_h2 = prev_controls[2];
+                var prev_p2 = prev_controls[4];
+                var prev_h2 = s.previous.point.add(s.point.subtract(s.previous.point).normalize().multiply(8));
+                prev_d_h2.position = prev_h2;
+                prev_p2.lastSegment.point = prev_h2;
+              }
+            }
+
+            if (s.handleOut.x == 0 && s.handleOut.y == 0) {
+              n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+
+              if (s.next.handleIn.length == 0) {
+                var nxt_idx = i * 1.0 + 1;
+                if (i == _this2.poly.segments.length - 1) nxt_idx = 0;
+                var nxt_controls = _this2.path_control_shapes[nxt_idx];
+                var nxt_d_h1 = nxt_controls[1];
+                var nxt_p1 = nxt_controls[3];
+                var nxt_h1 = s.next.point.add(s.point.subtract(s.next.point).normalize().multiply(8));
+                nxt_d_h1.position = nxt_h1;
+                nxt_p1.firstSegment.point = nxt_h1;
+              }
+            }
+
+            d_h1.position = n_h1;
+            d_h2.position = n_h2;
+            p1.firstSegment.point = n_h1;
+            p1.lastSegment.point = e.point;
+            p2.firstSegment.point = e.point;
+            p2.lastSegment.point = n_h2;
+          }; // create handles with manipulable dots at endpoints to manipulate the path
+
+
+          d_h1.onMouseDrag = function (e) {
+            s.handleIn = e.point.subtract(s.point);
+            p1.firstSegment.point = e.point;
+            d_h1.position = e.point;
+          };
+
+          d_h2.onMouseDrag = function (e) {
+            s.handleOut = e.point.subtract(s.point);
+            p2.lastSegment.point = e.point;
+            d_h2.position = e.point;
+          };
+
+          for (var _i2 in controls) {
+            _this2._redraw_above_poly(controls[_i2]);
+          }
+        }
+      };
+
+      for (var i in this.path_control_shapes) {
+        _loop3(i);
+      }
+    }
+  }, {
+    key: "show_rotation_control_shapes",
+    value: function show_rotation_control_shapes(bool) {
+      this.vis_control_shapes['rotation'] = bool;
+      this.rotation_control_shapes.line.visible = bool;
+      this.rotation_control_shapes.da.visible = bool;
+      this.rotation_control_shapes.dt.visible = bool;
+    }
+  }, {
+    key: "show_scale_control_shapes",
+    value: function show_scale_control_shapes(bool) {
+      this.vis_control_shapes['scale'] = bool;
+      this.scale_control_shapes.scale_box.visible = bool;
+
+      for (var d in this.scale_control_shapes.scale_dots) {
+        this.scale_control_shapes.scale_dots[d].visible = bool;
+      }
+    } // show_path_control_shapes: if true show shapes; otherwise hide
+
+  }, {
+    key: "show_path_control_shapes",
+    value: function show_path_control_shapes(bool) {
+      this.vis_control_shapes['path'] = bool;
+
+      for (var i in this.path_control_shapes) {
+        var controls = this.path_control_shapes[i];
+
+        if (controls) {
+          for (var j in controls) {
+            controls[j].visible = bool;
+          }
+        }
+      }
+    }
+  }, {
+    key: "highlight",
+    value: function highlight(color) {
+      if (this.poly) {
+        var bbox = this.get_bbox();
+        return _utils.AMES_Utils.make_rect(bbox, color);
+      }
+
+      return null;
+    }
+  }, {
+    key: "get_closest_bbox_corner",
+    value: function get_closest_bbox_corner(p) {
+      if (this.poly) {
+        var bbox = this.poly.bounds;
+        if (this.poly.strokeBounds) bbox = this.poly.strokeBounds;
+        var bbox_corners = [bbox.topLeft, bbox.topRight, bbox.bottomLeft, bbox.bottomRight];
+        var min_d = Number.MAX_VALUE;
+        var min_idx = 0;
+
+        for (var idx = 0; idx < 4; idx++) {
+          var d = _utils.AMES_Utils.lengthsq(bbox_corners[idx], p);
+
+          if (d < min_d) {
+            min_d = d;
+            min_idx = idx;
+          }
+        }
+
+        return bbox_corners[min_idx];
+      }
+    }
+  }, {
+    key: "to_path",
+    value: function to_path() {
+      if (this.poly) {
+        var p = this.poly.toPath();
+        this.poly.remove();
+        this.poly = p;
+      }
+    }
+  }, {
+    key: "get_name",
+    value: function get_name() {
+      return this.name;
+    }
+  }, {
+    key: "get_type",
+    value: function get_type() {
+      return this.artwork_type;
+    }
+  }, {
+    key: "set_name",
+    value: function set_name(n) {
+      this.name = n;
+    } // show: if true, show; otherwise hide
+
+  }, {
+    key: "show",
+    value: function show(bool) {
+      this.show_editor(bool);
+      this.visible = bool;
+      this.poly.visible = bool;
+      if (bool && !this.pos_is_set) this.pos_is_set = bool; // Ensure consistency if object is selected
+      // if (this.is_selected) {
+      // 	this.show_path_control_shapes(bool);
+      // }
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      console.log("To do -- Shape.remove()");
+    } // make_interactive: if true, enable interacitivty & open editor; otherwise disable and close
+
+  }, {
+    key: "make_interactive",
+    value: function make_interactive(bool) {
+      this.select(bool);
+      this.attach_interactivity(bool);
+    } // attach_interactivity: if true, enable interactivity; otherwise disable
+
+  }, {
+    key: "attach_interactivity",
+    value: function attach_interactivity(bool) {
+      var _this3 = this;
+
+      if (this.poly) {
+        if (bool) {
+          this.poly.onMouseDown = function (e) {
+            // Show only editors for this object
+            ames.hide_editors(_this3);
+
+            _this3.show_all_editors();
+          }; // select and de-select on click
+
+
+          this.poly.onClick = function (e) {
+            var toggle = !_this3.is_selected;
+
+            _this3.select(toggle); // this.open_editor(toggle);
+
+          };
+        } else {
+          this.poly.onClick = null;
+          this.poly.onMouseDown = null;
+        } // make all other handlers void;
+
+
+        this.poly.onMouseDrag = null; // console.log("attaching interactivity?")
+        // if (this.is_ames_path) {
+        // 	this.poly.onMouseDrag = (e) => {
+        // 		let nearest_point_on_path = this.poly.getNearestPoint(e.point);
+        // 		let path_offset = this.poly.getOffsetOf(nearest_point_on_path);
+        // 		console.log("event point / point on path / path offset / path length:", e.point, nearest_point_on_path, path_offset, this.poly.length);
+        // 		console.log("path offset at point:", path_offset / this.poly.length);
+        // 		console.log("path curvature at point:", this.poly.getCurvatureAt(path_offset))
+        // 	}
+        // }
+      }
+    }
+  }, {
+    key: "create_in_ames",
+    value: function create_in_ames() {
+      this.name = this.get_type() + " (" + this.get_type_count() + ")";
+      this.increment_type_count();
+      this.create_control_shapes();
+      this.create_editor();
+      ames.add_obj(this);
+      this.make_interactive(true);
+    }
+  }, {
+    key: "create_editor",
+    value: function create_editor() {
+      this.editor = new _editors.AMES_Shape_Editor(this);
+      var bounds = this.editor.box.bounds;
+      var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
+      var x = ames.toolbar.get_position().x + w;
+      var h = ames.canvas_view.size.height - 2 * _utils.AMES_Utils.ICON_OFFSET - bounds.height / 2;
+      this.editor.box.position = new Point(x, h);
+    }
+  }, {
+    key: "clone",
+    value: function clone(obj) {
+      obj = Object.assign(obj, this);
+      obj.poly = this.poly.clone();
+      obj.create_in_ames();
+      return obj;
+    }
+  }]);
+
+  return AMES_Artwork;
+}(); // // Class: Square
+// // ---------------------------------------------------------------------------
+// // Description: Implementation of a square / rectangle
+// export class AMES_Square extends AMES_Artwork {
+// 	name = "Rectangle";
+// 	shape_type = "Rectangle";
+// 	is_ames_rectangle = true;
+//
+// 	constructor() {
+// 		super();
+// 		this.poly = new Shape.Rectangle({
+// 			center: [this.pos.x, this.pos.y],
+// 			radius: 2,
+// 			fillColor: 'lavender',
+// 			visible: true,
+// 			strokeWidth: 1,
+// 			strokeColor: 'darkgray'
+// 		});
+// 	}
+// }
+
+
+exports.AMES_Artwork = AMES_Artwork;
+
+_defineProperty(AMES_Artwork, "count", 1);
+
+var AMES_Polygon = /*#__PURE__*/function (_AMES_Artwork) {
+  _inherits(AMES_Polygon, _AMES_Artwork);
+
+  var _super = _createSuper(AMES_Polygon);
+
+  function AMES_Polygon(opt) {
+    var _this4;
+
+    _classCallCheck(this, AMES_Polygon);
+
+    _this4 = _super.call(this);
+
+    _defineProperty(_assertThisInitialized(_this4), "name", "Polygon");
+
+    _defineProperty(_assertThisInitialized(_this4), "shape_type", "Polygon");
+
+    _defineProperty(_assertThisInitialized(_this4), "artwork_type", "Polygon");
+
+    _defineProperty(_assertThisInitialized(_this4), "sides", void 0);
+
+    _defineProperty(_assertThisInitialized(_this4), "radius", void 0);
+
+    _defineProperty(_assertThisInitialized(_this4), "centroid", void 0);
+
+    opt = opt || {};
+    if (!opt.centroid) opt.centroid = ames.canvas_view.center;
+    if (!opt.nsides) opt.nsides = 3;
+    if (!opt.radius) opt.radius = 25;
+    _this4.sides = opt.nsides;
+    _this4.radius = opt.radius;
+    _this4.centroid = opt.centroid;
+
+    if (!opt.clone) {
+      _this4.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, _this4.radius);
+      _this4.poly.strokeWidth = 1;
+      _this4.poly.strokeColor = 'darkgray';
+
+      _this4.to_path();
+
+      _this4.create_in_ames();
+    }
+
+    _this4.cbs['nsides'] = _this4._nsides_cb;
+    return _this4;
+  }
+
+  _createClass(AMES_Polygon, [{
+    key: "_clear_cb_helpers",
+    value: function _clear_cb_helpers() {
+      _get(_getPrototypeOf(AMES_Polygon.prototype), "_clear_cb_helpers", this).call(this);
+
+      this.editor.nsides.visible = false;
+    }
+  }, {
+    key: "_nsides_cb",
+    value: function _nsides_cb(shape, cb_helpers, sub) {
+      shape.editor.nsides.visible = true;
+    }
+  }, {
+    key: "clone",
+    value: function clone() {
+      var opt = {
+        "clone": true
+      };
+      var obj = new AMES_Polygon(opt);
+      return _get(_getPrototypeOf(AMES_Polygon.prototype), "clone", this).call(this, obj);
+    }
+  }, {
+    key: "get_type_count",
+    value: function get_type_count() {
+      return AMES_Polygon.type_count;
+    }
+  }, {
+    key: "increment_type_count",
+    value: function increment_type_count() {
+      AMES_Polygon.type_count += 1;
+    }
+  }, {
+    key: "set_scaling",
+    value: function set_scaling(x) {
+      _get(_getPrototypeOf(AMES_Polygon.prototype), "set_scaling", this).call(this, x);
+
+      this.radius *= x;
+    }
+  }, {
+    key: "set_number_of_sides",
+    value: function set_number_of_sides(nsides) {
+      var style = this.poly.style;
+      var position = this.poly.position;
+      this.poly.remove();
+      this.poly = new Path.RegularPolygon(position, nsides, this.radius);
+      this.poly.style = style;
+
+      if (nsides == 6) {
+        this.poly.rotate(-90);
+      } // this.poly.position = position;
+
+
+      this.sides = nsides;
+    }
+  }, {
+    key: "get_radius_from_side_length",
+    value: function get_radius_from_side_length(side_length, nsides) {
+      return side_length / 2 * Math.sin(180 / nsides * Math.PI / 180);
+    }
+  }]);
+
+  return AMES_Polygon;
+}(AMES_Artwork); // Class: Circle
+// ---------------------------------------------------------------------------
+// Description: Implementation of a circle / ellipse
+
+
+exports.AMES_Polygon = AMES_Polygon;
+
+_defineProperty(AMES_Polygon, "type_count", 1);
+
+var AMES_Ellipse = /*#__PURE__*/function (_AMES_Artwork2) {
+  _inherits(AMES_Ellipse, _AMES_Artwork2);
+
+  var _super2 = _createSuper(AMES_Ellipse);
+
+  function AMES_Ellipse(opt) {
+    var _this5;
+
+    _classCallCheck(this, AMES_Ellipse);
+
+    _this5 = _super2.call(this);
+
+    _defineProperty(_assertThisInitialized(_this5), "name", "Ellipse");
+
+    _defineProperty(_assertThisInitialized(_this5), "shape_type", "Ellipse");
+
+    _defineProperty(_assertThisInitialized(_this5), "artwork_type", "Ellipse");
+
+    _defineProperty(_assertThisInitialized(_this5), "is_ames_ellipse", true);
+
+    opt = opt || {};
+    if (!opt.centroid) opt.centroid = ames.canvas_view.center;
+    if (!opt.r) opt.r = 2;
+    if (!opt.rx) opt.rx = opt.r;
+    if (!opt.ry) opt.ry = opt.rx;
+
+    if (!opt.clone) {
+      _this5.poly = new Shape.Ellipse({
+        center: [opt.centroid.x, opt.centroid.y],
+        radius: [opt.rx, opt.ry],
+        visible: true,
+        strokeWidth: 1,
+        strokeColor: 'darkgray'
+      });
+      _this5.poly.visible = true;
+
+      _this5.to_path();
+
+      _this5.poly.rotate(-90);
+
+      _this5.create_in_ames();
+    }
+
+    return _this5;
+  }
+
+  _createClass(AMES_Ellipse, [{
+    key: "clone",
+    value: function clone() {
+      var opt = {
+        "clone": true
+      };
+      var obj = new AMES_Ellipse(opt);
+      return _get(_getPrototypeOf(AMES_Ellipse.prototype), "clone", this).call(this, obj);
+    }
+  }, {
+    key: "get_type_count",
+    value: function get_type_count() {
+      return AMES_Ellipse.type_count;
+    }
+  }, {
+    key: "increment_type_count",
+    value: function increment_type_count() {
+      AMES_Ellipse.type_count += 1;
+    }
+  }]);
+
+  return AMES_Ellipse;
+}(AMES_Artwork); // Class: Path
+// ---------------------------------------------------------------------------
+// Description: Implementation of a path
+
+
+exports.AMES_Ellipse = AMES_Ellipse;
+
+_defineProperty(AMES_Ellipse, "type_count", 1);
+
+var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
+  _inherits(AMES_Artwork_Path, _AMES_Artwork3);
+
+  var _super3 = _createSuper(AMES_Artwork_Path);
+
+  function AMES_Artwork_Path(opt) {
+    var _this6;
+
+    _classCallCheck(this, AMES_Artwork_Path);
+
+    _this6 = _super3.call(this);
+
+    _defineProperty(_assertThisInitialized(_this6), "name", "Path");
+
+    _defineProperty(_assertThisInitialized(_this6), "shape_type", "Path");
+
+    _defineProperty(_assertThisInitialized(_this6), "artwork_type", "Path");
+
+    _defineProperty(_assertThisInitialized(_this6), "bbox", void 0);
+
+    _defineProperty(_assertThisInitialized(_this6), "is_ames_path", true);
+
+    opt = opt || {};
+
+    if (!opt.clone) {
+      _this6.poly = new Path({
+        strokeColor: 'darkgray',
+        strokeWidth: 1,
+        visible: true,
+        fillColor: 'rgba(255, 0, 0, 0)'
+      });
+    }
+
+    return _this6;
+  }
+
+  _createClass(AMES_Artwork_Path, [{
+    key: "clone",
+    value: function clone() {
+      var opt = {
+        "clone": true
+      };
+      var obj = new AMES_Artwork_Path(opt);
+      return _get(_getPrototypeOf(AMES_Artwork_Path.prototype), "clone", this).call(this, obj);
+    }
+  }, {
+    key: "finish_creating_path",
+    value: function finish_creating_path() {
+      this.create_in_ames();
+    }
+  }, {
+    key: "get_type_count",
+    value: function get_type_count() {
+      return AMES_Artwork_Path.type_count;
+    }
+  }, {
+    key: "increment_type_count",
+    value: function increment_type_count() {
+      AMES_Artwork_Path.type_count += 1;
+    }
+  }, {
+    key: "add_points",
+    value: function add_points(points) {
+      for (var i in points) {
+        this.poly.add(points[i]);
+      }
+    }
+  }, {
+    key: "update_bbox",
+    value: function update_bbox() {
+      this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+      this.bbox.visible = true;
+      this.bbox.sendToBack();
+      this.bbox.fillColor = "lavender";
+      this.bbox.opacity = 0;
+    }
+  }, {
+    key: "make_path_helper",
+    value: function make_path_helper() {
+      // If last point is very close to the previous point close the path
+      var thresh = 144; // 1f first and last pts are within 12px, seal curve
+
+      var n_segs = this.poly.segments.length;
+
+      if (n_segs > 2) {
+        // Check there are at least 2 points in the line
+        var a = this.poly.segments[n_segs - 1].point;
+        var b = this.poly.segments[0].point;
+        if (_utils.AMES_Utils.lengthsq(a.x, a.y, b.x, b.y) < thresh) this.poly.closed = true;
+      } // Simplify, smooth & select path
+
+
+      this.poly.simplify();
+      this.poly.smooth();
+      this.poly.fullySelected = false;
+      this.pos = {
+        'x': this.poly.position.x,
+        'y': this.poly.position.y
+      };
+      console.log(this.poly.strokeBounds); // on double tap open visual props
+
+      this.update_bbox();
+    }
+  }]);
+
+  return AMES_Artwork_Path;
+}(AMES_Artwork);
+
+exports.AMES_Artwork_Path = AMES_Artwork_Path;
+
+_defineProperty(AMES_Artwork_Path, "type_count", 1);
+},{"./constraints.js":6,"./editors.js":7,"./utils.js":11}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.AMES_Collection = void 0;
+
+var _utils = require("./utils.js");
+
+var _constraints = require("./constraints.js");
+
+var _shapes = require("./shapes.js");
+
+var _editors = require("./editors.js");
+
+var _artwork = require("./artwork.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var AMES_Collection = /*#__PURE__*/function () {
+  function AMES_Collection(artwork, opt) {
+    var _this = this;
+
+    _classCallCheck(this, AMES_Collection);
+
+    _defineProperty(this, "name", "Collection");
+
+    _defineProperty(this, "type", "Collection");
+
+    _defineProperty(this, "is_geometry", true);
+
+    _defineProperty(this, "is_list", true);
+
+    _defineProperty(this, "is_collection", true);
+
+    _defineProperty(this, "shapes", []);
+
+    _defineProperty(this, "original", []);
+
+    _defineProperty(this, "count", 1);
+
+    _defineProperty(this, "box", void 0);
+
+    _defineProperty(this, "editor", void 0);
+
+    _defineProperty(this, "cbs", {
+      'position': this._position_cb,
+      'scale': this._scale_cb,
+      'rotation': this._rotation_cb,
+      'fillColor': this._fill_cb,
+      'strokeWidth': this._strokewidth_cb,
+      'strokeColor': this._strokecolor_cb,
+      'path': this._path_cb
+    });
+
+    _defineProperty(this, "cb_helpers", {
+      'shapes': []
+    });
+
+    _defineProperty(this, "c_inbound", {
+      "position": {
+        "all": [],
+        "x": [],
+        "y": []
+      },
+      "scale": {
+        "all": [],
+        "x": [],
+        "y": []
+      },
+      "rotation": {
+        "all": [],
+        "t": []
+      },
+      "fillColor": {
+        "all": [],
+        "h": [],
+        "s": [],
+        "v": [],
+        "a": []
+      },
+      "strokeWidth": {
+        "all": [],
+        "w": []
+      },
+      "strokeColor": {
+        "all": [],
+        "h": [],
+        "s": [],
+        "v": [],
+        "a": []
+      },
+      "path": {}
+    });
+
+    _defineProperty(this, "c_outbound", {
+      "position": {
+        "all": [],
+        "x": [],
+        "y": []
+      },
+      "scale": {
+        "all": [],
+        "x": [],
+        "y": []
+      },
+      "rotation": {
+        "all": [],
+        "t": []
+      },
+      "fillColor": {
+        "all": [],
+        "h": [],
+        "s": [],
+        "v": [],
+        "a": []
+      },
+      "strokeWidth": {
+        "all": [],
+        "w": []
+      },
+      "strokeColor": {
+        "all": [],
+        "h": [],
+        "s": [],
+        "v": [],
+        "a": []
+      },
+      "path": {}
+    });
+
+    _defineProperty(this, "list_constraints", []);
+
+    _defineProperty(this, "offset_mode", false);
+
+    _defineProperty(this, "is_para_style_list", true);
+
+    _defineProperty(this, "is_duplicator", false);
+
+    opt = opt || {};
+    if (opt.is_para_style_list) this.is_para_style_list = opt.is_para_style_list;
+    if (opt.is_duplicator) this.is_duplicator = opt.is_duplicator;
+    this.box = new Group();
+    var n_list = ames.n_lists;
+    this.name = "Collection " + ames.n_lists;
+
+    if (Array.isArray(artwork) && artwork.length > 1) {
+      this.count = artwork.length;
+      this.is_duplicator = false; // Sort shapes by x_position
+
+      artwork.sort(function (a, b) {
+        return a.pos.x - b.pos.x;
+      });
+
+      for (var idx in artwork) {
+        var s = artwork[idx];
+        this.add_to_collection(s);
+      }
+    } else {
+      this.is_duplicator = true;
+      this.count = 1;
+      this.add_to_collection(artwork[0]);
+    }
+
+    this.original = artwork;
+
+    this._make_show_box();
+
+    if (!ames.mode) ames.mode = 'list'; // TO DO: Make this touch screen friendly
+
+    for (var i in this.shapes) {
+      this.shapes[i].poly.on("doubleclick", function (e) {
+        // Change offset mode for all lists that contain shape
+        console.log(_this.name, "changed offset mode to", !_this.offset_mode);
+        _this.offset_mode = !_this.offset_mode;
+
+        _this.update_offset_mode();
+      });
+    }
+
+    for (var _i in ames.lists) {
+      console.log(ames.lists[_i].name, ames.lists[_i].box.children);
+    }
+
+    this.active_obj = this.shapes[0];
+    this.create_in_ames();
+  }
+
+  _createClass(AMES_Collection, [{
+    key: "get_type",
+    value: function get_type() {
+      return this.type;
+    }
+  }, {
+    key: "get_type_count",
+    value: function get_type_count() {
+      return AMES_Collection.type_count;
+    }
+  }, {
+    key: "increment_type_count",
+    value: function increment_type_count() {
+      AMES_Collection.type_count += 1;
+    }
+  }, {
+    key: "create_in_ames",
+    value: function create_in_ames() {
+      this.name = this.get_type() + " (" + this.get_type_count() + ")";
+      this.increment_type_count(); // this.create_control_shapes();
+
+      this.create_editor();
+      ames.add_obj(this);
+      this.make_interactive(true);
+    }
+  }, {
+    key: "create_editor",
+    value: function create_editor() {
+      this.editor = new _editors.AMES_List_Editor(this);
+      var bounds = this.editor.box.bounds;
+      var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
+      var x = ames.toolbar.get_position().x + w;
+      var h = ames.canvas_view.size.height - 2 * _utils.AMES_Utils.ICON_OFFSET - bounds.height / 2;
+      this.editor.box.position = new Point(x, h);
+    }
+  }, {
+    key: "update_offset_mode",
+    value: function update_offset_mode() {
+      for (var i in this.list_constraints) {
+        this.list_constraints[i].offset_mode = this.offset_mode;
+      }
+    } // show_editor: if true open editor; otherwise close;
+
+  }, {
+    key: "show_editor",
+    value: function show_editor(bool) {
+      if (this.editor) {
+        this.editor.show(bool);
+        this.show_box(bool);
+
+        if (!bool) {
+          if (this.active_prop) this.manipulate(this.active_prop);
+        }
+      }
+    } // has_shape: returns whether or not the shape is in the list
+
+  }, {
+    key: "has_shape",
+    value: function has_shape(x) {
+      for (var i in this.shapes) {
+        if (this.shapes[i] == x) return true;
+      }
+
+      return false;
+    }
+  }, {
+    key: "duplicate",
+    value: function duplicate() {
+      console.log("duplicator: ", this.is_duplicator, this.shapes);
+      var original_shape = this.original[0]; // if (!this.bottom) this.bottom = original_shape;
+
+      if (this.is_duplicator) {
+        // TO DO: insertion order bug. Having trouble changing relative ordering of shapes. 
+        var shape = original_shape.clone();
+        this.shapes.push(shape);
+        ames.hide_editors(this);
+        this.editor.show(true);
+        this.show(true);
+      }
+    }
+  }, {
+    key: "set_count",
+    value: function set_count(n) {
+      // Count has to be greater than or equal to 1
+      if (n < 1) return;
+
+      if (this.shapes.length == 1) {
+        var og = this.shapes[0]; // this.shapes = [];
+
+        for (var i = 1; i < n; i++) {
+          var a = Object.create(og);
+          a.poly = null;
+          a.poly = og.poly.clone();
+          a.poly.style = og.poly.style;
+          var c = i * 10;
+          a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
+          this.shapes.push(a);
+          this.show(true);
+        }
+
+        console.log("setting count");
+      } else {// Increase copies using first and last
+      }
+    }
+  }, {
+    key: "align",
+    value: function align() {
+      var og = this.shapes[0];
+
+      for (var i = 1; i < this.shapes.length; i++) {
+        this.shapes[i].poly.position = og.poly.position;
+      }
+    }
+  }, {
+    key: "add_to_collection",
+    value: function add_to_collection(s) {
+      if (!this.is_para_style_list && this.shapes.length > 0) {
+        var fs = this.shapes[0];
+        var ls = this.shapes[this.shapes.length - 1]; // Remove constraint connecting ls to fs
+
+        for (var i = 0; i < _utils.AMES_Utils.VIS_PROPS.length; i++) {
+          var p = _utils.AMES_Utils.VIS_PROPS[i];
+
+          if (p != 'path') {
+            if (this.shapes.length > 1) {
+              var oc = void 0;
+
+              for (var sub_idx = 0; sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; sub_idx++) {
+                var sub = _utils.AMES_Utils.SUB_PROPS[p][sub_idx]; // console.log(sub);
+
+                oc = ls.c_outbound[p][sub][fs.name];
+                this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+                oc.remove();
+              }
+
+              oc = ls.c_outbound[p]['all'][fs.name];
+              this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+              oc.remove();
+            }
+
+            var c_append = new _constraints.AMES_Constraint(s, ls, p, 'all');
+            var c_loop = new _constraints.AMES_Constraint(fs, s, p, 'all');
+            this.list_constraints.push(c_append);
+            this.list_constraints.push(c_loop);
+
+            for (var _sub_idx = 0; _sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; _sub_idx++) {
+              var _sub = _utils.AMES_Utils.SUB_PROPS[p][_sub_idx];
+              this.list_constraints.push(s.c_inbound[p][_sub][ls.name]);
+              this.list_constraints.push(fs.c_inbound[p][_sub][s.name]);
+            }
+          }
+        }
+      }
+
+      this.shapes.push(s);
+      s.add_list(this);
+    }
+  }, {
+    key: "update_constraints",
+    value: function update_constraints() {
+      AMES_List.update_constraints(this);
+    }
+  }, {
+    key: "get_shape_names",
+    value: function get_shape_names() {
+      var str = "";
+
+      for (var idx in this.shapes) {
+        if (idx != 0 && idx != this.shapes.length) str += ", ";
+        str += this.shapes[idx].name;
+      }
+
+      return str;
+    } // show: if true, show; otherwise hide
+
+  }, {
+    key: "show",
+    value: function show(bool) {
+      // this.show_editor(bool);
+      this.update_show_box();
+
+      if (bool) {
+        this._update_list();
+      }
+    } // _update_list: updates the artwork that the list contains
+
+  }, {
+    key: "_update_list",
+    value: function _update_list() {
+      // Use functions based on self-referencing constraints to define
+      // visual artwork in the list
+      for (var idx = 0; idx < this.count; idx++) {// Create symbol using shape function
+        // let s = this._get_shape(idx);
+        // Set position
+        // Set rotation
+      }
+    }
+  }, {
+    key: "remove_item",
+    value: function remove_item() {
+      if (this.count == 1) return;
+      this.count = this.count - 1;
+      this.update_show_box();
+    }
+  }, {
+    key: "add_item",
+    value: function add_item() {
+      this.count = this.count + 1;
+      this.duplicate();
+      this.update_show_box();
+    }
+  }, {
+    key: "show_box",
+    value: function show_box(bool) {
+      // Highlight list and update bbox if necessary
+      this.list_box.visible = bool;
+      if (this.label_box) this.label_box.visible = bool;
+      if (this.label_count) this.label_count.visible = bool;
+      if (this.text_count) this.text_count.visible = bool;
+    }
+  }, {
+    key: "update_show_box",
+    value: function update_show_box() {
+      this.update_show_box_count();
+      this.update_show_box_bounds();
+    }
+  }, {
+    key: "update_show_box_bounds",
+    value: function update_show_box_bounds() {
+      var TL = 1;
+      var BL = 0;
+      var bbox = this.get_bbox(); // console.log(this.name, 'update_show_box', this.box.children);
+
+      var x_off = 20 / (bbox.width + 20);
+      var y_off = 20 / (bbox.height + 20);
+      bbox = bbox.scale(1 + x_off, 1 + y_off);
+      var is_visible = this.list_box.visible;
+      this.list_box.remove();
+      this.list_box = _utils.AMES_Utils.make_rect(bbox, _utils.AMES_Utils.LIST_HIGHLIGHT_COLOR);
+      this.list_box.visible = is_visible;
+      this.count_box.position = this.list_box.segments[BL].point.add(this.label_box_offset);
+    } // update_show_box_count: updates count box value to match list count of items in list
+
+  }, {
+    key: "update_show_box_count",
+    value: function update_show_box_count() {
+      this.count = this.shapes.length;
+      this.text_count.content = this.count;
+    }
+  }, {
+    key: "_make_show_box",
+    value: function _make_show_box() {
+      var _this2 = this;
+
+      var bbox = this.get_bbox();
+      var x_off = 20 / (bbox.width + 20);
+      var y_off = 20 / (bbox.height + 20);
+      bbox = bbox.scale(1 + x_off, 1 + y_off);
+      this.list_box = _utils.AMES_Utils.make_rect(bbox, _utils.AMES_Utils.LIST_HIGHLIGHT_COLOR);
+      this.list_box.visible = true;
+
+      if (this.is_duplicator) {
+        this.label_count = new PointText({
+          point: [bbox.bottomLeft.x + _utils.AMES_Utils.ICON_OFFSET, bbox.bottomLeft.y + _utils.AMES_Utils.ICON_OFFSET * 2.5],
+          content: 'count:',
+          fontFamily: _utils.AMES_Utils.FONT,
+          fontSize: _utils.AMES_Utils.FONT_SIZE,
+          fillColor: _utils.AMES_Utils.LIST_HIGHLIGHT_COLOR
+        });
+        var x = this.label_count.bounds.bottomRight.x + _utils.AMES_Utils.ICON_OFFSET;
+        this.text_count = new PointText({
+          point: [x, bbox.bottomLeft.y + _utils.AMES_Utils.ICON_OFFSET * 2.5],
+          content: this.count,
+          fontFamily: _utils.AMES_Utils.FONT,
+          fontSize: _utils.AMES_Utils.FONT_SIZE,
+          fillColor: _utils.AMES_Utils.LIST_HIGHLIGHT_COLOR
+        });
+
+        this.text_count.onMouseDown = function (e) {
+          ames.canvas.style.cursor = 'move';
+        };
+
+        var total_drag = 0;
+
+        this.text_count.onMouseDrag = function (e) {
+          // ames.canvas.style.cursor = null;
+          total_drag += e.event.movementX;
+          if (total_drag < 0) ames.canvas.style.cursor = 'w-resize';
+          if (total_drag > 0) ames.canvas.style.cursor = 'e-resize';
+
+          if (total_drag < -10) {
+            _this2.remove_item();
+
+            total_drag = 0;
+          }
+
+          if (total_drag > 10) {
+            _this2.add_item();
+
+            total_drag = 0;
+          }
+        };
+
+        this.text_count.onMouseUp = function (e) {
+          ames.canvas.style.cursor = null;
+          total_drag = 0;
+        };
+
+        var r_size = new Size(this.label_count.bounds.width + this.text_count.bounds.width + _utils.AMES_Utils.ICON_OFFSET * 5, this.label_count.bounds.height + _utils.AMES_Utils.ICON_OFFSET);
+        var r_count = new Rectangle(bbox.bottomLeft, r_size);
+        this.label_box = _utils.AMES_Utils.make_rect(r_count, _utils.AMES_Utils.LIST_HIGHLIGHT_COLOR);
+        this.count_box = new Group();
+        this.count_box.addChildren([this.label_count, this.text_count, this.label_box]);
+        var TL = 1;
+        this.label_box_offset = this.label_box.position.subtract(this.label_box.segments[TL].point);
+      }
+    }
+  }, {
+    key: "make_interactive",
+    value: function make_interactive() {
+      console.log("To do -- List.make_interactive()");
+    }
+  }, {
+    key: "manipulate",
+    value: function manipulate(p, sub) {
+      this._clear_cb_helpers();
+
+      console.log("Manipulate list", p, sub); // Turn off the active property
+
+      if (this.active_prop) {
+        // Remove subproperty buttons
+        this.editor.show_subprops(this.active_prop, false);
+        this.editor.select_prop(this.active_prop, false);
+        this.editor.show_constraint(false);
+
+        for (var i in this.shapes) {
+          if (this.shapes[i].active_prop == p) this.shapes[i].manipulate(p);
+        }
+      } // If the new propety is not the property just turned off, turn it on
+
+
+      if (this.active_prop != p) {
+        // Turn off selection toggle and hide path control shapes
+        this.attach_interactivity(false); // this.show_path_control_shapes(false);
+        // Activate new propety callback
+
+        this.active_prop = p;
+        var sub_p = 'all';
+        this.active_sub_p = sub_p;
+
+        for (var _i2 in this.shapes) {
+          console.log('...iterating over', this.shapes[_i2].name);
+
+          if (this.shapes[_i2].active_prop == p) {
+            this.shapes[_i2].manipulate_helper('all');
+          } else {
+            this.shapes[_i2].manipulate(p, sub);
+          }
+        } // this.cbs[p](this, this.cb_helpers);
+        // Indicate active property and show subproperty buttons
+
+
+        this.editor.show_subprops(p, true);
+        this.editor.select_prop(p, true);
+        this.editor.show_constraint(true, p, sub_p);
+        this.active_prop = p;
+        this.active_sub_p = sub_p;
+      } else {
+        // Turn selection toggle back on
+        this.attach_interactivity(true); // Deactivate property and subproperty
+
+        this.active_prop = null;
+        this.active_sub_p = null;
+      }
+    }
+  }, {
+    key: "set_active_obj",
+    value: function set_active_obj(obj) {
+      this.active_obj = obj;
+      this.editor.update_constraint(this.active_prop, this.active_sub_p);
+    }
+  }, {
+    key: "manipulate_helper",
+    value: function manipulate_helper(sub) {
+      this._clear_cb_helpers();
+
+      this.active_sub_p = sub;
+      this.editor.show_constraint(true, this.active_prop, sub);
+
+      for (var i in this.shapes) {
+        this.shapes[i].manipulate_helper(sub);
+      }
+    }
+  }, {
+    key: "_clear_cb_helpers",
+    value: function _clear_cb_helpers() {
+      var shapes = this.cb_helpers['shapes'];
+      var n_shapes = this.cb_helpers['shapes'].length;
+
+      for (var idx = 0; idx < n_shapes; idx++) {
+        var s = shapes[idx];
+        s.remove();
+      }
+
+      if (this.cb_helpers['color_target']) {
+        var f = this.cb_helpers['color_target'];
+        ames.colorpicker.color_target = null;
+      }
+
+      if (this.cb_helpers['path']) this.show_path_control_shapes(false);
+      if (this.cb_helpers['scale']) this.show_scale_control_shapes(false);
+      if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
+      this.cb_helpers = {};
+      this.cb_helpers['shapes'] = [];
+    } // attach_interactivity: if true, enable interactivity on child shapes; otherwise disable
+
+  }, {
+    key: "attach_interactivity",
+    value: function attach_interactivity(bool) {
+      var _this3 = this;
+
+      for (var i in this.shapes) {
+        if (this.shapes[i].poly) {
+          if (bool) {
+            this.shapes[i].poly.onClick = function (e) {
+              var toggle = !_this3.is_selected;
+
+              _this3.select(toggle);
+            };
+          } else {
+            this.shapes[i].poly.onClick = null;
+          }
+        } // Make all other handlers void
+
+
+        this.shapes[i].poly.onMouseDrag = null;
+      }
+    } // select: if true, select object and opens editor; otherwise deselect and close
+
+  }, {
+    key: "select",
+    value: function select(bool) {
+      if (this.poly) {
+        // this.poly.fullySelected = bool;
+        this.is_selected = bool;
+      }
+    } // contains: true if list contains point and point is not inside a shape of the list that
+    // is currently active; false otherwise
+
+  }, {
+    key: "contains",
+    value: function contains(p) {
+      var b = this.list_box.strokeBounds;
+
+      if (b) {
+        var in_other_shape = false;
+
+        if (p.isInside(b)) {
+          for (var i in this.shapes) {
+            var is_active = ames.active_objs[this.shapes[i].name];
+            if (is_active && this.shapes[i].contains(p)) in_other_shape = true;
+          }
+
+          if (in_other_shape) return false;else return true;
+        }
+      }
+
+      return false;
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      console.log("To do -- List.remove()");
+    }
+  }, {
+    key: "make_list_group",
+    value: function make_list_group() {
+      var box = new Group();
+
+      for (var i in this.shapes) {
+        box.addChild(this.shapes[i].poly);
+      }
+
+      return box;
+    }
+  }, {
+    key: "empty_list_group",
+    value: function empty_list_group(box) {
+      for (var i in box.children) {
+        box.children[i].addTo(ames.canvas_view._project);
+      }
+    } // get_bbox: returns the bounding box of the group containing the list items
+
+  }, {
+    key: "get_bbox",
+    value: function get_bbox() {
+      var bbox;
+      var box = this.make_list_group();
+      if (box.strokeBounds) bbox = box.strokeBounds;else bbox = box.bounds;
+      this.empty_list_group(box);
+      return bbox;
+      ;
+    }
+  }, {
+    key: "highlight",
+    value: function highlight(color) {
+      var r = _utils.AMES_Utils.make_rect(this.list_box.strokeBounds, color);
+
+      r.insertBelow(this.list_box);
+      return r;
+    }
+  }, {
+    key: "get_closest_bbox_corner",
+    value: function get_closest_bbox_corner(p) {
+      return null; // nb: better UX
+    } // get_pos: returns position of list
+
+  }, {
+    key: "get_pos",
+    value: function get_pos() {
+      var box = this.make_list_group();
+      var p = box.position;
+      console.log(p);
+      this.empty_list_group(box);
+      return p;
+    }
+  }, {
+    key: "show_path_control_shapes",
+    value: function show_path_control_shapes(bool) {}
+  }], [{
+    key: "update_constraints",
+    value: function update_constraints(list) {
+      var s = list.active_sub_p;
+      if (!s) s = "all";
+
+      _constraints.AMES_Constraint.update_constraints(list.active_prop, s, list);
+    }
+  }]);
+
+  return AMES_Collection;
+}(); //
+// export class AMES_Duplicator extends AMES_List {
+// 	// Make control shapes list to control duplicator
+// 	controls = {
+// 		name: null,
+// 		is_list: true,
+// 		is_list_control: true,
+// 		count: 0,
+// 		shapes: [],
+// 		parent: null,
+// 		active_prop: null,
+// 		active_sub_p: null,
+// 		c_inbound: {
+// 		   "position" : {"all": [], "x": [], "y": []},
+// 		   "scale": {"all": [], "x": [], "y": []},
+// 		   "rotation": {"all": [], "t": []},
+// 		   "fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+// 		   "strokeWidth": {"all": [], "w": []},
+// 		   "strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+// 		   "path" : {}
+// 	   },
+// 	   c_outbound: {
+// 		   "position" : {"all": [], "x": [], "y": []},
+// 		   "scale": {"all": [], "x": [], "y": []},
+// 		   "rotation": {"all": [], "t": []},
+// 		   "fillColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+// 		   "strokeWidth": {"all": [], "w": []},
+// 		   "strokeColor": {"all": [], "h": [], "s": [], "v": [], "a": []},
+// 		   "path" : {}
+// 	   },
+// 	   update_constraints: function() {
+// 		   this.active_prop = this.parent.active_prop;
+// 		   this.active_sub_p = this.parent.active_sub_p;
+// 		   AMES_List.update_constraints(this);
+// 		},
+// 	   list_constraints: [],
+// 	   update_list_constraints: function() { AMES.update_list_constraints(this) },
+// 	   update_show_box_bounds: function() {},
+// 	   manipulate: function(p, sub) { console.log("here..."); },
+// 	   manipulate_helper: function(sub) { console.log("here..."); },
+// 	   set_active_obj: function(s) { this.active_obj = s; }
+// 	};
+//
+// 	constructor(shapes) {
+// 		super(shapes);
+//
+// 		// AMES_List(controls);
+//
+// 		// Initialize control list (for now just first / last)
+// 		// TO DO change to all original shapes
+//
+// 		this.controls.parent = this;
+// 		this.controls.name = this.name + " Controls";
+// 		this.add_to_control_list(shapes[0]);
+// 		this.add_to_control_list(shapes[shapes.length-1]);
+// 		console.log(this.controls.shapes);
+//
+// 		// // Self constrain child list with all duplicator shapes to parent
+// 		// for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+// 		// 	let p = utils.VIS_PROPS[i];
+// 		// 	if (p != 'path') {
+// 		// 		let c = new AMES_Constraint(this, this.controls, p, 'all');
+// 		// 	}
+// 		// }
+//
+// 		let c = new AMES_Constraint(this, this.controls, 'position', 'all');
+// 		console.log("is self-referencing?", c.is_self_referencing);
+// 		c.is_manual_constraint = true;
+// 		this.active_prop = 'position';
+// 		super.update_constraints();
+// 		this.active_prop = null;
+// 	}
+//
+// 	add_to_control_list(s) {
+// 		let controls = this.controls;
+// 		if (controls.shapes.length > 0) {
+// 			let fs = controls.shapes[0];
+// 			let ls = controls.shapes[controls.shapes.length - 1];
+// 			// Remove constraint connecting ls to fs
+// 			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+// 				let p = utils.VIS_PROPS[i];
+// 				if (p != 'path') {
+// 					if (controls.shapes.length > 1) {
+// 						let oc;
+// 						for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+// 							let sub = utils.SUB_PROPS[p][sub_idx];
+// 							oc = ls.c_outbound[p][sub][fs.name];
+// 							controls.list_constraints.splice(controls.list_constraints.indexOf(oc), 1);
+// 							oc.remove();
+// 						}
+// 						oc = ls.c_outbound[p]['all'][fs.name];
+// 						controls.list_constraints.splice(controls.list_constraints.indexOf(oc), 1);
+// 						oc.remove();
+// 					}
+//
+// 					let c_append = new AMES_Constraint(s, ls, p, 'all');
+// 					let c_loop = new AMES_Constraint(fs, s, p, 'all');
+//
+// 					controls.list_constraints.push(c_append);
+// 					controls.list_constraints.push(c_loop);
+//
+// 					for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+// 						let sub = utils.SUB_PROPS[p][sub_idx];
+// 						controls.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+// 						controls.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+// 					}
+// 				}
+// 			}
+// 		}
+// 		controls.count += 1;
+// 		controls.shapes.push(s);
+// 		s.add_list(controls);
+//
+// 		// TO DO: Make this touch screen friendly
+// 		s.poly.on("doubleclick", (e) => {
+// 			// Change offset mode for all lists that contain shape
+// 			console.log(this.name, "changed offset mode to", !controls.offset_mode);
+// 			controls.offset_mode = !this.offset_mode;
+// 			this.update_controls_offset_mode();
+// 		})
+// 	}
+//
+//
+// 	update_offset_mode() {
+// 		super.update_offset_mode();
+// 		this.controls.offset_mode = this.offset_mode;
+// 	}
+//
+// 	update_controls_offset_mode() {
+//
+// 	}
+// }
+
+
+exports.AMES_Collection = AMES_Collection;
+
+_defineProperty(AMES_Collection, "type_count", 1);
+},{"./artwork.js":4,"./constraints.js":6,"./editors.js":7,"./shapes.js":9,"./utils.js":11}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3937,7 +6849,7 @@ var AMES_Constraint = /*#__PURE__*/function () {
 }();
 
 exports.AMES_Constraint = AMES_Constraint;
-},{"./utils.js":8}],5:[function(require,module,exports){
+},{"./utils.js":11}],7:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -3945,11 +6857,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.AMES_List_Editor = exports.AMES_Shape_Editor = exports.AMES_Animation_Editor = void 0;
+exports.AMES_List_Editor = exports.AMES_Shape_Editor = exports.AMES_Transformation_Editor = void 0;
 
 var _utils = require("./utils.js");
 
-var _shapes = require("./shapes.js");
+var _artwork = require("./artwork.js");
 
 var _lists = require("./lists.js");
 
@@ -4007,6 +6919,7 @@ var AMES_Editor = /*#__PURE__*/function () {
       size: [e_width, e_height],
       fillColor: _utils.AMES_Utils.INACTIVE_COLOR,
       strokeWidth: 1,
+      radius: 5,
       strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
       opacity: 0.5
     });
@@ -4072,32 +6985,35 @@ var AMES_Editor = /*#__PURE__*/function () {
   _createClass(AMES_Editor, [{
     key: "set_editor_position",
     value: function set_editor_position() {
-      if (this.pos_is_set) return;
-      this.pos_is_set = true;
-      var pos = this.obj.get_pos();
-      var b = this.obj.get_bbox();
-
-      if (b) {
-        b.strokeColor = 'green';
-        b.strokeWidth = 2;
-        b.visible - true;
-      } else {
-        this.box.position = pos;
-        return;
-      }
-
-      var c = ames.canvas_view.bounds.center;
-      var x = b.width / 2 + this.box.bounds.width / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET; // Adjust horizontal posiiton
-
-      var d_left = b.leftCenter.getDistance(c, true);
-      var d_right = b.rightCenter.getDistance(c, true);
-
-      if (d_left < d_right) {
-        x *= -1;
-      } // Adjust position;
-
-
-      this.box.position = pos.add(new Point(x, -20));
+      // if (this.pos_is_set) return;
+      // this.pos_is_set = true;
+      // let pos = this.obj.get_pos();
+      // let b = this.obj.get_bbox();
+      // if (b) {
+      // 	b.strokeColor = 'green';
+      // 	b.strokeWidth = 2;
+      // 	b.visible - true;
+      // } else {
+      // 	this.box.position = pos; return;
+      // }
+      // let c = ames.canvas_view.bounds.center;
+      //
+      // let x = b.width/2 + this.box.bounds.width/2 + 3*utils.ICON_OFFSET;
+      //
+      // // Adjust horizontal posiiton
+      // let d_left = b.leftCenter.getDistance(c, true);
+      // let d_right = b.rightCenter.getDistance(c, true);
+      // if (d_left < d_right) {
+      // 	x *= -1;
+      // }
+      //
+      // // Adjust position;
+      // this.box.position = pos.add(new Point(x, -20));
+      var bounds = this.box.bounds;
+      var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
+      var x = ames.toolbar.get_position().x + w;
+      var h = ames.canvas_view.size.height - 2 * _utils.AMES_Utils.ICON_OFFSET - bounds.height / 2;
+      this.box.position = new Point(x, h);
     } // open: if true show editor; otherwise close
 
   }, {
@@ -4124,15 +7040,15 @@ var AMES_Editor = /*#__PURE__*/function () {
   return AMES_Editor;
 }();
 
-var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
-  _inherits(AMES_Animation_Editor, _AMES_Editor);
+var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
+  _inherits(AMES_Transformation_Editor, _AMES_Editor);
 
-  var _super = _createSuper(AMES_Animation_Editor);
+  var _super = _createSuper(AMES_Transformation_Editor);
 
-  function AMES_Animation_Editor(obj) {
+  function AMES_Transformation_Editor(obj) {
     var _this2;
 
-    _classCallCheck(this, AMES_Animation_Editor);
+    _classCallCheck(this, AMES_Transformation_Editor);
 
     _this2 = _super.call(this, obj);
 
@@ -4148,22 +7064,24 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     var x_off = 4 * _utils.AMES_Utils.ICON_OFFSET;
     var y_off = _utils.AMES_Utils.LAYER_HEIGHT * 3.5;
 
-    _this2.make_link_button([x_off, y_off], 'artwork');
+    _this2.make_link_button([x_off, y_off], 'target');
 
-    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'transformation'); // Create a play button
+    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'input'); // Create a play button
 
 
-    _this2.make_button(0, "play", "play");
+    _this2.make_button(0, "play", "transform"); // this.make_button(0, "pause", "pause");
+    // this.make_button(0, "rewind", "rewind");
 
-    _this2.make_button(0, "pause", "pause");
 
-    _this2.make_button(0, "rewind", "rewind");
+    _this2.make_button(0, "loop", "loop", {
+      "deactivate_required": true
+    });
 
-    _this2.make_button(0, "loop", "loop");
+    _this2.make_button(1, "axes", "toggle_show_tf", {
+      "deactivate_required": true
+    });
 
-    _this2.make_button(1, "axes", "set_transformation_axes");
-
-    _this2.make_button(1, "brush", "change_animation_property"); // Initialize editor position
+    _this2.make_button(1, "brush", "change_transformation_property"); // Initialize editor position
 
 
     _this2.set_editor_position();
@@ -4171,7 +7089,7 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     return _this2;
   }
 
-  _createClass(AMES_Animation_Editor, [{
+  _createClass(AMES_Transformation_Editor, [{
     key: "make_button",
     value: function make_button(btn_row, icon_name, btn_function, args) {
       var _this3 = this;
@@ -4186,10 +7104,22 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
       btn.visible = true;
 
       btn.onClick = function (e) {
-        btn.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-        btn.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+        if (btn.active) {
+          btn.strokeColor = _utils.AMES_Utils.INACTIVE_COLOR;
+          btn.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
 
-        _this3.obj[btn_function](args);
+          if (args.deactivate_required) {
+            console.log('deactivate', btn_function);
+            args.deactivate = true;
+
+            _this3.obj[btn_function](args);
+          }
+        } else {
+          btn.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+          btn.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+
+          _this3.obj[btn_function](args);
+        }
       };
 
       this.n_btns[btn_row] += 1;
@@ -4232,8 +7162,8 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
       link.onMouseDown = function (e) {
         console.log("click animation link button", field);
-        ames.active_linking_animation = _this4.obj;
-        ames.animation_active_field = field;
+        ames.active_linking_transformation = _this4.obj;
+        ames.transformation_active_field = field;
         ames.tools['Animation_Link'].activate(); // Little workaround... to start drawing line that defines constraint
 
         link.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
@@ -4259,10 +7189,10 @@ var AMES_Animation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     }
   }]);
 
-  return AMES_Animation_Editor;
+  return AMES_Transformation_Editor;
 }(AMES_Editor);
 
-exports.AMES_Animation_Editor = AMES_Animation_Editor;
+exports.AMES_Transformation_Editor = AMES_Transformation_Editor;
 
 var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
   _inherits(AMES_Shape_Editor, _AMES_Editor2);
@@ -4294,12 +7224,18 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
     _this5._make_subprop('all', 0, box); // Create property buttons
 
 
-    var properties = _utils.AMES_Utils.VIS_PROPS;
+    var properties = _utils.AMES_Utils.VIS_PROPS; // Add nsides for Polygon
+
+    if (obj.artwork_type == "Polygon") {
+      properties.push("nsides");
+    }
+
+    var b_w;
 
     var _loop = function _loop(idx) {
       var p = properties[idx];
       var button = ames.icons[p].clone();
-      var b_w = button.bounds.width;
+      b_w = button.bounds.width;
       button.position = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + idx * (_utils.AMES_Utils.ICON_OFFSET + b_w) + b_w / 2, by * 2);
       button.visible = true; // create subproperty boxes
 
@@ -4323,6 +7259,65 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
     for (var idx in properties) {
       _loop(idx);
+    } // Add special slider for polygon (nsides)
+
+
+    if (obj.artwork_type == "Polygon") {
+      var p_text = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + properties.length * (_utils.AMES_Utils.ICON_OFFSET + b_w) + b_w / 2, by * 2);
+      _this5.nsides = new PointText({
+        point: [p_text.x, p_text.y + _utils.AMES_Utils.ICON_OFFSET],
+        content: obj.sides,
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: false
+      });
+      var total_drag = 0;
+
+      _this5.nsides.onMouseDown = function (e) {
+        ames.canvas.style.cursor = 'move';
+      };
+
+      _this5.nsides.onMouseDrag = function (e) {
+        // ames.canvas.style.cursor = null;
+        total_drag += e.event.movementX;
+        console.log(total_drag);
+
+        if (total_drag < 0) {
+          if (total_drag > 0) total_drag = 0;
+          ames.canvas.style.cursor = 'w-resize';
+        }
+
+        if (total_drag > 0) {
+          if (total_drag < 0) total_drag = 0;
+          ames.canvas.style.cursor = 'e-resize';
+        }
+
+        if (total_drag < -5) {
+          // Decrement nsides
+          if (obj.sides > 3) {
+            obj.set_number_of_sides(Number(obj.sides) - 1);
+            _this5.nsides.content = obj.sides;
+          }
+
+          total_drag = 0;
+        }
+
+        if (total_drag > 5) {
+          // Increase nsides
+          console.log("incremenet nsides to", obj.sides + 1);
+          obj.set_number_of_sides(Number(obj.sides) + 1);
+          _this5.nsides.content = obj.sides;
+          total_drag = 0;
+        }
+      };
+
+      _this5.nsides.onMouseUp = function (e) {
+        ames.canvas.style.cursor = null;
+        total_drag = 0;
+      };
+
+      box.addChild(_this5.nsides);
     }
 
     _this5.box = box; // Initialize editor
@@ -4569,7 +7564,10 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
     key: "show_constraint",
     value: function show_constraint(bool, p, sub_p) {
       if (p == 'path') {
-        console.log("here");
+        bool = false;
+      }
+
+      if (p == 'nsides') {
         bool = false;
       }
 
@@ -4844,16 +7842,6 @@ var AMES_List_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
       }
 
       this.constraint_info.rel_idx_val.content = rel_idx;
-    }
-  }, {
-    key: "set_editor_position",
-    value: function set_editor_position() {
-      _get(_getPrototypeOf(AMES_List_Editor.prototype), "set_editor_position", this).call(this); // Adjust to be beneath shape editor
-
-
-      var px = this.obj.list_box.position.x + this.box.bounds.width / 2 + this.obj.list_box.bounds.width / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET;
-      var py = this.obj.list_box.position.y + this.obj.list_box.bounds.height / 2 + 40;
-      this.box.position = new Point(px, py);
     } // show_constraint: also include relative index information
 
   }, {
@@ -4883,7 +7871,7 @@ var AMES_List_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
 }(AMES_Shape_Editor);
 
 exports.AMES_List_Editor = AMES_List_Editor;
-},{"./lists.js":6,"./shapes.js":7,"./utils.js":8}],6:[function(require,module,exports){
+},{"./artwork.js":4,"./lists.js":8,"./utils.js":11}],8:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -5115,7 +8103,7 @@ var AMES_List = /*#__PURE__*/function () {
   }, {
     key: "duplicate",
     value: function duplicate() {
-      console.log("duplicator: ", this.shapes);
+      console.log("duplicator: ", this.is_duplicator, this.shapes);
       var original_shape = this.original_shapes[0];
 
       if (this.is_duplicator) {
@@ -5774,7 +8762,7 @@ var AMES_Duplicator = /*#__PURE__*/function (_AMES_List) {
 }(AMES_List);
 
 exports.AMES_Duplicator = AMES_Duplicator;
-},{"./constraints.js":4,"./shapes.js":7,"./utils.js":8}],7:[function(require,module,exports){
+},{"./constraints.js":6,"./shapes.js":9,"./utils.js":11}],9:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -7134,7 +10122,1921 @@ var AMES_Path = /*#__PURE__*/function (_AMES_Shape3) {
 }(AMES_Shape);
 
 exports.AMES_Path = AMES_Path;
-},{"./constraints.js":4,"./utils.js":8}],8:[function(require,module,exports){
+},{"./constraints.js":6,"./utils.js":11}],10:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Transformation_Space = exports.AMES_Transformation = void 0;
+
+var _utils = require("./utils.js");
+
+var _editors = require("./editors.js");
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var AMES_Transformation = /*#__PURE__*/function () {
+  // artwork or collection of artwork impacted
+  // artwork or collection driving the transformation
+  // transformation function (e.g. translation or scale vs index)
+  // many:many mapping behavior
+  // coord space used to interpret the input artwork
+  // TBD the location of the artwork
+  // supported transformations
+  // TF space
+  // The number of frames used to interpret the path
+  // Scale factor using average length
+  // # of segments to traverse per frame
+  // How speed is represented (constant, linear, xaxis, yaxis, map)
+  // opt
+  // pointers to the cues that trigger this transformation
+  // projection of transformation space onto the target artwork
+  // points that are cues that trigger other transformations
+  function AMES_Transformation(opt) {
+    _classCallCheck(this, AMES_Transformation);
+
+    _defineProperty(this, "target", void 0);
+
+    _defineProperty(this, "input", void 0);
+
+    _defineProperty(this, "mapping", void 0);
+
+    _defineProperty(this, "mapping_behavior", void 0);
+
+    _defineProperty(this, "transformation_space", void 0);
+
+    _defineProperty(this, "page", void 0);
+
+    _defineProperty(this, "mapping", 0);
+
+    _defineProperty(this, "mapping_behavior", "interpolate");
+
+    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position"]);
+
+    _defineProperty(this, "typed_mappings", [{
+      "mapping_type": "Polygon",
+      "mapping": "number of sides"
+    }, {
+      "mapping_type": "Vertex",
+      "mapping": "relative position"
+    }, {
+      "mapping_type": "Vertex",
+      "mapping": "relative animation"
+    }]);
+
+    _defineProperty(this, "MOTION_PATH", 0);
+
+    _defineProperty(this, "STATIC_SCALE", 1);
+
+    _defineProperty(this, "SCALE", 2);
+
+    _defineProperty(this, "DUPLICATE_EACH", 3);
+
+    _defineProperty(this, "HUE", 4);
+
+    _defineProperty(this, "POSITION", 5);
+
+    _defineProperty(this, "NUMBER_OF_SIDES", -1);
+
+    _defineProperty(this, "RELATIVE_POSITION", -2);
+
+    _defineProperty(this, "RELATIVE_ANIMATION", -3);
+
+    _defineProperty(this, "tf_space_absolute", true);
+
+    _defineProperty(this, "tf_mx", void 0);
+
+    _defineProperty(this, "tf_mx_range", {
+      "min": 0,
+      "max": 1
+    });
+
+    _defineProperty(this, "tf_sx", 1);
+
+    _defineProperty(this, "tf_my", void 0);
+
+    _defineProperty(this, "tf_my_range", {
+      "min": 0,
+      "max": 1
+    });
+
+    _defineProperty(this, "tf_sy", 1);
+
+    _defineProperty(this, "tf_mp", void 0);
+
+    _defineProperty(this, "tf_space_path_nsegments", void 0);
+
+    _defineProperty(this, "tf_space_path_length_relative_scale", void 0);
+
+    _defineProperty(this, "tf_space_speed_factor", 1);
+
+    _defineProperty(this, "tf_space_speed", void 0);
+
+    _defineProperty(this, "SPEED_CONSTANT", 0);
+
+    _defineProperty(this, "SPEED_LINEAR", 1);
+
+    _defineProperty(this, "SPEED_XAXIS", 2);
+
+    _defineProperty(this, "SPEED_YAXIS", 3);
+
+    _defineProperty(this, "SPEED_MAP", 4);
+
+    _defineProperty(this, "loop", false);
+
+    _defineProperty(this, "LOOP_INFINITY", -1);
+
+    _defineProperty(this, "loop_max_count", 100);
+
+    _defineProperty(this, "check_playback_points", true);
+
+    _defineProperty(this, "playback_triggers", void 0);
+
+    _defineProperty(this, "transformed_space", void 0);
+
+    _defineProperty(this, "playback_cues", void 0);
+
+    _defineProperty(this, "start_state_idx", 0);
+
+    _defineProperty(this, "play_helper", /*#__PURE__*/function () {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(state_idx, a, a_idx, a_smooth, v_idx) {
+        var _this = this;
+
+        var DELTA, DURATION;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                if (!(state_idx == this.tf_space_path_nsegments)) {
+                  _context.next = 20;
+                  break;
+                }
+
+                if (!false) {
+                  _context.next = 12;
+                  break;
+                }
+
+                if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx][v_idx] < this.loop_max_count))) {
+                  _context.next = 7;
+                  break;
+                }
+
+                state_idx = 0;
+
+                if (this.loop_max_count != this.LOOP_INFINITY) {
+                  this.loop_count[a_idx][v_idx] += 1;
+                }
+
+                _context.next = 10;
+                break;
+
+              case 7:
+                this.is_playing[a_idx][v_idx] = 0;
+                this.trigger_end(a, a_idx, v_idx);
+                return _context.abrupt("return");
+
+              case 10:
+                _context.next = 20;
+                break;
+
+              case 12:
+                if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx] < this.loop_max_count))) {
+                  _context.next = 17;
+                  break;
+                }
+
+                state_idx = 0;
+
+                if (this.loop_max_count != this.LOOP_INFINITY) {
+                  this.loop_count[a_idx] += 1;
+                }
+
+                _context.next = 20;
+                break;
+
+              case 17:
+                this.is_playing[a_idx] = 0;
+                this.trigger_end(a, a_idx);
+                return _context.abrupt("return");
+
+              case 20:
+                DELTA = 0;
+                DURATION = 1; // For a vertex animation
+
+                if (this.vertex_mapping) {
+                  (function () {
+                    // Get the update across all vertices for this object
+                    // let a_smooth = a.poly.clone(); a_smooth.smooth();
+                    // a_smooth.visible = false;
+                    // if (state_idx == 0) a.poly.clone();
+                    // return;
+                    var n_segments = a.poly.segments.length; //
+                    // let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx);
+                    // let d = vertex_update[DELTA];
+                    // let time = vertex_update[DURATION];
+                    // let t_frame = 1000/ames.fps;
+                    // let nframes = Math.ceil(time / t_frame);
+                    //
+                    // let p = a_smooth.getNearestPoint(a.poly.segments[v_idx].point);
+                    // let o = a_smooth.getOffsetOf(p);
+                    // let n = a_smooth.getNormalAt(o);
+                    // let center = a.poly.position;
+                    // if (n.dot(center.subtract(p)) < 0) n = n.multiply(-1);
+                    // let t = a_smooth.getTangentAt(o);
+                    //
+                    // let npath = new Path({
+                    // 	segments: [p, p.add(n.multiply(5))],
+                    // 	strokeColor: "red",
+                    // 	strokeWidth: 1
+                    // });
+                    // npath.visible = false;
+                    //
+                    // let tpath = new Path({
+                    // 	segments: [p, p.add(t.multiply(5))],
+                    // 	strokeColor: "green",
+                    // 	strokeWidth: 1
+                    // });
+                    // tpath.visible = false;
+                    //
+                    //
+                    // let nx = d.y*n.x + d.x*t.x;
+                    // let ny = d.y*n.y + d.x*t.y;
+                    // let vu = new Point(nx, ny);
+                    //
+                    // let perturb_path = new Path({
+                    // 	segments: [p, p.add(vu.multiply(20))],
+                    // 	strokeColor: "black",
+                    // 	strokeWidth: 1
+                    // });
+                    // perturb_path.visible = false;
+                    //
+                    // this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
+                    //
+                    // for (let n = 1;  n < nframes; n++) {
+                    // 	setTimeout(() => {
+                    // 		this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
+                    // 	}, n*t_frame);
+                    // }
+
+                    var time = [];
+                    var vertex_delta = [];
+                    var max_time = 0;
+
+                    for (var _v_idx = 0; _v_idx < n_segments; _v_idx++) {
+                      var vertex_update = _this.get_transform_artwork_at_state(state_idx, _v_idx);
+
+                      var d = vertex_update[DELTA];
+                      time[_v_idx] = vertex_update[DURATION];
+                      if (time[_v_idx] > max_time) max_time = time[_v_idx];
+                      var n = _this.vertex_normals[a_idx][_v_idx];
+                      var t = _this.vertex_tangents[a_idx][_v_idx]; // let npath = new Path({
+                      // 	segments: [p, p.add(n.multiply(20))],
+                      // 	strokeColor: "red",
+                      // 	strokeWidth: 1
+                      // });
+                      // npath.visible = false;
+                      //
+                      // let tpath = new Path({
+                      // 	segments: [p, p.add(t.multiply(20))],
+                      // 	strokeColor: "green",
+                      // 	strokeWidth: 1
+                      // });
+                      // tpath.visible = false;
+
+                      var nx = d.y * n.x + d.x * t.x;
+                      var ny = d.y * n.y + d.x * t.y;
+                      vertex_delta[_v_idx] = new Point(nx, ny);
+                    }
+
+                    var t_frame = 1000 / ames.fps;
+                    var nframes = Math.ceil(max_time / t_frame);
+
+                    _this.tween(a_idx, a, vertex_delta, nframes, state_idx);
+
+                    for (var _n = 1; _n < nframes; _n++) {
+                      setTimeout(function () {
+                        _this.tween(a_idx, a, vertex_delta, nframes, state_idx);
+                      }, _n * t_frame);
+                    } // TODO deal with vertex duplication??
+                    // Tween the updates across all vertices
+                    // let t_frame = 1000/ames.fps;
+                    // for (let v_idx = 0; v_idx < n_segments; v_idx++) {
+                    // 	let t = time[v_idx]; let nframes = Math.ceil(t / t_frame);
+                    // 	this.tween(a_idx, a, vertex_delta, nframes, state_idx);
+                    //
+                    // 	for (let n = 1;  n < nframes; n++) {
+                    // 		setTimeout(() => {
+                    // 			this.tween(a_idx, a, vertex_delta, nframes, state_idx);
+                    // 		}, n*t_frame);
+                    // 	}
+                    // }
+
+
+                    setTimeout(function () {
+                      _this.play_helper(state_idx + 1, a, a_idx, a_smooth, v_idx);
+                    }, max_time);
+                  })();
+                } else {
+                  (function () {
+                    var update = _this.get_transform_artwork_at_state(state_idx, a_idx);
+
+                    var d = update[DELTA];
+                    var t = update[DURATION];
+
+                    if (_this.mapping == _this.DUPLICATE_EACH) {
+                      _this.tween(a_idx, a, d, 1, state_idx);
+                    } else {
+                      (function () {
+                        var t_frame = 1000 / ames.fps;
+                        var nframes = Math.ceil(t / t_frame);
+
+                        _this.tween(a_idx, a, d, nframes, state_idx);
+
+                        for (var n = 1; n < nframes; n++) {
+                          setTimeout(function () {
+                            _this.tween(a_idx, a, d, nframes, state_idx);
+                          }, n * t_frame);
+                        }
+                      })();
+                    }
+
+                    setTimeout(function () {
+                      _this.play_helper(state_idx + 1, a, a_idx);
+                    }, t);
+                  })();
+                }
+
+              case 23:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      return function (_x, _x2, _x3, _x4, _x5) {
+        return _ref.apply(this, arguments);
+      };
+    }());
+
+    this.name = "Transformation" + " (" + AMES_Transformation.count + ")";
+    AMES_Transformation.count += 1;
+    opt = opt || {};
+    this.tf_space_setup_visuals();
+    if (opt.input) this.set_input(opt.input);
+    if (opt.target) this.set_target(opt.target);
+    if (opt.mapping) this.set_mapping(opt.mapping);
+    this.create_in_ames();
+  }
+
+  _createClass(AMES_Transformation, [{
+    key: "create_in_ames",
+    value: function create_in_ames() {
+      console.log("create tf in ames");
+      this.create_editor();
+      ames.add_obj(this);
+    }
+  }, {
+    key: "create_editor",
+    value: function create_editor() {
+      this.editor = new _editors.AMES_Transformation_Editor(this);
+      var bounds = this.editor.box.bounds;
+      var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
+      var x = ames.toolbar.get_position().x + w;
+      var h = ames.canvas_view.size.height - 2 * _utils.AMES_Utils.ICON_OFFSET - bounds.height / 2;
+      this.editor.box.position = new Point(x, h);
+    } // set_input_artwork
+    // ------------------------------------------------------------------------
+    // Modifies the input artwork, setting or unsetting it accordingly
+    //
+    // @param: input - artwork or collection that represents transformation
+    // or null
+
+  }, {
+    key: "set_input",
+    value: function set_input(input) {
+      this.input = input;
+      if (input.is_collection) this.update_count(input);else this.n_input = 1;
+      this.tf_space_speed = this.SPEED_CONSTANT; // # of segments in the path,
+      // i.e. if speed is 1, # of frames at frame rate to traverse transform
+
+      this.tf_space_path_nsegments = 1000;
+      var path_length;
+      if (input.is_artwork) path_length = this.input.poly.length;
+
+      if (input.is_collection) {
+        var total_length = 0;
+
+        for (var idx = 0; idx < this.n_input; idx++) {
+          total_length += this.input.shapes[idx].poly.length;
+        }
+
+        path_length = total_length / this.n_input;
+      }
+
+      this.tf_space_path_length_relative_scale = this.tf_space_path_nsegments / path_length; // if (this.target && this.input) this.transform();
+    } // set_target_artwork
+    // ------------------------------------------------------------------------
+    // Modifies the target artwork that the transformation affects
+    //
+    // @param: target - target artwork or collection to be impacted
+    // or null
+
+  }, {
+    key: "set_target",
+    value: function set_target(target) {
+      var change_target = true;
+
+      if (target) {
+        // If the mapping is typed, check the target is of the correct type
+        if (this.mapping < 0) {
+          var mapping = this.typed_mappings[-1 * this.mapping].mapping_type;
+          valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
+          if (!valid_type) change_target = false;
+        }
+      } else {
+        change_target = true;
+      }
+
+      if (change_target) {
+        this.target = target;
+        if (target.is_collection) this.update_count(target);else this.n_target = 1;
+        if (this.mapping) this.set_tf_space_to_defaults();
+        this.setup_playback_trackers();
+      }
+    } // update_count
+    // ------------------------------------------------------------------------
+    // Updates the count of items to in the input or target to match the count
+    // of the given collection if that collection is the input or target
+    //
+    // @param: the collection with the updated count
+
+  }, {
+    key: "update_count",
+    value: function update_count(collection) {
+      if (this.input == collection) this.n_input = collection.count;
+      if (this.target == collection) this.n_target = collection.count;
+    } // set_property_mapping
+    // ------------------------------------------------------------------------
+    //
+    // @param: mapping - defines the mapping function used to interpret the
+    // transformation
+    //
+
+  }, {
+    key: "set_mapping",
+    value: function set_mapping(mapping) {
+      console.log("set_mapping", mapping);
+      var changed_mapping = false;
+
+      if (!mapping) {
+        this.mapping = this.MOTION_PATH;
+        changed_mapping = true;
+      } // Check for mappings applicable to all types (vertices, artwork, objects)
+
+
+      for (var x in this.mappings) {
+        if (this.mappings[x] == mapping) {
+          this.mapping = x;
+          changed_mapping = true;
+        }
+      }
+
+      this.vertex_mapping = false; // Check for mappings applicable to specific types (polygon, etc)
+
+      if (mapping && mapping.type) {
+        for (var _x6 in this.typed_mappings) {
+          if (this.typed_mappings[_x6].mapping == mapping.mapping) {
+            // If all the objects match, set the mapping accordingly
+            var _mapping_type = this.typed_mappings[_x6].mapping_type;
+
+            if (this.check_valid_target_for_typed_mapping(this.target, _mapping_type)) {
+              this.mapping = -(Number(_x6) + 1);
+              changed_mapping = true;
+            }
+          }
+        }
+      } // If the mapping changed update the transfromation space or throw err
+
+
+      if (!changed_mapping) {
+        console.log("Transformation: Invalid mapping");
+        return false;
+      } else this.set_tf_space_to_defaults(); // Indicate if transformation property is a playbale mapping
+
+
+      if (this.mapping == this.MOTION_PATH) this.is_playable = true;
+      if (this.mapping == this.NUMBER_OF_SIDES) this.is_playable = false;
+      if (this.mapping == this.STATIC_SCALE) this.is_playable = false;
+      if (this.mapping == this.SCALE) this.is_playable = true;
+      if (this.mapping == this.HUE) this.is_playable = false;
+      if (this.mapping == this.POSITION) this.is_playable = false;
+      if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
+      if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
+
+      if (this.mapping == this.DUPLICATE_EACH) {
+        this.is_playable = true;
+        this.tf_space_path_nsegments = 1;
+      }
+
+      return true;
+    }
+  }, {
+    key: "set_mapping_behavior",
+    value: function set_mapping_behavior(behavior) {
+      var is_valid_behavior = false;
+      if (behavior == "alternate") is_valid_behavior = true;
+      if (behavior == "interpoalte") is_valid_behavior = true;
+      if (behavior == "random") is_valid_behavior = true;
+      if (is_valid_behavior) this.mapping_behavior = behavior;
+    } // check_valid_target_for_mapping
+    // ------------------------------------------------------------------------
+    // Returns bool indicating if target matches type necessary for a typed
+    // mapping such as number of sides (target must contain only polygons)
+
+  }, {
+    key: "check_valid_target_for_typed_mapping",
+    value: function check_valid_target_for_typed_mapping(target, mapping_type) {
+      var valid_type = false;
+
+      if (mapping_type == "Vertex") {
+        this.vertex_mapping = true;
+        valid_type = true;
+        return valid_type;
+      } // Check all of the items in the target match the mapping
+
+
+      if (target.is_artwork) {
+        if (target.artwork_type == mapping_type) {
+          valid_type = true;
+        }
+      } else if (target.is_collection) {
+        valid_type = true;
+
+        for (var a_idx in target.shapes) {
+          if (target.shapes[a_idx].artwork_type != mapping_type) {
+            valid_type = false;
+          }
+        }
+      }
+
+      return valid_type;
+    }
+  }, {
+    key: "set_tf_space_to_defaults",
+    value: function set_tf_space_to_defaults() {
+      // Default size of transformation space is the bounding box of the input
+      var bbox = null;
+
+      if (this.input) {
+        if (this.input.is_artwork || this.input.is_collection) {
+          bbox = this.input.get_bbox();
+        }
+      } else {
+        bbox = new Rectangle(ames.canvas_view.center, new Size(200, 100));
+      }
+
+      var BL = bbox.bottomLeft;
+      var TL = bbox.topLeft;
+      var TR = bbox.topRight;
+      var BR = bbox.bottomRight;
+      var eps = 1;
+      var w; // Support for flat lines...
+
+      if (-eps <= BL.y - TL.y && BL.y - TL.y <= 0 || 0 <= BL.y - TL.y && BL.y - TL.y <= eps) {
+        if (this.input.is_artwork) w = this.input.poly.length;
+        if (this.input.is_collection) w = this.input.shapes[0].poly.length;
+        bbox = new Rectangle(new Point(bbox.x, bbox.y), new Size(w, w));
+        BL = bbox.bottomLeft;
+        TL = bbox.topLeft;
+        TR = bbox.topRight;
+        BR = bbox.bottomRight;
+      } // If an axis is n (the idx across a collection), set initial axis scale to 1 and length to n
+
+
+      var n_target = this.target && this.target.is_collection ? this.target.shapes.length : 10;
+
+      if (this.mapping == this.MOTION_PATH || this.mapping == this.RELATIVE_ANIMATION) {
+        this.set_tf_space({
+          "mx": "x",
+          "mx1": TL.x,
+          "mx2": TR.x,
+          "my": "y",
+          "my1": TL.y,
+          "my2": BL.y,
+          "mp": "time",
+          "show": true,
+          "yflip": false,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.POSITION || this.mapping == this.RELATIVE_POSITION) {
+        this.set_tf_space({
+          "mx": "x",
+          "mx1": TL.x,
+          "mx2": TR.x,
+          "my": "y",
+          "my1": TL.y,
+          "my2": BL.y,
+          "mp": "",
+          "show": true,
+          "yflip": false,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.NUMBER_OF_SIDES) {
+        var my2 = this.linear_map(0, TR.x - TL.x, 0, n_target - 1, BL.y - TL.y);
+        this.set_tf_space({
+          "mx": "index",
+          "mx1": 0,
+          "mx2": n_target - 1,
+          "my": "sides",
+          "my1": 3,
+          "my2": 3 + my2,
+          "mp": null,
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.STATIC_SCALE) {
+        var _my = this.linear_map(0, TR.x - TL.x, 0, n_target - 1, BL.y - TL.y);
+
+        this.set_tf_space({
+          "mx": "index",
+          "mx1": 0,
+          "mx2": n_target - 1,
+          "my": "scaling",
+          "my1": 1,
+          "my2": 1 + _my,
+          "mp": null,
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.SCALE) {
+        var _my2 = this.linear_map(0, 25, 0, 1, BL.y - TL.y);
+
+        this.set_tf_space({
+          "mx": null,
+          "mx1": null,
+          "mx2": null,
+          "my": "scaling",
+          "my1": 1,
+          "my2": 1 + _my2,
+          "mp": "time",
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.DUPLICATE_EACH) {
+        var _my3 = this.linear_map(0, TR.x - TL.x, 0, 1, BL.y - TL.y);
+
+        this.set_tf_space({
+          "mx": "time",
+          "mx1": 0,
+          "mx2": 1,
+          "my": "duplicates",
+          "my1": 1,
+          "my2": 1 + _my3,
+          "mp": null,
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+
+      if (this.mapping == this.HUE) {
+        var _my4 = this.linear_map(0, TR.x - TL.x, 0, 360, BL.y - TL.y);
+
+        this.set_tf_space({
+          "mx": "index",
+          "mx1": 0,
+          "mx2": n_target - 1,
+          "my": "hue",
+          "my1": 0,
+          "my2": _my4,
+          "mp": null,
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+    }
+  }, {
+    key: "set_tf_space",
+    value: function set_tf_space(opt) {
+      console.log("set_tf_space", opt);
+      opt = opt || {};
+      if (opt.hasOwnProperty("mx")) this.tf_mx = opt.mx;
+      if (opt.hasOwnProperty("my")) this.tf_my = opt.my;
+      if (opt.hasOwnProperty("mp")) this.tf_mp = opt.mp;
+      if (opt.hasOwnProperty("mx1")) this.tf_mx1 = opt.mx1;
+      if (opt.hasOwnProperty("mx2")) this.tf_mx2 = opt.mx2;
+      if (opt.hasOwnProperty("my1")) this.tf_my1 = opt.my1;
+      if (opt.hasOwnProperty("my2")) this.tf_my2 = opt.my2;
+      if (opt.hasOwnProperty("sx1")) this.tf_sx1 = opt.sx1;
+      if (opt.hasOwnProperty("sx2")) this.tf_sx2 = opt.sx2;
+      if (opt.hasOwnProperty("sy1")) this.tf_sy1 = opt.sy1;
+      if (opt.hasOwnProperty("sy2")) this.tf_sy2 = opt.sy2;
+      if (opt.hasOwnProperty("yflip")) this.tf_s_yflip = opt.yflip;
+      if (opt.show) this.show_tf_space(opt.show);
+    }
+  }, {
+    key: "tf_space_setup_visuals",
+    value: function tf_space_setup_visuals() {
+      var tf_s = {};
+      var w = 200;
+      var h = 100;
+      var ox = ames.canvas_view.center.x;
+      var oy = ames.canvas_view.center.y;
+      tf_s["box"] = new Path.Rectangle(new Point(ox - w / 2, oy - h / 2), new Point(ox + w / 2, oy + h / 2));
+      tf_s.box.strokeColor = 'lightgray';
+      tf_s.box.strokeWidth = 0.5;
+      tf_s.box.dashArray = [6, 2];
+      tf_s["x_axis"] = _utils.AMES_Utils.make_line(new Point(ox - w / 2, oy), new Point(ox + w / 2, oy));
+      tf_s["y_axis"] = _utils.AMES_Utils.make_line(new Point(ox, oy - h / 2), new Point(ox, oy + h / 2));
+      tf_s.x_axis.strokeColor = 'lightgray';
+      tf_s.y_axis.strokeColor = 'lightgray';
+      tf_s.x_axis.strokeWidth = 0.5;
+      tf_s.y_axis.strokeWidth = 0.5;
+      tf_s.x_axis.dashArray = [6, 2];
+      tf_s.y_axis.dashArray = [6, 2];
+      tf_s["mx1_label"] = new PointText(tf_s.x_axis.segments[0].point);
+      tf_s["mx2_label"] = new PointText(tf_s.x_axis.segments[1].point);
+      tf_s["my1_label"] = new PointText(tf_s.y_axis.segments[0].point);
+      tf_s["my2_label"] = new PointText(tf_s.y_axis.segments[1].point);
+      tf_s["mp_label"] = new PointText(new Point(ox, oy));
+      tf_s["mx_label"] = new PointText(tf_s.x_axis.segments[1].point.subtract(25, -10));
+      tf_s["my_label"] = new PointText(tf_s.y_axis.segments[0].point.add(0, 10));
+
+      _utils.AMES_Utils.style_label(tf_s.mx1_label);
+
+      _utils.AMES_Utils.style_label(tf_s.mx2_label);
+
+      _utils.AMES_Utils.style_label(tf_s.my1_label);
+
+      _utils.AMES_Utils.style_label(tf_s.my2_label);
+
+      _utils.AMES_Utils.style_label(tf_s.mx_label);
+
+      _utils.AMES_Utils.style_label(tf_s.my_label);
+
+      _utils.AMES_Utils.style_label(tf_s.mp_label);
+
+      tf_s.mx1_label.content = "mx1_label";
+      tf_s.mx2_label.content = "mx2_label";
+      tf_s.my1_label.content = "my1_label";
+      tf_s.my2_label.content = "my2_label";
+      tf_s.mp_label.content = "path_label";
+      tf_s.mx_label.content = "mx_label";
+      tf_s.my_label.content = "my_label";
+
+      for (var x in tf_s) {
+        tf_s[x].visible = false;
+      }
+
+      this.tf_s = tf_s;
+    }
+  }, {
+    key: "show_tf_space",
+    value: function show_tf_space(bool) {
+      if (bool == null) bool = true;
+
+      if (bool) {
+        // Update screen space rectangle
+        var TL = 1;
+        var BL = 0;
+        var TR = 2;
+        var BR = 3;
+        this.tf_s.box.segments[TL].point = new Point(this.tf_sx1, this.tf_sy1);
+        this.tf_s.box.segments[BL].point = new Point(this.tf_sx1, this.tf_sy2);
+        this.tf_s.box.segments[TR].point = new Point(this.tf_sx2, this.tf_sy1);
+        this.tf_s.box.segments[BR].point = new Point(this.tf_sx2, this.tf_sy2); // Find origin using reverse mapping or use bottom left corner
+
+        var o = this.tf_space_reverse_map_x_y(0, 0);
+        if (!this.tf_s.box.bounds.contains(o)) o = this.tf_s.box.segments[BL].point; // Update x-axis and y-axis
+
+        this.tf_s.x_axis.segments[0].point = new Point(this.tf_sx1, o.y);
+        this.tf_s.x_axis.segments[1].point = new Point(this.tf_sx2, o.y);
+        this.tf_s.x_axis.strokeColor = "pink";
+        this.tf_s.y_axis.segments[0].point = new Point(o.x, this.tf_sy1);
+        this.tf_s.y_axis.segments[1].point = new Point(o.x, this.tf_sy2);
+        this.tf_s.y_axis.strokeColor = "orange"; // Update label content and positions
+
+        var loff = 10; // label offset
+
+        this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(0) : 0;
+        this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(0) : 0;
+        this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(0) : 0;
+        this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(0) : 0;
+        this.tf_s.mp_label.content = this.tf_mp ? this.tf_mp : "";
+
+        if (!this.tf_mx) {
+          this.tf_s.mx1_label.content = "";
+          this.tf_s.mx2_label.content = "";
+        }
+
+        if (!this.tf_my) {
+          this.tf_s.my1_label.content = "";
+          this.tf_s.my2_label.content = "";
+        }
+
+        this.tf_s.mx_label.content = this.tf_mx ? this.tf_mx : "";
+        this.tf_s.my_label.content = this.tf_my ? this.tf_my : "";
+        this.tf_s.mx1_label.position = this.tf_s.x_axis.segments[0].point.add(0, loff);
+        this.tf_s.mx2_label.position = this.tf_s.x_axis.segments[1].point.add(0, loff);
+        this.tf_s.my1_label.position = this.tf_s.y_axis.segments[0].point.add(-loff, 0);
+        this.tf_s.my2_label.position = this.tf_s.y_axis.segments[1].point.add(-loff, 0);
+        this.tf_s.mx_label.position = this.tf_s.x_axis.segments[1].point.subtract(2 * loff, -1.5 * loff);
+        this.tf_s.my_label.position = this.tf_s.y_axis.segments[0].point.add(-1.5 * loff, loff);
+        var first_path;
+        if (this.input.is_artwork) first_path = this.input.poly;
+        if (this.input.is_collection) first_path = this.input.shapes[0].poly;
+
+        if (first_path) {
+          this.tf_s.mp_label.position = first_path.getPointAt(0).add(0, -1.5 * loff);
+        } else {
+          this.tf_s.mp_label.position = this.tf_s.box.segments[TR].point.subtract(2 * loff, -2 * loff);
+        } // Flip y label if needed
+
+
+        if (this.tf_s_yflip) {
+          var temp = this.tf_s.my1_label.position;
+          this.tf_s.my1_label.position = this.tf_s.my2_label.position;
+          this.tf_s.my2_label.position = temp;
+        } // Show all items
+
+
+        for (var x in this.tf_s) {
+          this.tf_s[x].visible = true;
+        }
+      } else {
+        // Hide all items
+        for (var _x7 in this.tf_s) {
+          this.tf_s[_x7].visible = false;
+        }
+      }
+    }
+  }, {
+    key: "tf_space_map_x_y",
+    value: function tf_space_map_x_y(x, y) {
+      var tx = null;
+      var ty = null;
+
+      if (x != null) {
+        tx = this.linear_map(this.tf_sx1, this.tf_sx2, this.tf_mx1, this.tf_mx2, x);
+      }
+
+      if (y != null) {
+        if (!this.tf_s_yflip) ty = this.linear_map(this.tf_sy1, this.tf_sy2, this.tf_my1, this.tf_my2, y);
+        if (this.tf_s_yflip) ty = this.linear_map(this.tf_sy1, this.tf_sy2, this.tf_my2, this.tf_my1, y);
+      }
+
+      return {
+        "x": tx,
+        "y": ty
+      };
+    }
+  }, {
+    key: "tf_space_reverse_map_x_y",
+    value: function tf_space_reverse_map_x_y(x, y) {
+      var tx = null;
+      var ty = null;
+
+      if (x != null) {
+        tx = this.linear_map(this.tf_mx1, this.tf_mx2, this.tf_sx1, this.tf_sx2, x);
+      }
+
+      if (y != null) {
+        if (!this.tf_s_yflip) ty = this.linear_map(this.tf_my1, this.tf_my2, this.tf_sy1, this.tf_sy2, y);
+        if (this.tf_s_yflip) ty = this.linear_map(this.tf_my1, this.tf_my2, this.tf_sy2, this.tf_sy1, y);
+      }
+
+      return {
+        "x": tx,
+        "y": ty
+      };
+    }
+  }, {
+    key: "linear_map",
+    value: function linear_map(in_s, in_f, out_s, out_f, v) {
+      return out_s + (v - in_s) * (out_f - out_s) / (in_f - in_s);
+    } // transform
+    // ------------------------------------------------------------------------
+    // Plays the transformation function if it represents an animation;
+    // otherwise it applies the transformation function to the objects
+    // properties
+
+  }, {
+    key: "transform",
+    value: function transform() {
+      if (!this.mapping) this.set_mapping();
+      if (!this.input || !this.target) return;
+
+      if (this.is_playable) {
+        this.play();
+      } else {
+        console.log("applying transformation?");
+        this.apply();
+      }
+    }
+  }, {
+    key: "_clear_cb_helpers",
+    value: function _clear_cb_helpers() {
+      this.show_tf_space(false);
+    }
+  }, {
+    key: "loop",
+    value: function loop(args) {
+      if (args.deactivate) {
+        this.loop = false;
+      } else {
+        this.loop = true;
+      }
+    }
+  }, {
+    key: "toggle_show_tf",
+    value: function toggle_show_tf(args) {
+      if (args.deactivate) {
+        this.show_tf_space(false);
+      } else {
+        this.set_mapping("position");
+        this.show_tf_space(true);
+      }
+    }
+  }, {
+    key: "set_geometry_field",
+    value: function set_geometry_field(field, obj) {
+      if (field == "input") {
+        this.set_input(obj);
+      }
+
+      if (field == "target") {
+        this.set_target(obj);
+      } // this.show_tf_space(false);
+
+    }
+  }, {
+    key: "change_transformation_property",
+    value: function change_transformation_property(args) {
+      if (args.deactivate) {} else {
+        var isValid = false;
+        var str = "";
+
+        for (var i in this.mappings) {
+          str += this.mappings[i];
+          str += ", ";
+        }
+
+        for (var _i in this.typed_mappings) {
+          str += this.typed_mappings[_i].mapping_type + ": " + this.typed_mappings[_i].mapping;
+          if (_i < this.typed_mappings.length - 1) str += ", ";
+        }
+
+        var property;
+
+        while (!isValid) {
+          property = prompt("Enter the property that the transformation represents: " + str); // No input, deactivate
+
+          if (!property) {
+            return;
+          }
+
+          property = property.split(": ");
+
+          if (property.length == 1) {
+            isValid = this.set_mapping(property[0]);
+          } else {
+            isValid = this.set_mapping({
+              "type": property[0],
+              "mapping": property[1]
+            });
+          }
+        }
+
+        console.log("Changing transformation space", property);
+      }
+    } // apply
+    //
+    // Applies a transformation that represents a procedural relationship in
+    // a static context. I.e. if the artist makes a change to any artwork in
+    // the target, the input constrains how that change is applied
+    //
+    // The property of the target artwork impacted by the transformation is
+    // shifted to match the input value
+
+  }, {
+    key: "apply",
+    value: function apply() {
+      for (var idx = 0; idx < this.n_target; idx++) {
+        var a = void 0;
+        if (this.target.is_artwork) a = this.target;
+        if (this.target.is_collection) a = this.target.shapes[idx];
+
+        if (this.vertex_mapping) {
+          // Iterate over all the vertices in the artwork to transform them
+          var n_segments = a.poly.segments.length;
+          var a_smooth = a.poly.clone();
+          a_smooth.smooth();
+          a_smooth.visible = false; // TO DO Have to deal with tf space absolute
+
+          var vertex_update = [];
+
+          for (var v_idx = 0; v_idx < n_segments; v_idx++) {
+            var v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0);
+            var v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end");
+            var v = {
+              "x": v1.x - v0.x,
+              "y": v1.y - v0.y,
+              "v": v1.v.subtract(v0.v)
+            };
+            vertex_update[v_idx] = this.get_vertex_value_update_at(a, v_idx, v, a_smooth);
+          }
+
+          for (var _v_idx2 = 0; _v_idx2 < n_segments; _v_idx2++) {
+            this.update_vertex_value_to(a, _v_idx2, vertex_update[_v_idx2]);
+          }
+        } else {
+          // Transform the artwork
+          if (this.tf_space_absolute) {
+            var sv = void 0;
+            if (this.mapping == this.POSITION) sv = this.get_value_at_target_index_for_path_offset(idx, 0);else {
+              sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+            }
+            this.set_artwork_value_to(a, sv);
+          }
+
+          var _v = void 0;
+
+          if (this.mapping == this.POSITION) {
+            _v = this.get_value_at_target_index_for_path_offset(idx, null);
+          } else {
+            _v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+          }
+
+          this.set_artwork_value_to(a, _v);
+        }
+      }
+    }
+  }, {
+    key: "setup_playback_trackers",
+    value: function setup_playback_trackers() {
+      var n = 1;
+      if (this.target.is_artwork) n = 1;
+      if (this.target.is_collection) n = this.n_target;
+      this.dx_total = [];
+      this.dy_total = [];
+      this.v_total = [];
+      this.dx_direction = [];
+      this.dy_direction = [];
+      this.slope = [];
+      this.loop_count = [];
+      this.is_playing = [];
+      this.tween_helper_scale = [];
+
+      for (var i = 0; i < n; i++) {
+        this.loop_count[i] = 1;
+        this.dx_total[i] = 0;
+        this.dy_total[i] = 0;
+        this.v_total[i] = 0;
+        this.dx_direction[i] = 0;
+        this.dy_direction[i] = 0;
+        this.slope[i] = 1;
+        this.tween_helper_scale[i] = 1;
+      }
+    } // play
+    // ------------------------------------------------------------------------
+    // @description: If the transformation function represents an animation,
+    // this plays the animation
+    //
+    // Note: the playback point also triggers this function
+
+  }, {
+    key: "play",
+    value: function play() {
+      var state_idx = 0;
+      this.vertex_normals = [];
+      this.vertex_tangents = [];
+
+      for (var idx = 0; idx < this.n_target; idx++) {
+        var a = void 0;
+        if (this.target.is_artwork) a = this.target;
+        if (this.target.is_collection) a = this.target.shapes[idx];
+        var n_segments = a.poly.segments.length;
+        this.vertex_normals[idx] = [];
+        this.vertex_tangents[idx] = [];
+        var eps = 0.01;
+
+        for (var i = 0; i < n_segments; i++) {
+          var p = a.poly.segments[i].point;
+          var o = a.poly.getOffsetOf(p);
+          var n = void 0;
+          var t = void 0;
+          var n1 = void 0;
+          var n2 = void 0;
+          var p1 = void 0;
+          var p2 = void 0;
+          var c = new PointText({
+            point: p,
+            content: i
+          });
+          c.visible = false;
+          var o1 = o - eps;
+          var o2 = o + eps;
+
+          if (i == 0) {
+            o1 = a.poly.length - eps;
+          }
+
+          p1 = a.poly.getPointAt(o1);
+          p2 = a.poly.getPointAt(o2);
+
+          if (a.poly.segments[i].isSmooth()) {
+            n = a.poly.getNormalAt(o);
+            t = a.poly.getTangentAt(o);
+          } else {
+            n1 = a.poly.getNormalAt(o1);
+            n2 = a.poly.getNormalAt(o2);
+            n = n1.add(n2).normalize();
+            var t1 = a.poly.getTangentAt(o1);
+            var t2 = a.poly.getTangentAt(o2);
+            t = t1.add(t2).normalize();
+          }
+
+          this.vertex_normals[idx][i] = n;
+          this.vertex_tangents[idx][i] = t;
+          var nPath = new Path.Line({
+            segments: [p, p.add(n.multiply(20))],
+            strokeColor: "pink",
+            strokeWidth: 1
+          });
+          nPath.visible = false;
+          var n1Path = new Path.Line({
+            segments: [p1, p1.add(n1.multiply(20))],
+            strokeColor: "red",
+            strokeWidth: 1
+          });
+          n1Path.visible = false;
+          var n2Path = new Path.Line({
+            segments: [p2, p2.add(n2.multiply(20))],
+            strokeColor: "lightblue",
+            strokeWidth: 1
+          });
+          n2Path.visible = false;
+          var tPath = new Path.Line({
+            segments: [p, p.add(t.multiply(20))],
+            strokeColor: "green",
+            strokeWidth: 1
+          });
+          tPath.visible = false;
+        }
+
+        if (false) {
+          this.loop_count[idx] = [];
+          this.is_playing[idx] = [];
+          var _n_segments = a.poly.segments.length;
+
+          for (var v_idx = 0; v_idx < _n_segments; v_idx++) {
+            if (this.tf_space_absolute) {
+              var sv = this.get_value_at_target_index_for_path_offset(v_idx, 0); // set_vertex_value_to
+            }
+
+            this.loop_count[idx][v_idx] = 1;
+            this.is_playing[idx][v_idx] = 1;
+            var a_smooth = a.poly.clone();
+            a_smooth.smooth();
+            a_smooth.visible = false; //this.play_helper(state_idx, a, idx, a_smooth, v_idx);
+          }
+        } else {
+          this.loop_count[idx] = 1;
+          this.is_playing[idx] = 1; // Jump target to match transformation input start values
+
+          if (this.tf_space_absolute) {
+            var _sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+
+            this.set_artwork_value_to(a, _sv);
+          }
+
+          this.play_helper(state_idx, a, idx);
+        }
+      }
+    } // TO DO update for vertex transformations
+
+  }, {
+    key: "trigger_function_for_target_idx",
+    value: function trigger_function_for_target_idx(a, a_idx) {
+      var idx = a_idx; // Play or apply transformation
+
+      if (this.is_playable) {
+        // Cannot trigger an animation that is already playing
+        // if (this.is_playing[idx] == 1) return;
+        // Reset playback trackers
+        this.dx_total[idx] = 0;
+        this.dy_total[idx] = 0;
+        this.v_total[idx] = 0;
+        this.loop_count[idx] = 1;
+        this.is_playing[idx] = 1;
+        this.slope[a_idx] = 1;
+        this.tween_helper_scale[a_idx] = 1; // Jump target to match transformation input start values
+
+        if (this.tf_space_absolute) {
+          var sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+          this.set_artwork_value_to(a, sv);
+        }
+
+        this.play_helper(0, a, idx);
+      } else {
+        if (this.tf_space_absolute) {
+          if (this.tf_space_absolute) {
+            var _sv2 = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+
+            this.set_artwork_value_to(a, _sv2);
+          }
+
+          var v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+          this.set_artwork_value_to(a, v);
+        }
+      }
+    }
+  }, {
+    key: "tween",
+    value: function tween(a_idx, a, d, f, state_idx, v_idx) {
+      // Detect playback points
+      if (this.check_playback_points) this.trigger_playback_points(a_idx, a, d, f, state_idx); // Tween property
+
+      if (!f) f = 1;
+      if (this.mapping == this.MOTION_PATH) a.poly.position = new Point(a.poly.position.x + d.x / f, a.poly.position.y + d.y / f);
+
+      if (this.mapping == this.SCALE) {
+        // a.poly.scaling = 1+d.y/f;
+        var prev_sf = this.tween_helper_scale[a_idx];
+        var sf = this.tf_my1 + this.dy_total[a_idx];
+        a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx]) / prev_sf;
+        this.tween_helper_scale[a_idx] = sf;
+      }
+
+      if (this.mapping == this.DUPLICATE_EACH) {
+        var eps = .001;
+        var inc = this.dy_total[a_idx] - 1;
+
+        if (-eps < inc && inc < 0 || 0 < inc < eps) {
+          var new_a = Object.create(a);
+          new_a.poly = a.poly.clone();
+          this.dy_total[a_idx] = 0; // if (a_idx == 1) console.log("making new instance", a_idx);
+
+          this.trigger_new_instance(new_a, a_idx);
+        }
+      }
+
+      if (this.mapping == this.RELATIVE_ANIMATION) {
+        var n_segments = a.poly.segments.length;
+
+        for (var _v_idx3 = 0; _v_idx3 < n_segments; _v_idx3++) {
+          var idx = _v_idx3; // if (state_idx%2 == 0) idx = n_segments - v_idx - 1;
+
+          var x = d[idx].x;
+          var y = d[idx].y;
+          var p = a.poly.segments[idx].point.add(new Point(x / f, y / f));
+          a.poly.segments[idx].point = p;
+        }
+
+        a.poly.clearHandles();
+      }
+    }
+  }, {
+    key: "use_playback_points_to_trigger_transformation",
+    value: function use_playback_points_to_trigger_transformation(opt) {
+      var tf = opt.tf; // transformation function
+
+      var condition = opt.condition; // Trigger condition
+
+      var q = opt.q; // Optional
+
+      var trigger = {
+        "tf": tf,
+        "condition": condition,
+        "Q": q
+      };
+
+      if (!this.transformation_functions_to_trigger) {
+        this.transformation_functions_to_trigger = [];
+      }
+
+      this.transformation_functions_to_trigger.push(trigger);
+      this.check_playback_points = true;
+    }
+  }, {
+    key: "trigger_end",
+    value: function trigger_end(a, a_idx, v_idx) {
+      for (var x in this.transformation_functions_to_trigger) {
+        var tf = this.transformation_functions_to_trigger[x];
+
+        if (tf.condition == "remove at end") {
+          // if (a_idx == 1) console.log("remove at", a_idx);
+          a.poly.remove();
+        }
+      }
+    }
+  }, {
+    key: "trigger_new_instance",
+    value: function trigger_new_instance(a, a_idx) {
+      for (var x in this.transformation_functions_to_trigger) {
+        var tf = this.transformation_functions_to_trigger[x];
+        if (tf.condition == "new instance") tf.tf.trigger_function_for_target_idx(a, a_idx);
+      }
+    }
+  }, {
+    key: "trigger_playback_points",
+    value: function trigger_playback_points(a_idx, a, d, f, state_idx) {
+      // Get condition information based on net change in x, y, v
+      // F(x)
+      var x_prev = this.dx_total[a_idx];
+      var x_next = x_prev + d.x / f;
+      this.dx_total[a_idx] = x_next; // F(y)
+
+      var y_prev = this.dy_total[a_idx];
+      var y_next = y_prev + d.y / f;
+      this.dy_total[a_idx] = y_next; // F(x, y)
+
+      var v_prev = this.v_total[a_idx];
+      var v_next = v_prev + d.v / f;
+      this.v_total[a_idx] += d.v / f; // Check conditions for change in direction
+
+      var x_direction_change = false;
+      var y_direction_change = false;
+      var slope_change = false;
+      var dir_x = 0;
+      var dir_y = 0; // Initialize conditions at the start of playback
+
+      if (state_idx == 0 && this.loop_count[a_idx] == 1) {
+        if (d.x / f > 0) dir_x = 1;
+        if (d.x / f < 0) dir_x = -1;
+        this.dx_direction[a_idx] = dir_x;
+        if (d.y / f > 0) dir_y = 1;
+        if (d.y / f < 0) dir_y = -1;
+        this.dy_direction[a_idx] = dir_y; // Slope
+
+        this.slope[a_idx] = d.y / d.x;
+      } else {
+        // Check for and indicate change in x direction
+        dir_x = this.dx_direction[a_idx];
+
+        if (this.dx_direction[a_idx] == -1) {
+          // Moving down
+          if (d.x / f == 0) dir_x = 0; // To zero
+
+          if (d.x / f > 0) dir_x = 1; // To up
+        }
+
+        if (this.dx_direction[a_idx] == 0) {
+          // At zero
+          if (d.x / f < 0) dir_x = -1; // To down
+
+          if (d.x / f > 0) dir_x = 1; // To up
+        }
+
+        if (this.dx_direction[a_idx] == 1) {
+          // Moving up
+          if (d.x / f < 0) dir_x = -1; // To down
+
+          if (d.x / f == 0) dir_x = 0; // To zero
+        }
+
+        if (this.dx_direction[a_idx] != dir_x) {
+          this.dx_direction[a_idx] = dir_x;
+          x_direction_change = true;
+        } // Check for and indicate change in y direction
+
+
+        dir_y = this.dy_direction[a_idx];
+
+        if (this.dy_direction[a_idx] == -1) {
+          // Moving down
+          if (d.y / f == 0) dir_y = 0; // To zero
+
+          if (d.y / f > 0) dir_y = 1; // To up
+        }
+
+        if (this.dy_direction[a_idx] == 0) {
+          // At zero
+          if (d.y / f < 0) dir_y = -1; // To down
+
+          if (d.y / f > 0) dir_y = 1; // To up
+        }
+
+        if (this.dy_direction[a_idx] == 1) {
+          // Moving up
+          if (d.y / f < 0) dir_y = -1; // To down
+
+          if (d.y / f == 0) dir_y = 0; // To zero
+        }
+
+        if (this.dy_direction[a_idx] != dir_y) {
+          this.dy_direction[a_idx] = dir_y;
+          y_direction_change = true;
+        } // Check for slope change
+
+
+        var m = d.y / d.x;
+        var m_diff = m - this.slope[a_idx];
+        var m_eps = .001;
+
+        if (m_diff > m_eps || m_diff < -m_eps) {
+          slope_change = true;
+          this.slope[a_idx] = m;
+        }
+      }
+
+      for (var x in this.transformation_functions_to_trigger) {
+        var tf = this.transformation_functions_to_trigger[x];
+        var trigger_tf = false;
+
+        if (tf.Q) {
+          if (tf.condition == "f(x,y) == Q" && v_prev < tf.Q && tf.Q < v_next) trigger_tf = true;
+          if (tf.condition == "f(x) == Q" && x_prev < tf.Q && tf.Q < x_next) trigger_tf = true;
+          if (tf.condition == "f(y) == Q" && y_prev < tf.Q && tf.Q < y_next) trigger_tf = true;
+        } else {
+          if (tf.condition == "x direction change" && x_direction_change) trigger_tf = true;
+          if (tf.condition == "y direction change" && y_direction_change) trigger_tf = true;
+          if (tf.condition == "x or y direction change" && (x_direction_change || y_direction_change)) trigger_tf = true;
+          if (tf.condition == "x and y direction change" && x_direction_change && y_direction_change) trigger_tf = true;
+          if (tf.condition == "slope change" && slope_change) trigger_tf = true;
+        }
+
+        if (trigger_tf) {
+          // console.log(a_idx, "trigger");
+          tf.tf.trigger_function_for_target_idx(a, a_idx);
+        }
+      }
+    }
+  }, {
+    key: "get_vertex_value_update_at",
+    value: function get_vertex_value_update_at(a, v_idx, v, a_smooth) {
+      if (this.mapping == this.RELATIVE_POSITION) {
+        var p = a_smooth.getNearestPoint(a.poly.segments[v_idx].point);
+        var o = a_smooth.getOffsetOf(p);
+        var n = a_smooth.getNormalAt(o);
+        var t = a_smooth.getTangentAt(o);
+        var nx = v.y * n.x + v.x * t.x;
+        var ny = v.y * n.y + v.x * t.y;
+        var p_update = new Point(nx, ny); // let npath = new Path({
+        // 	segments: [p, p.add(n.multiply(20))],
+        // 	strokeColor: "red",
+        // 	strokeWidth: 1
+        // });
+        // npath.visible = false;
+        //
+        // let tpath = new Path({
+        // 	segments: [p, p.add(t.multiply(20))],
+        // 	strokeColor: "green",
+        // 	strokeWidth: 1
+        // });
+        // tpath.visible = false;
+        //
+        // let perturb_path = new Path({
+        // 	segments: [p, p.add(p_update)],
+        // 	strokeColor: "black",
+        // 	strokeWidth: 1
+        // });
+        // perturb_path.visible = false;
+
+        return p_update;
+      }
+    }
+  }, {
+    key: "update_vertex_value_to",
+    value: function update_vertex_value_to(a, v_idx, update) {
+      if (this.mapping == this.RELATIVE_POSITION) {
+        a.poly.segments[v_idx].point = a.poly.segments[v_idx].point.add(update);
+      }
+    }
+  }, {
+    key: "set_vertex_value_to",
+    value: function set_vertex_value_to(a, v_idx, v, a_copy) {
+      var b = a.poly.clone();
+      b.smooth();
+      b.strokeColor = "pink";
+      var p = b.getNearestPoint(a.poly.segments[v_idx].point);
+      var o = b.getOffsetOf(p);
+      var n = b.getNormalAt(o);
+      var t = b.getTangentAt(o);
+      b.visible = false;
+      var npath = new Path({
+        segments: [p, p.add(n.multiply(20))],
+        strokeColor: "red",
+        strokeWidth: 1
+      });
+      npath.visible = false;
+      var tpath = new Path({
+        segments: [p, p.add(t.multiply(20))],
+        strokeColor: "green",
+        strokeWidth: 1
+      });
+      tpath.visible = false; // v.y = 0
+      // v.y * n + v.x * t
+
+      var nx = v.y * n.x + v.x * t.x;
+      var ny = v.y * n.y + v.x * t.y;
+      var p1 = new Point(nx, ny);
+      var perturb_path = new Path({
+        segments: [p, p.add(p1.multiply(1))],
+        strokeColor: "black",
+        strokeWidth: 1
+      }); // perturb_path.visible = false;
+
+      a_copy.segments[v_idx].point = p.add(p1); // a.poly.segments[v_idx].point = p.add(p1);
+
+      if (this.mapping == this.RELATIVE_POSITION) {// let p = a.poly.segments[v_idx].point;
+        // let o = a.poly.getOffsetOf(p);
+        // let n = a.poly.getNormalAt(o);
+        //
+        // let p2 = p.add(n.multiply(20));
+        // console.log(p, p2);
+        // let npath = new Path({
+        // 	segments: [p, p.add(n.multiply(20))],
+        // 	strokeColor: "red",
+        // 	strokeWidth: 2
+        // });
+        // console.log(npath);
+        //
+        // let t = a.poly.getTangentAt(o);
+        //
+        // // We want to apply the transformation in the basis defined by
+        // // the normal and the tangent at the vertex point
+        // let nx = n.x*v.x + t.x*v.y;
+        // let ny = n.y*v.x + t.y*v.y;
+        //
+        // if (v_idx == 1) {
+        // 	let c = new Path.Circle(p,2);
+        // 	c.fillColor = "pink";
+        //
+        // 	let s = p.add(new Point(nx, ny));
+        // 	let cs = new Path.Circle(p, 2);
+        // 	cs.fillColor = "orange";
+        //
+        // 	console.log(n, t);
+        // }
+        // a.poly.segments[v_idx].point = p.subtract(new Point(nx, ny));
+      }
+    }
+  }, {
+    key: "set_artwork_value_to",
+    value: function set_artwork_value_to(a, sv) {
+      if (this.mapping == this.MOTION_PATH || this.mapping == this.POSITION) a.poly.position = new Point(sv.x, sv.y);
+      if (this.mapping == this.NUMBER_OF_SIDES) a.set_number_of_sides(Math.round(sv.y));
+      if (this.mapping == this.STATIC_SCALE) a.set_scaling(sv.y);
+      if (this.mapping == this.SCALE) a.poly.scale(sv.y, sv.y);
+
+      if (this.mapping == this.HUE) {
+        var saturation;
+        var brightness;
+
+        if (a.poly.fillColor) {
+          saturation = a.poly.fillColor.saturation;
+          brightness = a.poly.fillColor.brightness;
+          a.poly.fillColor.hue = Math.round(sv.y);
+          a.poly.fillColor.saturation = saturation;
+          a.poly.fillColor.brightness = brightness;
+        }
+
+        if (a.poly.strokeColor) {
+          saturation = a.poly.strokeColor.saturation;
+          brightness = a.poly.strokeColor.brightness;
+          a.poly.strokeColor.hue = Math.round(sv.y);
+          a.poly.strokeColor.saturation = saturation;
+          a.poly.strokeColor.brightness = brightness;
+        }
+      }
+    } // Assump a_target is always a shape
+
+  }, {
+    key: "get_transform_artwork_at_state",
+    value: function get_transform_artwork_at_state(state_idx, a_idx) {
+      var i = state_idx;
+      var nxt_i = state_idx + 1;
+      var d;
+      var dx;
+      var dy;
+      var delta;
+      var seg_change_value;
+
+      if (this.input.is_shape) {
+        d = this.get_delta_from_state(i, nxt_i);
+        seg_change_value = this.get_change_in_segment_at_state(i, nxt_i);
+        dx = d.x;
+        dy = d.y;
+        d = Math.sqrt(d.x * d.x + d.y * d.y);
+      }
+
+      if (this.input.is_collection) {
+        if (this.mapping_behavior == "interpolate") {
+          d = [];
+          var x = [];
+          var y = [];
+          seg_change_value = [];
+
+          for (var in_idx = 0; in_idx < this.n_input; in_idx++) {
+            d[in_idx] = this.get_delta_from_state(i, nxt_i, in_idx);
+            seg_change_value[in_idx] = this.get_change_in_segment_at_state(i, nxt_i, in_idx);
+          }
+
+          x = d.map(function (m) {
+            return m.x;
+          });
+          y = d.map(function (m) {
+            return m.y;
+          });
+          d = d.map(function (m) {
+            return Math.sqrt(m.x * m.x + m.y * m.y);
+          });
+          dx = _utils.AMES_Utils.interpolate_fast(x, a_idx);
+          dy = _utils.AMES_Utils.interpolate_fast(y, a_idx);
+          d = _utils.AMES_Utils.interpolate_fast(d, a_idx);
+          seg_change_value = _utils.AMES_Utils.interpolate_fast(seg_change_value, a_idx);
+        }
+
+        if (this.mapping_behavior == "alternate") {
+          var _in_idx = a_idx % this.n_input;
+
+          d = this.get_delta_from_state(i, nxt_i, _in_idx);
+          seg_change_value = this.get_change_in_segment_at_state(i, nxt_i, _in_idx);
+          dx = d.x;
+          dy = d.y;
+        }
+      }
+
+      var change_segment = false;
+      if (seg_change_value > 0.5) change_segment = true;
+      delta = {
+        "x": dx,
+        "y": dy,
+        "v": d,
+        "change_segment": change_segment
+      };
+      var duration = 1000 / ames.fps * (1 / this.tf_space_speed_factor);
+
+      if (this.tf_space_speed == this.SPEED_CONSTANT) {
+        duration = duration;
+      }
+
+      if (this.tf_space_speed == this.SPEED_LINEAR) {
+        duration *= d;
+      }
+
+      ;
+
+      if (this.tf_space_speed == this.SPEED_XAXIS) {
+        duration *= Math.abs(dx);
+      }
+
+      ;
+
+      if (this.tf_space_speed == this.SPEED_YAXIS) {
+        duration *= Math.abs(dy);
+      }
+
+      ;
+
+      if (this.tf_space_speed == this.SPEED_MAP) {} // TBD
+
+
+      if (duration == 0) duration = .001;
+      var rate = delta.v / duration; // This is actually the time per segment
+      // if (a_idx == 4) console.log(delta.v.toFixed(4), rate.toFixed(4));
+
+      return [delta, duration];
+    }
+  }, {
+    key: "get_delta_from_state",
+    value: function get_delta_from_state(i, nxt_i, in_idx) {
+      var in_artwork;
+      if (this.input.is_artwork) in_artwork = this.input.poly;
+      if (this.input.is_collection) in_artwork = this.input.shapes[in_idx].poly;
+      var l = in_artwork.length;
+      var prev_s = this.get_artwork_value_at_offset(in_artwork, i * l / this.tf_space_path_nsegments);
+      var nxt_s = this.get_artwork_value_at_offset(in_artwork, nxt_i * l / this.tf_space_path_nsegments);
+      return nxt_s.subtract(prev_s);
+    }
+  }, {
+    key: "get_change_in_segment_at_state",
+    value: function get_change_in_segment_at_state(i, nxt_i, in_idx) {
+      var in_artwork;
+      if (this.input.is_artwork) in_artwork = this.input.poly;
+      if (this.input.is_collection) in_artwork = this.input.shapes[in_idx].poly;
+      var l = in_artwork.length;
+      var prev_loc = in_artwork.getLocationAt(i * l / this.tf_space_path_nsegments);
+      var nxt_loc = in_artwork.getLocationAt(nxt_i * l / this.tf_space_path_nsegments);
+
+      if (prev_loc && nxt_loc && prev_loc.curve != nxt_loc.curve) {
+        return 1;
+      }
+
+      return 0;
+    }
+  }, {
+    key: "get_artwork_value_at_offset",
+    value: function get_artwork_value_at_offset(artwork, off) {
+      if (off > artwork.length) off = artwork.length;
+      var p = artwork.getPointAt(off);
+      var t = this.tf_space_map_x_y(p.x, p.y);
+      p.x = t.x;
+      p.y = t.y;
+      return p;
+    }
+  }, {
+    key: "get_artwork_value_at_intersection",
+    value: function get_artwork_value_at_intersection(artwork, axis_idx, axis_mapping) {
+      var eps = 0.5;
+      var p1;
+      var p2;
+
+      if (this.tf_mx == axis_mapping) {
+        // Horizontal
+        p1 = this.tf_space_reverse_map_x_y(axis_idx, this.tf_my1);
+        if (axis_idx == 0) p1.x += eps;
+        if (axis_idx == this.tf_mx2) p1.x -= eps;
+        var ymax = this.tf_sy2;
+        if (this.tf_s_yflip) ymax = this.tf_sy1;
+        p2 = new Point(p1.x, ymax);
+      }
+
+      if (this.tf_my == axis_mapping) {
+        // Vertical
+        p1 = this.tf_space_reverse_map_x_y(this.tf_mx1, axis_idx);
+        if (axis_idx == 0) p1.y += this.tf_s_yflip ? -eps : eps;
+        if (axis_idx == this.tf_my2) p1.y -= this.tf_s_yflip ? eps : -eps;
+        p2 = new Point(this.tf_sx2, p1.y);
+      }
+
+      var line = new Path.Line(p1, p2);
+      var intersects = artwork.getIntersections(line);
+      line.strokeWidth = 1;
+      line.strokeColor = "lightblue";
+      line.dashArray = [3, 5];
+      var p3 = new Point(this.tf_sx1, intersects[0].point.y);
+      var p4 = new Point(this.tf_sx2, intersects[0].point.y);
+      var line_v = new Path.Line(p3, p4);
+      line_v.strokeWidth = 1;
+      line_v.strokeColor = "lightblue";
+      line_v.dashArray = [3, 5];
+      var t = this.tf_space_map_x_y(intersects[0].point.x, intersects[0].point.y); // let t_label = new PointText({
+      // 	point: [p3.x - 5*utils.ICON_OFFSET, p3.y],
+      // 	content: t.y.toFixed(2),
+      // 	fillColor: utils.INACTIVE_S_COLOR,
+      // 	fontFamily: utils.FONT,
+      // 	fontSize: 8,
+      // });
+
+      return t;
+    }
+  }, {
+    key: "get_value_at_target_index_for_axis_mapping",
+    value: function get_value_at_target_index_for_axis_mapping(artwork_idx, axis_idx, axis_mapping) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, null, axis_idx, axis_mapping);
+    }
+  }, {
+    key: "get_value_at_target_index_for_path_offset",
+    value: function get_value_at_target_index_for_path_offset(artwork_idx, offset) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, offset, null, null);
+    }
+  }, {
+    key: "get_value_at_target_index_for_path_offset_or_axis_mapping",
+    value: function get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping) {
+      var p;
+      var x;
+      var y;
+
+      if (this.input.is_shape) {
+        if (axis_mapping) {
+          p = this.get_artwork_value_at_intersection(this.input.poly, axis_idx, axis_mapping);
+        } else {
+          if (offset == null) offset = (a_idx + 0.5) * this.input.poly.length / this.n_target;
+          if (offset == "end") offset = this.input.poly.length;
+          p = this.get_artwork_value_at_offset(this.input.poly, offset);
+        }
+
+        x = p.x;
+        y = p.y;
+        p = Math.sqrt(x * x + y * y);
+      }
+
+      if (this.input.is_collection) {
+        if (this.mapping_behavior == "interpolate") {
+          p = [];
+
+          for (var in_idx = 0; in_idx < this.n_input; in_idx++) {
+            var in_artwork = this.input.shapes[in_idx].poly;
+
+            if (axis_mapping) {
+              p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, axis_idx, axis_mapping);
+            } else {
+              if (offset == null) offset = (a_idx + 0.5) * in_artwork.length / this.n_target;
+              if (offset == "end") offset = in_artwork.length;
+              p[in_idx] = this.get_artwork_value_at_offset(in_artwork, offset);
+            }
+          }
+
+          x = p.map(function (p) {
+            return p.x;
+          });
+          y = p.map(function (p) {
+            return p.y;
+          });
+          p = p.map(function (p) {
+            return Math.sqrt(p.x * p.x + p.y * p.y);
+          });
+          x = _utils.AMES_Utils.interpolate_fast(x, a_idx);
+          y = _utils.AMES_Utils.interpolate_fast(y, a_idx);
+          p = _utils.AMES_Utils.interpolate_fast(p, a_idx);
+        }
+
+        if (this.mapping_behavior == "alternate") {
+          var _in_idx2 = a_idx % this.n_input;
+
+          var _in_artwork = this.input.shapes[_in_idx2].poly;
+
+          if (axis_mapping) {
+            p = this.get_artwork_value_at_intersection(_in_artwork, axis_idx, axis_mapping);
+          } else {
+            if (offset == null) offset = (a_idx + 0.5) * _in_artwork.length / this.n_target;
+            if (offset == "end") offset = _in_artwork.length;
+            p = this.get_artwork_value_at_offset(_in_artwork, offset);
+          }
+
+          x = p.x;
+          y = p.y;
+        }
+      }
+
+      return {
+        "x": x,
+        "y": y,
+        "v": p
+      };
+    }
+  }]);
+
+  return AMES_Transformation;
+}();
+
+exports.AMES_Transformation = AMES_Transformation;
+
+_defineProperty(AMES_Transformation, "count", 1);
+
+var Transformation_Space = function Transformation_Space() {
+  _classCallCheck(this, Transformation_Space);
+};
+
+exports.Transformation_Space = Transformation_Space;
+},{"./editors.js":7,"./utils.js":11}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -7196,6 +12098,13 @@ var AMES_Utils = /*#__PURE__*/function () {
       var btn = this.get_button(b);
       console.log(btn);
       if (btn) btn.style.backgroundColor = this.ACTIVE_COLOR;
+    }
+  }, {
+    key: "style_label",
+    value: function style_label(label) {
+      label.fontSize = this.FONT_SIZE;
+      label.fillColor = 'lightgray';
+      label.fontFamily = this.FONT;
     } // get_buttons(b)
     // Returns the button given the value of the button b if it's defined in a btn list
 
@@ -7219,8 +12128,9 @@ var AMES_Utils = /*#__PURE__*/function () {
     }
   }, {
     key: "make_dot",
-    value: function make_dot(p, color) {
-      var d = new Path.Circle(p, 2.5);
+    value: function make_dot(p, color, radius) {
+      if (!radius) radius = 2.5;
+      var d = new Path.Circle(p, radius);
       if (!color) color = this.SHAPE_PATH_COLOR;
       d.fillColor = color;
       return d;
@@ -7276,6 +12186,69 @@ var AMES_Utils = /*#__PURE__*/function () {
       }
 
       return r;
+    } // interpolate: Lagrange interpolation over polynomial given by y = f(x),
+    // where data = [y0, y1, ... yn] and idx is the relative idx of the
+    // desired queried result or an array of indices [i0, i1, ... in]
+    // ref: https://www.geeksforgeeks.org/lagranges-interpolation/
+
+  }, {
+    key: "interpolate_fast",
+    value: function interpolate_fast(data, idx) {
+      var n = data.length;
+      var m = null;
+      if (Array.isArray(idx)) m = idx.length;
+      var r = 0;
+      if (n == 1) r = data[0];
+      var v = 0;
+
+      if (m) {
+        r = [];
+        if (n == 1) v = data[0];
+
+        for (var k = 0; k < m; k++) {
+          r.push(v);
+        }
+      }
+
+      var t;
+
+      for (var i = 0; i < n; i++) {
+        if (!m) {
+          t = data[i];
+        }
+
+        if (m) {
+          t = [];
+
+          for (var _k = 0; _k < m; _k++) {
+            t[_k] = data[i];
+          }
+        }
+
+        for (var j = 0; j < n; j++) {
+          if (j != i) {
+            if (!m) {
+              t = t * (idx - j) / (i - j);
+            }
+
+            if (m) {
+              for (var _k2 = 0; _k2 < m; _k2++) {
+                t[_k2] = t[_k2] * (idx[_k2] - j) / (i - j);
+              }
+            }
+          }
+        }
+
+        if (!m) r += t;
+
+        if (m) {
+          for (var _k3 = 0; _k3 < m; _k3++) {
+            r[_k3] += t[_k3];
+          }
+        }
+      }
+
+      return r;
     }
   }]);
 
@@ -7284,13 +12257,13 @@ var AMES_Utils = /*#__PURE__*/function () {
 
 exports.AMES_Utils = AMES_Utils;
 
-_defineProperty(AMES_Utils, "ACTIVE_COLOR", 'lavender');
+_defineProperty(AMES_Utils, "ACTIVE_COLOR", '#800020');
 
 _defineProperty(AMES_Utils, "INACTIVE_COLOR", 'white');
 
 _defineProperty(AMES_Utils, "INACTIVE_DARK_COLOR", 'whitesmoke');
 
-_defineProperty(AMES_Utils, "INACTIVE_S_COLOR", 'darkgray');
+_defineProperty(AMES_Utils, "INACTIVE_S_COLOR", '#838383');
 
 _defineProperty(AMES_Utils, "ACTIVE_S_COLOR", 'black');
 
@@ -7349,7 +12322,8 @@ _defineProperty(AMES_Utils, "SUB_PROPS", {
   "fillColor": ["h", "s", "v", "a"],
   "strokeWidth": ["w"],
   "strokeColor": ["h", "s", "v", "a"],
-  "path": []
+  "path": [],
+  "nsides": []
 });
 
 _defineProperty(AMES_Utils, "shape_btns", {
@@ -7363,754 +12337,35 @@ _defineProperty(AMES_Utils, "shape_btns", {
 });
 
 _defineProperty(AMES_Utils, "btns", [AMES_Utils.shape_btns]);
-},{}],9:[function(require,module,exports){
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
+},{}],12:[function(require,module,exports){
+"use strict";
 
-var runtime = (function (exports) {
-  "use strict";
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.AMES_Viewfoil = void 0;
 
-  var Op = Object.prototype;
-  var hasOwn = Op.hasOwnProperty;
-  var undefined; // More compressible than void 0.
-  var $Symbol = typeof Symbol === "function" ? Symbol : {};
-  var iteratorSymbol = $Symbol.iterator || "@@iterator";
-  var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
+var _utils = require("./utils.js");
 
-  function define(obj, key, value) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-    return obj[key];
-  }
-  try {
-    // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-    define({}, "");
-  } catch (err) {
-    define = function(obj, key, value) {
-      return obj[key] = value;
-    };
-  }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-  function wrap(innerFn, outerFn, self, tryLocsList) {
-    // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-    var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-    var generator = Object.create(protoGenerator.prototype);
-    var context = new Context(tryLocsList || []);
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-    // The ._invoke method unifies the implementations of the .next,
-    // .throw, and .return methods.
-    generator._invoke = makeInvokeMethod(innerFn, self, context);
+var AMES_Viewfoil = function AMES_Viewfoil() {
+  _classCallCheck(this, AMES_Viewfoil);
 
-    return generator;
-  }
-  exports.wrap = wrap;
+  _defineProperty(this, "parent", void 0);
 
-  // Try/catch helper to minimize deoptimizations. Returns a completion
-  // record like context.tryEntries[i].completion. This interface could
-  // have been (and was previously) designed to take a closure to be
-  // invoked without arguments, but in all the cases we care about we
-  // already have an existing method we want to call, so there's no need
-  // to create a new function object. We can even get away with assuming
-  // the method takes exactly one argument, since that happens to be true
-  // in every case, so we don't have to touch the arguments object. The
-  // only additional allocation required is the completion record, which
-  // has a stable shape and so hopefully should be cheap to allocate.
-  function tryCatch(fn, obj, arg) {
-    try {
-      return { type: "normal", arg: fn.call(obj, arg) };
-    } catch (err) {
-      return { type: "throw", arg: err };
-    }
-  }
+  _defineProperty(this, "z_distance", void 0);
 
-  var GenStateSuspendedStart = "suspendedStart";
-  var GenStateSuspendedYield = "suspendedYield";
-  var GenStateExecuting = "executing";
-  var GenStateCompleted = "completed";
+  _defineProperty(this, "visible", void 0);
 
-  // Returning this object from the innerFn has the same effect as
-  // breaking out of the dispatch switch statement.
-  var ContinueSentinel = {};
+  _defineProperty(this, "artwork", void 0);
 
-  // Dummy constructor functions that we use as the .constructor and
-  // .constructor.prototype properties for functions that return Generator
-  // objects. For full spec compliance, you may wish to configure your
-  // minifier not to mangle the names of these two functions.
-  function Generator() {}
-  function GeneratorFunction() {}
-  function GeneratorFunctionPrototype() {}
+  _defineProperty(this, "linked_artwork", void 0);
 
-  // This is a polyfill for %IteratorPrototype% for environments that
-  // don't natively support it.
-  var IteratorPrototype = {};
-  IteratorPrototype[iteratorSymbol] = function () {
-    return this;
-  };
+  _defineProperty(this, "context", void 0);
+};
 
-  var getProto = Object.getPrototypeOf;
-  var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-  if (NativeIteratorPrototype &&
-      NativeIteratorPrototype !== Op &&
-      hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-    // This environment has a native %IteratorPrototype%; use it instead
-    // of the polyfill.
-    IteratorPrototype = NativeIteratorPrototype;
-  }
-
-  var Gp = GeneratorFunctionPrototype.prototype =
-    Generator.prototype = Object.create(IteratorPrototype);
-  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
-  GeneratorFunctionPrototype.constructor = GeneratorFunction;
-  GeneratorFunction.displayName = define(
-    GeneratorFunctionPrototype,
-    toStringTagSymbol,
-    "GeneratorFunction"
-  );
-
-  // Helper for defining the .next, .throw, and .return methods of the
-  // Iterator interface in terms of a single ._invoke method.
-  function defineIteratorMethods(prototype) {
-    ["next", "throw", "return"].forEach(function(method) {
-      define(prototype, method, function(arg) {
-        return this._invoke(method, arg);
-      });
-    });
-  }
-
-  exports.isGeneratorFunction = function(genFun) {
-    var ctor = typeof genFun === "function" && genFun.constructor;
-    return ctor
-      ? ctor === GeneratorFunction ||
-        // For the native GeneratorFunction constructor, the best we can
-        // do is to check its .name property.
-        (ctor.displayName || ctor.name) === "GeneratorFunction"
-      : false;
-  };
-
-  exports.mark = function(genFun) {
-    if (Object.setPrototypeOf) {
-      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-    } else {
-      genFun.__proto__ = GeneratorFunctionPrototype;
-      define(genFun, toStringTagSymbol, "GeneratorFunction");
-    }
-    genFun.prototype = Object.create(Gp);
-    return genFun;
-  };
-
-  // Within the body of any async function, `await x` is transformed to
-  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-  // `hasOwn.call(value, "__await")` to determine if the yielded value is
-  // meant to be awaited.
-  exports.awrap = function(arg) {
-    return { __await: arg };
-  };
-
-  function AsyncIterator(generator, PromiseImpl) {
-    function invoke(method, arg, resolve, reject) {
-      var record = tryCatch(generator[method], generator, arg);
-      if (record.type === "throw") {
-        reject(record.arg);
-      } else {
-        var result = record.arg;
-        var value = result.value;
-        if (value &&
-            typeof value === "object" &&
-            hasOwn.call(value, "__await")) {
-          return PromiseImpl.resolve(value.__await).then(function(value) {
-            invoke("next", value, resolve, reject);
-          }, function(err) {
-            invoke("throw", err, resolve, reject);
-          });
-        }
-
-        return PromiseImpl.resolve(value).then(function(unwrapped) {
-          // When a yielded Promise is resolved, its final value becomes
-          // the .value of the Promise<{value,done}> result for the
-          // current iteration.
-          result.value = unwrapped;
-          resolve(result);
-        }, function(error) {
-          // If a rejected Promise was yielded, throw the rejection back
-          // into the async generator function so it can be handled there.
-          return invoke("throw", error, resolve, reject);
-        });
-      }
-    }
-
-    var previousPromise;
-
-    function enqueue(method, arg) {
-      function callInvokeWithMethodAndArg() {
-        return new PromiseImpl(function(resolve, reject) {
-          invoke(method, arg, resolve, reject);
-        });
-      }
-
-      return previousPromise =
-        // If enqueue has been called before, then we want to wait until
-        // all previous Promises have been resolved before calling invoke,
-        // so that results are always delivered in the correct order. If
-        // enqueue has not been called before, then it is important to
-        // call invoke immediately, without waiting on a callback to fire,
-        // so that the async generator function has the opportunity to do
-        // any necessary setup in a predictable way. This predictability
-        // is why the Promise constructor synchronously invokes its
-        // executor callback, and why async functions synchronously
-        // execute code before the first await. Since we implement simple
-        // async functions in terms of async generators, it is especially
-        // important to get this right, even though it requires care.
-        previousPromise ? previousPromise.then(
-          callInvokeWithMethodAndArg,
-          // Avoid propagating failures to Promises returned by later
-          // invocations of the iterator.
-          callInvokeWithMethodAndArg
-        ) : callInvokeWithMethodAndArg();
-    }
-
-    // Define the unified helper method that is used to implement .next,
-    // .throw, and .return (see defineIteratorMethods).
-    this._invoke = enqueue;
-  }
-
-  defineIteratorMethods(AsyncIterator.prototype);
-  AsyncIterator.prototype[asyncIteratorSymbol] = function () {
-    return this;
-  };
-  exports.AsyncIterator = AsyncIterator;
-
-  // Note that simple async functions are implemented on top of
-  // AsyncIterator objects; they just return a Promise for the value of
-  // the final result produced by the iterator.
-  exports.async = function(innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-    if (PromiseImpl === void 0) PromiseImpl = Promise;
-
-    var iter = new AsyncIterator(
-      wrap(innerFn, outerFn, self, tryLocsList),
-      PromiseImpl
-    );
-
-    return exports.isGeneratorFunction(outerFn)
-      ? iter // If outerFn is a generator, return the full iterator.
-      : iter.next().then(function(result) {
-          return result.done ? result.value : iter.next();
-        });
-  };
-
-  function makeInvokeMethod(innerFn, self, context) {
-    var state = GenStateSuspendedStart;
-
-    return function invoke(method, arg) {
-      if (state === GenStateExecuting) {
-        throw new Error("Generator is already running");
-      }
-
-      if (state === GenStateCompleted) {
-        if (method === "throw") {
-          throw arg;
-        }
-
-        // Be forgiving, per 25.3.3.3.3 of the spec:
-        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-        return doneResult();
-      }
-
-      context.method = method;
-      context.arg = arg;
-
-      while (true) {
-        var delegate = context.delegate;
-        if (delegate) {
-          var delegateResult = maybeInvokeDelegate(delegate, context);
-          if (delegateResult) {
-            if (delegateResult === ContinueSentinel) continue;
-            return delegateResult;
-          }
-        }
-
-        if (context.method === "next") {
-          // Setting context._sent for legacy support of Babel's
-          // function.sent implementation.
-          context.sent = context._sent = context.arg;
-
-        } else if (context.method === "throw") {
-          if (state === GenStateSuspendedStart) {
-            state = GenStateCompleted;
-            throw context.arg;
-          }
-
-          context.dispatchException(context.arg);
-
-        } else if (context.method === "return") {
-          context.abrupt("return", context.arg);
-        }
-
-        state = GenStateExecuting;
-
-        var record = tryCatch(innerFn, self, context);
-        if (record.type === "normal") {
-          // If an exception is thrown from innerFn, we leave state ===
-          // GenStateExecuting and loop back for another invocation.
-          state = context.done
-            ? GenStateCompleted
-            : GenStateSuspendedYield;
-
-          if (record.arg === ContinueSentinel) {
-            continue;
-          }
-
-          return {
-            value: record.arg,
-            done: context.done
-          };
-
-        } else if (record.type === "throw") {
-          state = GenStateCompleted;
-          // Dispatch the exception by looping back around to the
-          // context.dispatchException(context.arg) call above.
-          context.method = "throw";
-          context.arg = record.arg;
-        }
-      }
-    };
-  }
-
-  // Call delegate.iterator[context.method](context.arg) and handle the
-  // result, either by returning a { value, done } result from the
-  // delegate iterator, or by modifying context.method and context.arg,
-  // setting context.delegate to null, and returning the ContinueSentinel.
-  function maybeInvokeDelegate(delegate, context) {
-    var method = delegate.iterator[context.method];
-    if (method === undefined) {
-      // A .throw or .return when the delegate iterator has no .throw
-      // method always terminates the yield* loop.
-      context.delegate = null;
-
-      if (context.method === "throw") {
-        // Note: ["return"] must be used for ES3 parsing compatibility.
-        if (delegate.iterator["return"]) {
-          // If the delegate iterator has a return method, give it a
-          // chance to clean up.
-          context.method = "return";
-          context.arg = undefined;
-          maybeInvokeDelegate(delegate, context);
-
-          if (context.method === "throw") {
-            // If maybeInvokeDelegate(context) changed context.method from
-            // "return" to "throw", let that override the TypeError below.
-            return ContinueSentinel;
-          }
-        }
-
-        context.method = "throw";
-        context.arg = new TypeError(
-          "The iterator does not provide a 'throw' method");
-      }
-
-      return ContinueSentinel;
-    }
-
-    var record = tryCatch(method, delegate.iterator, context.arg);
-
-    if (record.type === "throw") {
-      context.method = "throw";
-      context.arg = record.arg;
-      context.delegate = null;
-      return ContinueSentinel;
-    }
-
-    var info = record.arg;
-
-    if (! info) {
-      context.method = "throw";
-      context.arg = new TypeError("iterator result is not an object");
-      context.delegate = null;
-      return ContinueSentinel;
-    }
-
-    if (info.done) {
-      // Assign the result of the finished delegate to the temporary
-      // variable specified by delegate.resultName (see delegateYield).
-      context[delegate.resultName] = info.value;
-
-      // Resume execution at the desired location (see delegateYield).
-      context.next = delegate.nextLoc;
-
-      // If context.method was "throw" but the delegate handled the
-      // exception, let the outer generator proceed normally. If
-      // context.method was "next", forget context.arg since it has been
-      // "consumed" by the delegate iterator. If context.method was
-      // "return", allow the original .return call to continue in the
-      // outer generator.
-      if (context.method !== "return") {
-        context.method = "next";
-        context.arg = undefined;
-      }
-
-    } else {
-      // Re-yield the result returned by the delegate method.
-      return info;
-    }
-
-    // The delegate iterator is finished, so forget it and continue with
-    // the outer generator.
-    context.delegate = null;
-    return ContinueSentinel;
-  }
-
-  // Define Generator.prototype.{next,throw,return} in terms of the
-  // unified ._invoke helper method.
-  defineIteratorMethods(Gp);
-
-  define(Gp, toStringTagSymbol, "Generator");
-
-  // A Generator should always return itself as the iterator object when the
-  // @@iterator function is called on it. Some browsers' implementations of the
-  // iterator prototype chain incorrectly implement this, causing the Generator
-  // object to not be returned from this call. This ensures that doesn't happen.
-  // See https://github.com/facebook/regenerator/issues/274 for more details.
-  Gp[iteratorSymbol] = function() {
-    return this;
-  };
-
-  Gp.toString = function() {
-    return "[object Generator]";
-  };
-
-  function pushTryEntry(locs) {
-    var entry = { tryLoc: locs[0] };
-
-    if (1 in locs) {
-      entry.catchLoc = locs[1];
-    }
-
-    if (2 in locs) {
-      entry.finallyLoc = locs[2];
-      entry.afterLoc = locs[3];
-    }
-
-    this.tryEntries.push(entry);
-  }
-
-  function resetTryEntry(entry) {
-    var record = entry.completion || {};
-    record.type = "normal";
-    delete record.arg;
-    entry.completion = record;
-  }
-
-  function Context(tryLocsList) {
-    // The root entry object (effectively a try statement without a catch
-    // or a finally block) gives us a place to store values thrown from
-    // locations where there is no enclosing try statement.
-    this.tryEntries = [{ tryLoc: "root" }];
-    tryLocsList.forEach(pushTryEntry, this);
-    this.reset(true);
-  }
-
-  exports.keys = function(object) {
-    var keys = [];
-    for (var key in object) {
-      keys.push(key);
-    }
-    keys.reverse();
-
-    // Rather than returning an object with a next method, we keep
-    // things simple and return the next function itself.
-    return function next() {
-      while (keys.length) {
-        var key = keys.pop();
-        if (key in object) {
-          next.value = key;
-          next.done = false;
-          return next;
-        }
-      }
-
-      // To avoid creating an additional object, we just hang the .value
-      // and .done properties off the next function object itself. This
-      // also ensures that the minifier will not anonymize the function.
-      next.done = true;
-      return next;
-    };
-  };
-
-  function values(iterable) {
-    if (iterable) {
-      var iteratorMethod = iterable[iteratorSymbol];
-      if (iteratorMethod) {
-        return iteratorMethod.call(iterable);
-      }
-
-      if (typeof iterable.next === "function") {
-        return iterable;
-      }
-
-      if (!isNaN(iterable.length)) {
-        var i = -1, next = function next() {
-          while (++i < iterable.length) {
-            if (hasOwn.call(iterable, i)) {
-              next.value = iterable[i];
-              next.done = false;
-              return next;
-            }
-          }
-
-          next.value = undefined;
-          next.done = true;
-
-          return next;
-        };
-
-        return next.next = next;
-      }
-    }
-
-    // Return an iterator with no values.
-    return { next: doneResult };
-  }
-  exports.values = values;
-
-  function doneResult() {
-    return { value: undefined, done: true };
-  }
-
-  Context.prototype = {
-    constructor: Context,
-
-    reset: function(skipTempReset) {
-      this.prev = 0;
-      this.next = 0;
-      // Resetting context._sent for legacy support of Babel's
-      // function.sent implementation.
-      this.sent = this._sent = undefined;
-      this.done = false;
-      this.delegate = null;
-
-      this.method = "next";
-      this.arg = undefined;
-
-      this.tryEntries.forEach(resetTryEntry);
-
-      if (!skipTempReset) {
-        for (var name in this) {
-          // Not sure about the optimal order of these conditions:
-          if (name.charAt(0) === "t" &&
-              hasOwn.call(this, name) &&
-              !isNaN(+name.slice(1))) {
-            this[name] = undefined;
-          }
-        }
-      }
-    },
-
-    stop: function() {
-      this.done = true;
-
-      var rootEntry = this.tryEntries[0];
-      var rootRecord = rootEntry.completion;
-      if (rootRecord.type === "throw") {
-        throw rootRecord.arg;
-      }
-
-      return this.rval;
-    },
-
-    dispatchException: function(exception) {
-      if (this.done) {
-        throw exception;
-      }
-
-      var context = this;
-      function handle(loc, caught) {
-        record.type = "throw";
-        record.arg = exception;
-        context.next = loc;
-
-        if (caught) {
-          // If the dispatched exception was caught by a catch block,
-          // then let that catch block handle the exception normally.
-          context.method = "next";
-          context.arg = undefined;
-        }
-
-        return !! caught;
-      }
-
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-        var record = entry.completion;
-
-        if (entry.tryLoc === "root") {
-          // Exception thrown outside of any try block that could handle
-          // it, so set the completion value of the entire function to
-          // throw the exception.
-          return handle("end");
-        }
-
-        if (entry.tryLoc <= this.prev) {
-          var hasCatch = hasOwn.call(entry, "catchLoc");
-          var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-          if (hasCatch && hasFinally) {
-            if (this.prev < entry.catchLoc) {
-              return handle(entry.catchLoc, true);
-            } else if (this.prev < entry.finallyLoc) {
-              return handle(entry.finallyLoc);
-            }
-
-          } else if (hasCatch) {
-            if (this.prev < entry.catchLoc) {
-              return handle(entry.catchLoc, true);
-            }
-
-          } else if (hasFinally) {
-            if (this.prev < entry.finallyLoc) {
-              return handle(entry.finallyLoc);
-            }
-
-          } else {
-            throw new Error("try statement without catch or finally");
-          }
-        }
-      }
-    },
-
-    abrupt: function(type, arg) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-        if (entry.tryLoc <= this.prev &&
-            hasOwn.call(entry, "finallyLoc") &&
-            this.prev < entry.finallyLoc) {
-          var finallyEntry = entry;
-          break;
-        }
-      }
-
-      if (finallyEntry &&
-          (type === "break" ||
-           type === "continue") &&
-          finallyEntry.tryLoc <= arg &&
-          arg <= finallyEntry.finallyLoc) {
-        // Ignore the finally entry if control is not jumping to a
-        // location outside the try/catch block.
-        finallyEntry = null;
-      }
-
-      var record = finallyEntry ? finallyEntry.completion : {};
-      record.type = type;
-      record.arg = arg;
-
-      if (finallyEntry) {
-        this.method = "next";
-        this.next = finallyEntry.finallyLoc;
-        return ContinueSentinel;
-      }
-
-      return this.complete(record);
-    },
-
-    complete: function(record, afterLoc) {
-      if (record.type === "throw") {
-        throw record.arg;
-      }
-
-      if (record.type === "break" ||
-          record.type === "continue") {
-        this.next = record.arg;
-      } else if (record.type === "return") {
-        this.rval = this.arg = record.arg;
-        this.method = "return";
-        this.next = "end";
-      } else if (record.type === "normal" && afterLoc) {
-        this.next = afterLoc;
-      }
-
-      return ContinueSentinel;
-    },
-
-    finish: function(finallyLoc) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-        if (entry.finallyLoc === finallyLoc) {
-          this.complete(entry.completion, entry.afterLoc);
-          resetTryEntry(entry);
-          return ContinueSentinel;
-        }
-      }
-    },
-
-    "catch": function(tryLoc) {
-      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-        var entry = this.tryEntries[i];
-        if (entry.tryLoc === tryLoc) {
-          var record = entry.completion;
-          if (record.type === "throw") {
-            var thrown = record.arg;
-            resetTryEntry(entry);
-          }
-          return thrown;
-        }
-      }
-
-      // The context.catch method must only be called with a location
-      // argument that corresponds to a known catch block.
-      throw new Error("illegal catch attempt");
-    },
-
-    delegateYield: function(iterable, resultName, nextLoc) {
-      this.delegate = {
-        iterator: values(iterable),
-        resultName: resultName,
-        nextLoc: nextLoc
-      };
-
-      if (this.method === "next") {
-        // Deliberately forget the last sent value so that we don't
-        // accidentally pass it on to the delegate.
-        this.arg = undefined;
-      }
-
-      return ContinueSentinel;
-    }
-  };
-
-  // Regardless of whether this script is executing as a CommonJS module
-  // or not, return the runtime object so that we can declare the variable
-  // regeneratorRuntime in the outer scope, which allows this module to be
-  // injected easily by `bin/regenerator --include-runtime script.js`.
-  return exports;
-
-}(
-  // If this script is executing as a CommonJS module, use module.exports
-  // as the regeneratorRuntime namespace. Otherwise create a new empty
-  // object. Either way, the resulting object will be used to initialize
-  // the regeneratorRuntime variable at the top of this file.
-  typeof module === "object" ? module.exports : {}
-));
-
-try {
-  regeneratorRuntime = runtime;
-} catch (accidentalStrictMode) {
-  // This module should not be running in strict mode, so the above
-  // assignment should always work unless something is misconfigured. Just
-  // in case runtime.js accidentally runs in strict mode, we can escape
-  // strict mode using a global Function call. This could conceivably fail
-  // if a Content Security Policy forbids using Function, but in that case
-  // the proper solution is to fix the accidental strict mode problem. If
-  // you've misconfigured your bundler to force strict mode and applied a
-  // CSP to forbid Function, and you're not willing to fix either of those
-  // problems, please detail your unique predicament in a GitHub issue.
-  Function("r", "regeneratorRuntime = r")(runtime);
-}
-
-},{}]},{},[2]);
+exports.AMES_Viewfoil = AMES_Viewfoil;
+},{"./utils.js":11}]},{},[2]);
