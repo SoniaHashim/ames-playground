@@ -48,7 +48,7 @@ export class AMES_Transformation {
 	mapping;				// transformation function (e.g. translation or scale vs index)
 	mapping_behavior; 		// many:many mapping behavior
 	transformation_space;   // coord space used to interpret the input artwork
-	page;					// TBD the location of the artwork
+	obj_box = null;
 
 	// supported transformations
 	mapping = 0;
@@ -101,11 +101,11 @@ export class AMES_Transformation {
 		this.name = "Transformation" + " (" + AMES_Transformation.count + ")";
 		AMES_Transformation.count += 1;
 		opt = opt || {};
+
 		this.tf_space_setup_visuals();
 		if (opt.input) this.set_input(opt.input);
 		if (opt.target) this.set_target(opt.target);
 		if (opt.mapping) this.set_mapping(opt.mapping);
-
 		this.create_in_ames();
 	}
 
@@ -152,6 +152,7 @@ export class AMES_Transformation {
 		this.tf_space_path_length_relative_scale = this.tf_space_path_nsegments / path_length;
 
 		// if (this.target && this.input) this.transform();
+		if (this.mapping) this.set_tf_space_to_defaults();
 	}
 
 	// set_target_artwork
@@ -180,9 +181,8 @@ export class AMES_Transformation {
 			if (target.is_collection) this.update_count(target);
 			else this.n_target = 1;
 
-			if (this.mapping) this.set_tf_space_to_defaults();
-
 			this.setup_playback_trackers();
+			ames.update_layers({parent: true, parent_box: this.target.obj_box, box: this.obj_box});
 		}
 
 	}
@@ -196,6 +196,17 @@ export class AMES_Transformation {
 	update_count(collection) {
 		if (this.input == collection) this.n_input = collection.count;
 		if (this.target == collection) this.n_target = collection.count;
+	}
+
+	// Returns text describing the mapping type
+	get_mapping() {
+		if (this.mapping > 0) {
+			return this.mappings[this.mapping];
+		} else {
+			let typed_mapping = this.typed_mappings[this.mapping];
+			return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
+		}
+
 	}
 
 	// set_property_mapping
@@ -237,6 +248,8 @@ export class AMES_Transformation {
 		// If the mapping changed update the transfromation space or throw err
  		if (!changed_mapping) { console.log("Transformation: Invalid mapping"); return false }
 		else this.set_tf_space_to_defaults();
+
+		if (this.obj_box) this.obj_box.change_name();
 
 		// Indicate if transformation property is a playbale mapping
 		if (this.mapping == this.MOTION_PATH) this.is_playable = true;
@@ -446,9 +459,105 @@ export class AMES_Transformation {
 			tf_s[x].visible = false;
 		}
 		this.tf_s = tf_s;
+
+		// Add interactivity to axis labels
+		let total_drag;
+		let move_cursor_cb = (e) => {
+			ames.canvas.style.cursor = 'move';
+			total_drag = 0;
+		}
+		let drag_cursor_cb = (e, label, value, mode, check_mode, check_value) => {
+			console.log(total_drag);
+			if (mode == "horizontal") total_drag += e.event.movementX;
+			if (mode == "vertical") total_drag += e.event.movementY;
+			if (total_drag < 0) {
+				if (total_drag > 0) total_drag = 0;
+				if (mode == "horizontal") ames.canvas.style.cursor = 'w-resize';
+				if (mode == "vertical") ames.canvas.style.cursor = 'n-resize'
+			}
+			if (total_drag > 0) {
+				if (total_drag < 0) total_drag = 0;
+				if (mode == "horizontal") ames.canvas.style.cursor = 'e-resize';
+				if (mode == "vertical") ames.canvas.style.cursor = 's-resize'
+			}
+
+			if (total_drag < -2.5) { // Decrement
+				let min_check = false;
+				if (mode == "vertical" && this.tf_s_yflip) {
+					min_check = (this[value] + 1 < this[check_value]);
+				} else {
+					min_check = (this[check_value] < this[value] - 1);
+				}
+				if (check_mode == "max" || (check_mode == "min" && min_check)) {
+					if (mode == "vertical" && this.tf_s_yflip) {
+						this[value] += 1;
+					} else {
+						this[value] -=1;
+					}
+				}
+				console.log("decrement", this[value], this[check_value], this[value]);
+				this.tf_s[label].content = this[value];
+				total_drag = 0;
+			}
+			if (total_drag > 2.5) { // Increment
+				let max_check = false;
+				if (mode == "vertical" && this.tf_s_yflip) {
+					max_check = (this[check_value] < this.value + 1);
+				} else {
+					max_check = (this[check_value] > this[value] + 1);
+				}
+				if (check_mode == "min" || (check_mode == "max" && max_check)) {
+					if (mode == "vertical" && this.tf_s_yflip) {
+						this[value] -= 1;
+					} else {
+						this[value] += 1;
+					}
+				}
+				console.log("increment", this[value]);
+				this.tf_s[label].content = this[value];
+				total_drag = 0;
+			}
+		}
+		let up_cursor_cb = (e) => {
+			ames.canvas.style.cursor = null;
+			total_drag = 0;
+		}
+
+		let labels = ["mx1_label", "mx2_label", "my1_label", "my2_label"];
+		let values = ["tf_sx1", "tf_sx2", "tf_sy1", "tf_sy2"];
+		let check_modes = ["max", "min", "max", "min"];
+		let check_values = ["tf_sx2", "tf_sx1", "tf_sy2", "tf_sy1"];
+		for (let i in labels) {
+			let label = labels[i]; let value = values[i];
+			this.tf_s[label].onMouseDown = move_cursor_cb;
+
+			let mode;
+			if (i < 2) {
+				mode = "horizontal";
+			} else {
+				mode = "vertical"
+			}
+
+			this.tf_s[label].onMouseDrag = (e) => {
+				drag_cursor_cb(e, label, value, mode, check_modes[i], check_values[i]);
+			}
+
+			this.tf_s[label].onMouseUp = up_cursor_cb;
+		}
+
+		this.tf_s.mx1_label.onMouseDown = move_cursor_cb;
+		this.tf_s.mx2_label.onMouseDown = move_cursor_cb;
+		this.tf_s.my1_label.onMouseDown = move_cursor_cb;
+	    this.tf_s.my2_label.onMouseDown = move_cursor_cb;
+
+	}
+
+	show(bool) {
+		this.editor.show(bool);
 	}
 
 	show_tf_space(bool) {
+		if (!this.input) return;
 		if (bool == null) bool = true;
 		if (bool) {
 			// Update screen space rectangle
@@ -505,11 +614,13 @@ export class AMES_Transformation {
 			for (let x in this.tf_s) {
 				this.tf_s[x].visible = true;
 			}
+			this.tf_space_visible = true;
 		} else {
 			// Hide all items
 			for (let x in this.tf_s) {
 				this.tf_s[x].visible = false;
 			}
+			this.tf_space_visible = false;
 		}
 	}
 
@@ -554,24 +665,29 @@ export class AMES_Transformation {
 	// Plays the transformation function if it represents an animation;
 	// otherwise it applies the transformation function to the objects
 	// properties
-	transform() {
+	transform(args) {
 		if (!this.mapping) this.set_mapping();
 		if (!this.input || !this.target) return;
 
 		if (this.is_playable) {
 			this.play();
+			if (args && args.btn) {
+				setTimeout(() => { args.btn.deactivate(); }, 1000);
+			}
 		} else {
 			console.log("applying transformation?")
 			this.apply();
-
+			if (args && args.btn) {
+				setTimeout(() => { args.btn.deactivate(); }, 1000);
+			}
 		}
 	}
 
 	_clear_cb_helpers() {
-		this.show_tf_space(false);
 	}
 
-	loop(args) {
+	toggle_loop(args) {
+		args = args || {};
 		if (args.deactivate) {
 			this.loop = false;
 		} else {
@@ -580,10 +696,11 @@ export class AMES_Transformation {
 	}
 
 	toggle_show_tf(args) {
+		args = args || {};
 		if (args.deactivate) {
 			this.show_tf_space(false);
 		} else {
-			this.set_mapping("position");
+			if (!this.mapping) this.set_mapping("position");
 			this.show_tf_space(true);
 		}
 	}
@@ -596,12 +713,10 @@ export class AMES_Transformation {
 		if (field == "target") {
 			this.set_target(obj);
 		}
-
-		// this.show_tf_space(false);
 	}
 
 	change_transformation_property(args) {
-
+		args = args || {};
 		if (args.deactivate) {
 
 		} else {
@@ -618,18 +733,21 @@ export class AMES_Transformation {
 			let property;
 			while (!isValid) {
 				property = prompt("Enter the property that the transformation represents: " + str);
+
 				// No input, deactivate
 				if (!property) {
+					args.btn.deactivate();
 					return;
 				}
 				property = property.split(": ")
 				if (property.length == 1) {
 					isValid = this.set_mapping(property[0]);
+					args.btn.deactivate();
 				} else {
 					isValid = this.set_mapping({"type": property[0], "mapping": property[1]});
+					args.btn.deactivate();
 				}
 			}
-			console.log("Changing transformation space", property);
 		}
 
 	}
@@ -1570,6 +1688,14 @@ export class AMES_Transformation {
 		}
 
 		return {"x": x, "y": y, "v": p};
+	}
+
+	remove() {
+		for (let x in this.tf_s) {
+			this.tf_s[x].remove();
+		}
+		this.input = null;
+		this.target = null;
 	}
 }
 

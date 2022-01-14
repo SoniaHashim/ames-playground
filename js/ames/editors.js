@@ -140,7 +140,7 @@ class AMES_Editor {
 
 export class AMES_Transformation_Editor extends AMES_Editor {
 	box_width;
-	e_height = 175;
+	e_height = 275;
 
 	constructor(obj) {
 		super(obj);
@@ -155,14 +155,10 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.make_link_button([x_off, y_off], 'target')
 		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'input')
 
-		// Create a play button
+		this.make_button(0, "axes", "toggle_show_tf", {"deactivate_required": true});
+		this.make_button(0, "brush", "change_transformation_property");
 		this.make_button(0, "play", "transform");
-		// this.make_button(0, "pause", "pause");
-		// this.make_button(0, "rewind", "rewind");
-		this.make_button(0, "loop", "loop", {"deactivate_required": true});
-		this.make_button(1, "axes", "toggle_show_tf", {"deactivate_required": true});
-		this.make_button(1, "brush", "change_transformation_property");
-
+		this.make_button(0, "loop", "toggle_loop", {"deactivate_required": true});
 		// Initialize editor position
 		this.set_editor_position();
 	}
@@ -176,28 +172,41 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		if (!this.n_btns[btn_row]) this.n_btns[btn_row] = 0;
 		btn.position = new Point(2*utils.ICON_OFFSET + this.n_btns[btn_row]*(utils.ICON_OFFSET + bw) + bw/2, by*2);
 		btn.visible = true;
+		btn.active = false;
+		args.btn = btn;
+
+		btn.deactivate = () => {
+			btn.strokeColor = utils.INACTIVE_S_COLOR;
+			btn.fillColor = utils.INACTIVE_S_COLOR;
+			if (args.deactivate_required) {
+				args.deactivate = true;
+				this.obj[btn_function](args)
+			}
+			btn.active = false;
+		}
+
 		btn.onClick = (e) => {
 			if (btn.active) {
-				btn.strokeColor = utils.INACTIVE_COLOR;
-				btn.fillColor = utils.INACTIVE_S_COLOR;
-				if (args.deactivate_required) {
-					console.log('deactivate', btn_function);
-					args.deactivate = true;
-					this.obj[btn_function](args)
-				}
+				btn.deactivate();
 			} else {
+				console.log("activating btn?", btn.active)
 				btn.strokeColor = utils.ACTIVE_S_COLOR;
+				console.log(btn.strokeColor.toCSS());
 				btn.fillColor = utils.ACTIVE_S_COLOR;
 				this.obj[btn_function](args);
+				btn.active = true;
 			}
 		}
+
 		this.n_btns[btn_row] += 1;
+
 		this.box.addChild(btn);
 	}
 
 	make_link_button(editor_location, field) {
 		let x_off = editor_location[0];
 		let y_off = editor_location[1];
+
 		let field_label = new PointText({
 			point: [2*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
 			content: field[0].toUpperCase() + field.substring(1)+ ":",
@@ -217,9 +226,12 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		link_remove.visible = false;
 		link_remove.strokeWidth = .25;
 		this.geometry_field_info[field] = {};
+		let field_name;
+		if (this.obj[field]) field_name = this.obj[field].name;
+		field_name = field_name || field;
 		let label = new PointText({
 			point: [2.25*utils.ICON_OFFSET + x_off, y_off + .75*utils.ICON_OFFSET],
-			content: field,
+			content: field_name,
 			fillColor: utils.INACTIVE_S_COLOR,
 			fontFamily: utils.FONT,
 			fontSize: utils.FONT_SIZE
@@ -238,7 +250,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		}
 		link_remove.onMouseDown = (e) => {
 			// Remove obj field
-			this.obj.remove_geometry_field(field);
+			this.obj.set_geometry_field(field, "null");
 			this.geometry_field_info[field].label.content = field;
 			link.visible = true;
 			link_remove.visible = false;
@@ -273,7 +285,10 @@ export class AMES_Shape_Editor extends AMES_Editor {
 		// create all sub-property box
 		this._make_subprop('all', 0, box);
 		// Create property buttons
-		let properties = utils.VIS_PROPS;
+		let properties = [];
+		for (let p in utils.VIS_PROPS) {
+			properties.push(utils.VIS_PROPS[p]);
+		}
 		// Add nsides for Polygon
 		if (obj.artwork_type == "Polygon") {
 			properties.push("nsides");
@@ -342,7 +357,6 @@ export class AMES_Shape_Editor extends AMES_Editor {
 				}
 				if (total_drag > 5) {
 					// Increase nsides
-					console.log("incremenet nsides to", obj.sides+1);
 					obj.set_number_of_sides(Number(obj.sides) + 1);
 					this.nsides.content = obj.sides;
 					total_drag = 0;

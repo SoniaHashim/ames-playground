@@ -20,6 +20,7 @@ export class AMES_Utils {
 	static ICON_OFFSET = 4;
 	static FONT = 'Times';
 	static FONT_SIZE = 10;
+	static SCROLLBAR_WIDTH = 5;
 
 	// Layer box ui elements
 	static L_CONTROLS = ["Shapes", "Lists", "Animations"];

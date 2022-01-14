@@ -1017,7 +1017,7 @@ export class AMES_Artwork {
 	}
 
 	remove() {
-		console.log("To do -- Shape.remove()");
+		this.poly.remove();
 	}
 
 	// make_interactive: if true, enable interacitivty & open editor; otherwise disable and close
@@ -1183,7 +1183,7 @@ export class AMES_Polygon extends AMES_Artwork {
 		if (nsides == 6) {
 			this.poly.rotate(-90);
 		}
-		// this.poly.position = position;
+		this.poly.position = position;
 		this.sides = nsides;
 	}
 

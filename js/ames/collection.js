@@ -181,16 +181,14 @@ export class AMES_Collection {
 	}
 
 	duplicate() {
-		console.log("duplicator: ", this.is_duplicator, this.shapes);
 		let original_shape = this.original[0];
 		// if (!this.bottom) this.bottom = original_shape;
 		if (this.is_duplicator) {
-			// TO DO: insertion order bug. Having trouble changing relative ordering of shapes. 
+			// TO DO: insertion order bug. Having trouble changing relative ordering of shapes.
 			let shape = original_shape.clone();
+			console.log("duplicated shape...", shape.name);
 			this.shapes.push(shape);
-
 			ames.hide_editors(this);
-			this.editor.show(true);
 			this.show(true);
 		}
 	}
@@ -286,7 +284,7 @@ export class AMES_Collection {
 
 	// show: if true, show; otherwise hide
 	show(bool) {
-		// this.show_editor(bool);
+		this.show_editor(bool);
 		this.update_show_box();
 
 		if (bool) {

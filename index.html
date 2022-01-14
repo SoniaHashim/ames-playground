@@ -55,7 +55,8 @@
 			}
 
 			#animation-canvas {
-			 /* position: absolute */
+			 	/* position: absolute;
+				padding-right: 5px; */
 			}
 
 			#layers-canvas {
@@ -64,6 +65,14 @@
 			#colorwheel {
 				display: none
 			}
+
+/*
+			input {
+				position: absolute;
+				right: 105px;
+				padding-top: 245px;
+				font-size: .5rem;
+			} */
 		</style>
 	</head>
 	<body>
@@ -79,10 +88,12 @@
 		<div class="container-fluid min-vh-100" id="main">
 
 			<div class="row">
-				<div class="col-13 main">
+				<div class="col-12 main">
 					<canvas id="animation-canvas"></canvas>
+					<input id="file_input" style="display: none;" type="file" accept=".svg, .ames">
 				</div>
 			</div>
+
 
 			<img id="colorwheel" src='media/colorwheel.png'>
 

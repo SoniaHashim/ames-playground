@@ -61,7 +61,7 @@ export class AMES {
 	offset_mode = false;
 	// UX
 	ux = [];
-	layers = {};
+	// layers = {};
 
 
 	// Iniitalize AMES app properties after window loads
@@ -115,8 +115,14 @@ export class AMES {
 		let a_triangle = new AMES_Polygon();
 		let a_square = new AMES_Polygon({centroid: new Point(200, 200), nsides: 4, radius: 50});
 		let a_dot = new AMES_Ellipse({centroid: new Point(500, 500), rx: 5, ry: 5});
-		let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150}); 
-		let t = new AMES_Transformation();
+		let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150});
+		let c = new AMES_Collection([a_dot]);
+		for (let i = 0; i < 9; i++) {
+			c.duplicate();
+		}
+		let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
+		t.set_target(c);
+
 	}
 
 	create_toolbar() {
@@ -224,17 +230,20 @@ export class AMES {
 			size: new Size(w, 3*ames_text.bounds.height),
 			radius: 0,
 		});
+
 		ames_box.position = ames_text.position;
+		console.log("ames_box", ames_box.bounds.height, utils.SIDEBAR_WIDTH);
 		ames_box.fillColor = utils.INACTIVE_S_COLOR;
 		ames_box.strokeColor = utils.INACTIVE_S_COLOR;
 
 		// Add ux show / hide carets
 		sidebar.add_caret = (i_name) => {
 			let button = ames.icons[i_name].clone();
-			let caret_position = new Point(ames_text.position.x - ames_text.bounds.width/2 - 4*utils.ICON_OFFSET, ames_text.position.y);
+			let caret_position = new Point(ames_text.position.x - ames_text.bounds.width/2 - 3*utils.ICON_OFFSET, ames_text.position.y);
 			button.position = caret_position;
-			button.scaling = 0.75;
+			button.scaling = 1.125;
 			button.strokeColor = utils.INACTIVE_DARK_COLOR;
+			button.fillColor = utils.INACTIVE_DARK_COLOR;
 			// Show
 			if (i_name == "caret-right") {
 				button.visible = false;
@@ -262,8 +271,6 @@ export class AMES {
 
 		sidebar.addChildren([r, ames_box, ames_text]);
 
-		let layers_panel = new Group();
-		sidebar.addChild(layers_panel);
 
 		let get_position = () => {
 			let cw = ames.canvas_view.size.width/2 - .5*utils.ICON_OFFSET;
@@ -275,6 +282,123 @@ export class AMES {
 		sidebar.position = get_position();
 		sidebar.visible = true;
 		this.sidebar = sidebar;
+
+		let label_x = ames.canvas_view.size.width/2;
+		let label_y = -ames.canvas_view.size.height/2;
+
+		let save_label = new PointText({
+			point: [sidebar.position.x - sidebar.bounds.width/2 + 5*utils.ICON_OFFSET, sidebar.position.y],
+			content: "Save",
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE,
+			visible: true,
+		});
+		let save_btn = new Path.Rectangle({
+			position: [save_label.position.x, save_label.position.y],
+			size: [save_label.bounds.width + 5*utils.ICON_OFFSET, save_label.bounds.height + 2.5*utils.ICON_OFFSET],
+			strokeColor: utils.INACTIVE_S_COLOR,
+			radius: 5
+		});
+		let import_label = new PointText({
+			point: [sidebar.position.x - sidebar.bounds.width/2 + save_label.bounds.width + 12*utils.ICON_OFFSET, sidebar.position.y],
+			content: "Import",
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE,
+			visible: true,
+		});
+		let import_btn = new Path.Rectangle({
+			position: [import_label.position.x, import_label.position.y],
+			size: [import_label.bounds.width + 5*utils.ICON_OFFSET, import_label.bounds.height + 2.5*utils.ICON_OFFSET],
+			strokeColor: utils.INACTIVE_S_COLOR,
+			radius: 5
+		});
+		let sidebar_btn_click = (btn) => {
+			if (btn == "import") {
+				document.getElementById('file_input').click();
+				import_btn.fillColor = "lightgray";
+				setTimeout(() => { import_btn.fillColor = null;}, 250);
+			}
+			if (btn == "save") {
+				save_btn.fillColor = "lightgray";
+				setTimeout(() => { save_btn.fillColor = null;}, 250);
+				// TO DO: Save an ames file
+			}
+
+		}
+		import_btn.onMouseDown = (e) => { sidebar_btn_click("import"); }
+		import_label.onMouseDown = (e) => { sidebar_btn_click("import"); }
+		save_btn.onMouseDown = (e) => { sidebar_btn_click("save"); }
+		save_btn.onMouseDown = (e) => { sidebar_btn_click("save"); }
+		this.ux.push(import_btn, import_label, save_btn, save_label);
+		this.sidebar.addChildren[save_label, save_btn, import_label, import_btn];
+
+		let layers = new Group();
+		let scrollbar_top = sidebar.position.y + save_btn.bounds.height/2 + 2*utils.ICON_OFFSET;
+		let scrollbar_x = sidebar.position.x + sidebar.bounds.width/2 - 1.25*utils.ICON_OFFSET;
+		let scrollbar_bottom = sidebar.position.y + r.bounds.height/2 - utils.ICON_OFFSET;
+		layers.scroll = (e) => {
+			layers.sendToBack()
+			layers.position.y += -e.event.movementY;
+			for (let i in this.layers.children) {
+				let lbox = this.layers.children[i];
+				lbox.sendToBack();
+				lbox.visible = true;
+				if (lbox.position.y < scrollbar_top) lbox.visible = false;
+				if (lbox.position.y > scrollbar_bottom) lbox.visible = false;
+			}
+		}
+
+		let scrollbar = new Path.Line({
+			from: [scrollbar_x, scrollbar_top],
+			to: [scrollbar_x, scrollbar_bottom],
+			strokeColor: "lightgray",
+			strokeWidth: 4,
+			strokeCap: 'round'
+		});
+		scrollbar.onMouseDrag = (e) => {
+			layers.scroll(e);
+		}
+		let r_top = new Path.Rectangle({
+			point: [100, 100],
+			size: [sidebar.bounds.width + 2, 22],
+			fillColor: "white"
+		});
+		r_top.position = new Point(sidebar.position.x, scrollbar_top - 10.25);
+		let r_btm = r_top.clone();
+		r_btm.position = new Point(sidebar.position.x, scrollbar_bottom + 10.25);
+		r_top.sendToBack();
+		r_btm.sendToBack();
+		scrollbar.top = scrollbar_top;
+		scrollbar.bottom = scrollbar_bottom;
+		sidebar.addChild(scrollbar);
+		layers.scrollbar = scrollbar;
+		this.layers = layers;
+		this.ux.push(scrollbar);
+		this.ux.push(layers);
+	}
+
+	import_file(filename) {
+		let file_name_parts = filename.split(".");
+		let name = file_name_parts[0];
+		let ext = file_name_parts[1];
+
+		if (ext == "ames") {
+			// TO DO: load an ames file
+		}
+
+		if (ext == "svg") {
+			project.importSVG(filename, {
+				onError: function() {
+					console.log("Error: unable to import svg file.")
+				},
+				onLoad: function(i, s) {
+					console.log(i, s);
+					i.visible = true; // create new artwork type to support
+				}
+			})
+		}
 	}
 
 	show_ux(bool) {
@@ -327,7 +451,6 @@ export class AMES {
 
 			let caret = this.icons[i_name].clone();
 			let caret_w = caret.bounds.width;
-			caret.scaling = 0.65;
 
 			let box_y = box.position.y;
 			let caret_p = new Point(caret_w/2 + utils.ICON_OFFSET, box_y+1);
@@ -729,7 +852,7 @@ export class AMES {
 			}
 
 			colorpicker.load_color = (c) => {
-				if (!c) c = utils.INACTIVE_COLOR;
+				if (!c) c = new Color(utils.INACTIVE_COLOR);
 				// update swatch
 				r.fillColor = c;
 				// update color label
@@ -1196,7 +1319,6 @@ export class AMES {
 	}
 
 	hide_editors(obj) {
-		console.log("hide editors?");
 		obj = obj || {};
 		for (let i in this.objs) {
 			if (this.objs[i].name != obj.name) {
@@ -1210,10 +1332,179 @@ export class AMES {
 		// if (obj.active_prop == 'strokeColor' || obj.active_prop == 'fillColor') ames.colorpicker.visible = true;
 	}
 
+	update_layers(opt) {
+		console.log("update_layers...", this.layers.children.length, opt.box.children[1].content)
+		opt = opt || {};
+
+		let box;
+		if (opt.box) box = opt.box;
+
+		// Insert box into layers box
+		if (opt.insert) {
+			this.layers.insertChild(0, box);
+			box.sendToBack();
+		}
+
+		// Delete box from layers box
+		if (opt.remove) {
+			let idx = box.index;
+			this.layers.removeChildren(idx, idx+1);
+		}
+
+		// Parent box to another box (change order of boxes)
+		if (opt.parent) {
+			let parent_idx = opt.parent_box.index;
+			let box_idx = box.index;
+			box.children[1].content = '    ' + box.children[1].content;
+			this.layers.removeChildren(box_idx, box_idx+1);
+			this.layers.insertChild(parent_idx, box);
+			let str = "";
+			for (let i in this.layers.children) {
+				str += this.layers.children[i].children[1].content
+			}
+			console.log("layers: ", str);
+		}
+
+		// TO DO: Keep all transformation functions without a target at the top
+
+		// Update view for layers box
+		this.layers.sendToBack();
+		let nchildren = this.layers.children.length;
+		for (let i = 0; i < nchildren; i++) {
+			let lbox = this.layers.children[i];
+			lbox.position.x = ames.sidebar.position.x - utils.SCROLLBAR_WIDTH;
+			lbox.position.y = i*lbox.bounds.height;
+		}
+		let layers_ypos = this.layers.scrollbar.top + this.layers.bounds.height/2 + utils.ICON_OFFSET/2;
+		this.layers.position = new Point(ames.sidebar.position.x - utils.SCROLLBAR_WIDTH, layers_ypos)
+		for (let i = 0; i < nchildren; i++) {
+			let lbox = this.layers.children[i];
+			lbox.visible = true;
+			if (lbox.position.y < this.layers.scrollbar.top) lbox.visible = false;
+			if (lbox.position.y > this.layers.scrollbar.bottom) lbox.visible = false;
+		}
+
+		let str = "";
+		for (let i in this.layers.children) {
+			str += this.layers.children[i].children[1].content
+		}
+		console.log("layers: ", str);
+	}
+
+	create_layers_box(obj) {
+		let obj_box = new Group();
+		obj.obj_box = obj_box;
+
+		// Create a box in the side panel
+		let ypos = 450;
+		let box = new Path.Rectangle({
+			point: [500, 450],
+			size: [utils.SIDEBAR_WIDTH - 2*utils.SCROLLBAR_WIDTH, 20],
+			fillColor: "white",
+			strokeColor: utils.INACTIVE_S_COLOR,
+			radius: 3,
+			strokeWidth: .75,
+			position: [ames.sidebar.position.x - utils.SCROLLBAR_WIDTH, ypos]
+		});
+		// box.sendToBack();
+
+		let box_label = new PointText({
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE,
+			visible: true,
+			point: [box.position.x - utils.SIDEBAR_WIDTH/2 + 5*utils.ICON_OFFSET, box.position.y + utils.ICON_OFFSET]
+		});
+
+		let name;
+		obj_box.change_name = () => {
+			name = obj.name
+			if (obj instanceof AMES_Transformation) {
+				let obj_name_parts = obj.name.split(" ");
+				let num = obj_name_parts[1];
+				let mapping = obj.get_mapping();
+				mapping = mapping[0].toUpperCase() + mapping.substr(1);
+				name = "T" + num + " " + mapping;
+			}
+			box_label.content = name;
+		}
+		obj_box.change_name();
+
+		// Remove btn to remove obj
+		let trash = ames.icons['trash'].clone();
+		let trash_w = trash.bounds.width;
+		trash.scaling = .825
+		trash.visible = true;
+		trash.position = new Point(box.position.x + box.bounds.width/2 - trash_w, box.position.y);
+		trash.bringToFront();
+		trash.onClick = (e) => {
+			obj.remove();
+			this.update_layers({remove: true, box: obj_box});
+			obj_box.remove();
+		};
+
+		obj_box.addChildren([box, box_label, trash])
+
+		// Visibility btns to toggle visibility
+		let eye = ames.icons['eye'].clone();
+		let eye_slash = ames.icons['eye-slash'].clone();
+		let eye_w = eye.bounds.width;
+		eye.visible = true;
+		eye_slash.visible = false;
+		let eye_pos = new Point(trash.position.x - eye_w - utils.ICON_OFFSET, box.position.y);
+		eye.position = eye_pos;
+		eye_slash.position = eye_pos;
+		eye.bringToFront();
+		eye_slash.bringToFront();
+		eye.onClick = (e) => {
+			eye.visible = false;
+			eye_slash.visible = true;
+			obj.show(false);
+		}
+		eye_slash.onClick = (e) => {
+			eye_slash.visible = false;
+			eye.visible = true;
+			ames.hide_editors(obj);
+			obj.show(true);
+		}
+		obj_box.addChildren([eye, eye_slash]);
+		if (obj instanceof AMES_Transformation) {
+			// For a transformation toggle whether or not the transformation space is visible
+			let axes = ames.icons['axes'].clone();
+			let axes_w = axes.bounds.width;
+			axes.position = new Point(eye_pos.x - axes_w - utils.ICON_OFFSET, box.position.y)
+			axes.active = obj.tf_space_visible;
+			if (axes.active) {
+				axes.strokeColor = utils.ACTIVE_S_COLOR;
+				axes.fillColor = utils.ACTIVE_S_COLOR;
+			}
+			axes.onClick = (e) => {
+				if (axes.active) {
+					axes.strokeColor = utils.INACTIVE_S_COLOR;
+					axes.fillColor = utils.INACTIVE_S_COLOR;
+					obj.toggle_show_tf({"deactivate": true});
+					axes.active = false;
+				} else {
+					axes.strokeColor = utils.ACTIVE_S_COLOR;
+					axes.fillColor = utils.ACTIVE_S_COLOR;
+					obj.toggle_show_tf();
+					axes.active = true;
+				}
+			}
+			axes.visible = true;
+			axes.bringToFront();
+			obj_box.addChild(axes);
+		}
+
+		this.update_layers({insert: true, box: obj_box});
+	}
+
+
 	add_obj(x, t_obj) {
 		this.objs[x.name] = x;
 		// Hide all open editors
 		this.hide_editors(x);
+		this.create_layers_box(x);
 
 		// let n = x.name;
 		// let box_idx;
