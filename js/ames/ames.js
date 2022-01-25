@@ -112,17 +112,17 @@ export class AMES {
 		// a.poly.strokeColor = "pink";
 		// let b = new AMES_Ellipse();
 		// b.poly.sendToBack();
-		let a_triangle = new AMES_Polygon();
-		let a_square = new AMES_Polygon({centroid: new Point(200, 200), nsides: 4, radius: 50});
-		let a_dot = new AMES_Ellipse({centroid: new Point(500, 500), rx: 5, ry: 5});
-		let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150});
-		let c = new AMES_Collection([a_dot]);
-		for (let i = 0; i < 9; i++) {
-			c.duplicate();
-		}
-		let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
-		t.set_target(c);
-
+		// let a_triangle = new AMES_Polygon();
+		// let a_square = new AMES_Polygon({centroid: new Point(200, 200), nsides: 4, radius: 50});
+		// let a_dot = new AMES_Ellipse({centroid: new Point(500, 500), rx: 5, ry: 5});
+		// let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150});
+		// let c = new AMES_Collection([a_dot]);
+		// for (let i = 0; i < 9; i++) {
+		// 	c.duplicate();
+		// }
+		// let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
+		// t.set_target(c);
+		ames.starfield(6)
 	}
 
 	create_toolbar() {
@@ -979,17 +979,20 @@ export class AMES {
 		if (step == null) step = 5;
 		console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
 
-		if (step != 5) dproject.activeLayer.removeChildren();
+		// if (step != 5) project.activeLayer.removeChildren();
 		let oct;
 		if (step >= 0) {
-			oct = new AMES_Polygon({"nsides": 20});
-			oct.poly.strokeColor = "pink";
+			oct = new AMES_Polygon({"nsides": 12});
+			oct.poly.strokeColor = "silver";
+			oct.poly.fillColor = "black";
+			oct.poly.scaling = 0.8;
+			oct.poly.strokeWidth = 2;
 		}
 
 		let poly_collection;
 		if (step >= 1) {
-			poly_collection = new AMES_Collection(oct);
-			poly_collection.set_count(10);
+			poly_collection = new AMES_Collection([oct]);
+			poly_collection.set_count(24);
 		}
 
 		let tf_position; let line_position;
@@ -1010,7 +1013,7 @@ export class AMES {
 			let line1 = new AMES_Artwork_Path();
 			let line2 = new AMES_Artwork_Path();
 			line1.add_points([new Point(75, 100), new Point(75, 90)]);
-			line2.add_points([new Point(100, 100), new Point(100, 105)]);
+			line2.add_points([new Point(100, 100), new Point(100, 110)]);
 			lines_perturb = new AMES_Collection([line1, line2]);
 			tf_point_perturb = new AMES_Transformation({
 				"input": lines_perturb,
@@ -1028,39 +1031,63 @@ export class AMES {
 
 		let tf_nsides;
 		if (step >= 4) {
-			let line_nsides = new AMES_Artwork_Path();
-			line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
-			tf_nsides = new AMES_Transformation();
-			tf_nsides.set_target(poly_collection);
-			tf_nsides.set_input(line_nsides);
-			tf_nsides.set_mapping({"type": "Polygon", "mapping": "number of sides"});
-			tf_nsides.set_tf_space({"my1": 10, "my2": 28});
-			tf_nsides.show_tf_space(true);
-			tf_nsides.transform();
+			// let line_nsides = new AMES_Artwork_Path();
+			// line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
+			// tf_nsides = new AMES_Transformation();
+			// tf_nsides.set_target(poly_collection);
+			// tf_nsides.set_input(line_nsides);
+			// tf_nsides.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+			// tf_nsides.set_tf_space({"my1": 10, "my2": 28});
+			// tf_nsides.show_tf_space(true);
+			// tf_nsides.transform();
 
 			tf_point_perturb.transform();
 		}
 
-		let tf_point_perturb_animation; let lines_perturb_animated;
+		let tf_point_perturb_animation;
+		// let lines_perturb_animated;
 		if (step >= 5) {
-			let line1 = new AMES_Artwork_Path();
-			let line2 = new AMES_Artwork_Path();
-			line1.add_points([new Point(275, 100), new Point(275, 95)]);
-			line2.add_points([new Point(300, 100), new Point(300, 105)]);
-			lines_perturb_animated = new AMES_Collection([line1, line2]);
+			// let line1 = new AMES_Artwork_Path();
+			// let line2 = new AMES_Artwork_Path();
+			// line1.add_points([new Point(275, 100), new Point(275, 95)]);
+			// line2.add_points([new Point(300, 100), new Point(300, 105)]);
+			// lines_perturb_animated = new AMES_Collection([line1, line2]);
 			tf_point_perturb_animation = new AMES_Transformation({
-				"input": lines_perturb_animated,
-				"target": poly_collection
+				"input": lines_perturb,
+				"target": poly_collection,
+				"mapping": {
+					"type": "Vertex",
+					"mapping": "relative animation"
+				}
 			});
-			tf_point_perturb_animation.set_mapping({"type": "Vertex", "mapping": "relative animation"});
 			tf_point_perturb_animation.set_mapping_behavior("alternate");
 			tf_point_perturb_animation.tf_space_absolute = false;
-			tf_point_perturb_animation.tf_space_path_nsegments = 25;
-			tf_point_perturb_animation.tf_space_speed_factor = 1;
-			tf_point_perturb_animation.loop_max_count = 1;
+			// tf_point_perturb_animation.tf_space_path_nsegments = 250;
+			// tf_point_perturb_animation.tf_space_speed_factor = 1;
+			// tf_point_perturb_animation.loop_max_count = 1;
+			// tf_point_perturb_animation.loop = true;
 
 			tf_point_perturb.show_tf_space(false);
-			tf_point_perturb_animation.transform();
+			if (step == 5) tf_point_perturb_animation.transform();
+		}
+
+		if (step >= 6) {
+			let playback_loop1 = new AMES_Ellipse({"centroid": new Point(200, 150), "rx": 25, "ry": 25});
+			// let playback_loop2 = new AMES_Ellipse({"centroid": new Point(200, 150), "rx": 50, "ry": 25});
+			// let playback_loop_collection = new AMES_Collection([playback_loop1, playback_loop2])
+			let tf_playback = new AMES_Transformation({
+				"input": playback_loop1,
+				"target": tf_point_perturb_animation,
+				"mapping": {
+					"type": "Transformation",
+					"mapping": "playback"
+				}
+			});
+			tf_playback.tf_space_path_nsegments = 10;
+			// tf_playback.loop_max_count = 10;
+			tf_playback.loop = true;
+			// if (step == 6) tf_point_perturb_animation.transform();
+			// if (step >= 6) tf_playback.transform();
 		}
 
 	}
@@ -1333,11 +1360,11 @@ export class AMES {
 	}
 
 	update_layers(opt) {
-		console.log("update_layers...", this.layers.children.length, opt.box.children[1].content)
 		opt = opt || {};
 
 		let box;
 		if (opt.box) box = opt.box;
+		else return;
 
 		// Insert box into layers box
 		if (opt.insert) {
@@ -1353,16 +1380,17 @@ export class AMES {
 
 		// Parent box to another box (change order of boxes)
 		if (opt.parent) {
-			let parent_idx = opt.parent_box.index;
-			let box_idx = box.index;
-			box.children[1].content = '    ' + box.children[1].content;
-			this.layers.removeChildren(box_idx, box_idx+1);
-			this.layers.insertChild(parent_idx, box);
-			let str = "";
-			for (let i in this.layers.children) {
-				str += this.layers.children[i].children[1].content
-			}
-			console.log("layers: ", str);
+			// let parent_idx = opt.parent_box.index;
+			// console.log(box);
+			// let box_idx = box.index;
+			// box.children[1].content = '    ' + box.children[1].content;
+			// this.layers.removeChildren(box_idx, box_idx+1);
+			// this.layers.insertChild(parent_idx, box);
+			// let str = "";
+			// for (let i in this.layers.children) {
+			// 	str += this.layers.children[i].children[1].content
+			// }
+			// console.log("layers: ", str);
 		}
 
 		// TO DO: Keep all transformation functions without a target at the top
@@ -1388,7 +1416,6 @@ export class AMES {
 		for (let i in this.layers.children) {
 			str += this.layers.children[i].children[1].content
 		}
-		console.log("layers: ", str);
 	}
 
 	create_layers_box(obj) {
@@ -1423,8 +1450,10 @@ export class AMES {
 				let obj_name_parts = obj.name.split(" ");
 				let num = obj_name_parts[1];
 				let mapping = obj.get_mapping();
-				mapping = mapping[0].toUpperCase() + mapping.substr(1);
-				name = "T" + num + " " + mapping;
+				if (mapping) {
+					mapping = mapping[0].toUpperCase() + mapping.substr(1);
+					name = "T" + num + " " + mapping;
+				}
 			}
 			box_label.content = name;
 		}

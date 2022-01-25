@@ -49,6 +49,7 @@ export class AMES_Transformation {
 	mapping_behavior; 		// many:many mapping behavior
 	transformation_space;   // coord space used to interpret the input artwork
 	obj_box = null;
+	is_transformation = true;
 
 	// supported transformations
 	mapping = 0;
@@ -60,7 +61,9 @@ export class AMES_Transformation {
 		{ "mapping_type": "Vertex",
 	      "mapping": "relative position" },
 		{ "mapping_type": "Vertex",
-  	      "mapping": "relative animation" }
+  	      "mapping": "relative animation" },
+		{ "mapping_type": "Transformation",
+    	   "mapping": "playback" },
 	];
 	MOTION_PATH = 0;
 	STATIC_SCALE = 1;
@@ -71,6 +74,7 @@ export class AMES_Transformation {
 	NUMBER_OF_SIDES = -1;
 	RELATIVE_POSITION = -2;
 	RELATIVE_ANIMATION = -3;
+	PLAYBACK = -4;
 
 	// TF space
 	tf_space_absolute = true;
@@ -113,6 +117,8 @@ export class AMES_Transformation {
 		console.log("create tf in ames");
 		this.create_editor();
 		ames.add_obj(this);
+		if (this.target)
+			ames.update_layers({parent: true, parent_box: this.target.obj_box, box: this.obj_box});
 	}
 
 	create_editor() {
@@ -139,18 +145,19 @@ export class AMES_Transformation {
 		this.tf_space_speed = this.SPEED_CONSTANT;
 		// # of segments in the path,
 		// i.e. if speed is 1, # of frames at frame rate to traverse transform
-		this.tf_space_path_nsegments = 1000;
-		let path_length;
-		if (input.is_artwork) path_length = this.input.poly.length;
+		// this.tf_space_path_nsegments = 1000;
+		let avg_path_length;
+		if (input.is_artwork) avg_path_length = this.input.poly.length;
 		if (input.is_collection) {
 			let total_length = 0;
 			for (let idx = 0; idx < this.n_input; idx++) {
 				total_length += this.input.shapes[idx].poly.length;
 			}
-			path_length = total_length/this.n_input;
+			avg_path_length = total_length/this.n_input;
 		}
-		this.tf_space_path_length_relative_scale = this.tf_space_path_nsegments / path_length;
-
+		this.avg_path_length = avg_path_length;
+		this.tf_space_path_nsegments = Math.round(avg_path_length);
+		console.log(this.name, "SEGMENTS", this.tf_space_path_nsegments);
 		// if (this.target && this.input) this.transform();
 		if (this.mapping) this.set_tf_space_to_defaults();
 	}
@@ -182,6 +189,7 @@ export class AMES_Transformation {
 			else this.n_target = 1;
 
 			this.setup_playback_trackers();
+
 			ames.update_layers({parent: true, parent_box: this.target.obj_box, box: this.obj_box});
 		}
 
@@ -203,10 +211,9 @@ export class AMES_Transformation {
 		if (this.mapping > 0) {
 			return this.mappings[this.mapping];
 		} else {
-			let typed_mapping = this.typed_mappings[this.mapping];
-			return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
+			let typed_mapping = this.typed_mappings[-1*this.mapping - 1];
+			if (typed_mapping) return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
 		}
-
 	}
 
 	// set_property_mapping
@@ -264,6 +271,7 @@ export class AMES_Transformation {
 			this.is_playable = true;
 			this.tf_space_path_nsegments = 1;
 		}
+		if (this.mapping == this.PLAYBACK) this.is_playable = true;
 
 		return true;
 	}
@@ -285,6 +293,9 @@ export class AMES_Transformation {
 		let valid_type = false;
 		if (mapping_type == "Vertex") { this.vertex_mapping = true; valid_type = true; return valid_type}
 		// Check all of the items in the target match the mapping
+		if (mapping_type == "Transformation") {
+			if (!this.target || this.target.is_transformation) valid_type = true;
+		}
 		if (target.is_artwork) {
 			if (target.artwork_type == mapping_type) {
 				valid_type = true;
@@ -387,6 +398,15 @@ export class AMES_Transformation {
 				"mx": "index", "mx1": 0, "mx2": n_target - 1,
 				"my": "hue", "my1": 0, "my2": my2,
 				"mp": null, "show": true, "yflip": true,
+				"sx1": TL.x, "sx2": TR.x, "sy1": TL.y, "sy2": BL.y
+			}); return;
+		}
+
+		if (this.mapping == this.PLAYBACK) {
+			this.set_tf_space({
+				"mx": null, "mx1": null, "mx2": null,
+				"my": "iterations", "my1": 0, "my2": 1,
+				"mp": "time", "show": true, "yflip": true,
 				"sx1": TL.x, "sx2": TR.x, "sy1": TL.y, "sy2": BL.y
 			}); return;
 		}
@@ -496,7 +516,7 @@ export class AMES_Transformation {
 					}
 				}
 				console.log("decrement", this[value], this[check_value], this[value]);
-				this.tf_s[label].content = this[value];
+				this.tf_s[label].content = Math.round(this[value]);
 				total_drag = 0;
 			}
 			if (total_drag > 2.5) { // Increment
@@ -514,7 +534,7 @@ export class AMES_Transformation {
 					}
 				}
 				console.log("increment", this[value]);
-				this.tf_s[label].content = this[value];
+				this.tf_s[label].content = Math.round(this[value]);
 				total_drag = 0;
 			}
 		}
@@ -524,7 +544,7 @@ export class AMES_Transformation {
 		}
 
 		let labels = ["mx1_label", "mx2_label", "my1_label", "my2_label"];
-		let values = ["tf_sx1", "tf_sx2", "tf_sy1", "tf_sy2"];
+		let values = ["tf_mx1", "tf_mx2", "tf_my1", "tf_my2"];
 		let check_modes = ["max", "min", "max", "min"];
 		let check_values = ["tf_sx2", "tf_sx1", "tf_sy2", "tf_sy1"];
 		for (let i in labels) {
@@ -812,6 +832,10 @@ export class AMES_Transformation {
 		if (this.target.is_artwork) n = 1;
 		if (this.target.is_collection) n = this.n_target;
 
+		if (this.mapping == this.PLAYBACK) {
+			n = this.target.n_target;
+		}
+
 		this.dx_total = [];
 		this.dy_total = [];
 		this.v_total = [];
@@ -823,6 +847,8 @@ export class AMES_Transformation {
 		this.loop_count = [];
 		this.is_playing = [];
 		this.tween_helper_scale = [];
+		this.curr_state = [];
+		this.curr_remainder = [];
 
 		for (let i = 0; i < n; i++) {
 			this.loop_count[i] = 1;
@@ -833,7 +859,92 @@ export class AMES_Transformation {
 			this.dy_direction[i] = 0;
 			this.slope[i] = 1;
 			this.tween_helper_scale[i] = 1;
+			this.curr_state[i] = 0;
+			this.curr_remainder[i] = 0;
 		}
+
+		if (this.vertex_mapping) {
+			this.vertex_normals = [];
+			this.vertex_tangents = [];
+
+			for (let idx = 0; idx < this.n_target; idx++) {
+				let a;
+				if (this.target.is_collection) a = this.target.shapes[idx];
+				if (this.target.is_artwork) a = this.target;
+
+				let n_segments = a.poly.segments.length;
+
+				this.vertex_normals[idx] = [];
+				this.vertex_tangents[idx] = [];
+
+				let eps = 0.01;
+
+				for (let i = 0; i < n_segments; i++) {
+					let p = a.poly.segments[i].point;
+					let o = a.poly.getOffsetOf(p);
+					let n; let t;
+					let n1; let n2; let p1; let p2;
+
+					let c = new PointText({
+						point: p,
+						content: i
+					}); c.visible = false;
+
+					let o1 = o-eps;
+					let o2 = o+eps;
+
+					if (i == 0) {
+						o1 = a.poly.length - eps;
+					}
+
+					p1 = a.poly.getPointAt(o1);
+					p2 = a.poly.getPointAt(o2);
+
+					if (a.poly.segments[i].isSmooth()) {
+						n = a.poly.getNormalAt(o);
+						t = a.poly.getTangentAt(o);
+					} else {
+						n1 = a.poly.getNormalAt(o1);
+						n2 = a.poly.getNormalAt(o2);
+						n = n1.add(n2).normalize();
+						let t1 = a.poly.getTangentAt(o1);
+						let t2 = a.poly.getTangentAt(o2);
+						t = t1.add(t2).normalize();
+					}
+					this.vertex_normals[idx][i] = n;
+					this.vertex_tangents[idx][i] = t;
+
+					let nPath = new Path.Line({
+						segments: [p, p.add(n.multiply(20))],
+						strokeColor: "pink",
+						strokeWidth: 1
+					});
+					nPath.visible = false;
+					let n1Path = new Path.Line({
+						segments: [p1, p1.add(n1.multiply(20))],
+						strokeColor: "red",
+						strokeWidth: 1
+					});
+					n1Path.visible = false;
+
+					let n2Path = new Path.Line({
+						segments: [p2, p2.add(n2.multiply(20))],
+						strokeColor: "lightblue",
+						strokeWidth: 1
+					});
+					n2Path.visible = false;
+
+					let tPath = new Path.Line({
+						segments: [p, p.add(t.multiply(20))],
+						strokeColor: "green",
+						strokeWidth: 1
+					});
+					tPath.visible = false;
+				}
+			}
+		}
+
+
 	}
 
 	// play
@@ -845,82 +956,22 @@ export class AMES_Transformation {
 	play() {
 		let state_idx = 0;
 
-		this.vertex_normals = [];
-		this.vertex_tangents = [];
+		this.setup_playback_trackers();
+		let n_target = this.n_target;
+		if (this.mapping == this.PLAYBACK) {
+			this.target.setup_playback_trackers();
+			n_target = this.target.n_target;
+			console.log("Playing playback transform to drive ", this.target.name);
+			console.log("The parent transform has n segments:", this.tf_space_path_nsegments);
+			console.log("The child transform has n segements: ", this.target.tf_space_path_nsegments);
+		}
 
-		for (let idx = 0; idx < this.n_target; idx++) {
+
+		for (let idx = 0; idx < n_target; idx++) {
 			let a;
-			if (this.target.is_artwork) a = this.target;
 			if (this.target.is_collection) a = this.target.shapes[idx];
-
-			let n_segments = a.poly.segments.length;
-
-			this.vertex_normals[idx] = [];
-			this.vertex_tangents[idx] = [];
-
-			let eps = 0.01;
-			for (let i = 0; i < n_segments; i++) {
-				let p = a.poly.segments[i].point;
-				let o = a.poly.getOffsetOf(p);
-				let n; let t;
-				let n1; let n2; let p1; let p2;
-
-				let c = new PointText({
-					point: p,
-					content: i
-				}); c.visible = false;
-
-				let o1 = o-eps;
-				let o2 = o+eps;
-
-				if (i == 0) {
-					o1 = a.poly.length - eps;
-				}
-
-				p1 = a.poly.getPointAt(o1);
-				p2 = a.poly.getPointAt(o2);
-
-				if (a.poly.segments[i].isSmooth()) {
-					n = a.poly.getNormalAt(o);
-					t = a.poly.getTangentAt(o);
-				} else {
-					n1 = a.poly.getNormalAt(o1);
-					n2 = a.poly.getNormalAt(o2);
-					n = n1.add(n2).normalize();
-					let t1 = a.poly.getTangentAt(o1);
-					let t2 = a.poly.getTangentAt(o2);
-					t = t1.add(t2).normalize();
-				}
-				this.vertex_normals[idx][i] = n;
-				this.vertex_tangents[idx][i] = t;
-
-				let nPath = new Path.Line({
-					segments: [p, p.add(n.multiply(20))],
-					strokeColor: "pink",
-					strokeWidth: 1
-				});
-				nPath.visible = false;
-				let n1Path = new Path.Line({
-					segments: [p1, p1.add(n1.multiply(20))],
-					strokeColor: "red",
-					strokeWidth: 1
-				});
-				n1Path.visible = false;
-
-				let n2Path = new Path.Line({
-					segments: [p2, p2.add(n2.multiply(20))],
-					strokeColor: "lightblue",
-					strokeWidth: 1
-				});
-				n2Path.visible = false;
-
-				let tPath = new Path.Line({
-					segments: [p, p.add(t.multiply(20))],
-					strokeColor: "green",
-					strokeWidth: 1
-				});
-				tPath.visible = false;
-			}
+			if (this.target.is_artwork) a = this.target;
+			if (this.target.is_transformation) a = this.target.target.shapes[idx];
 
 			if (false) {
 				this.loop_count[idx] = [];
@@ -941,10 +992,20 @@ export class AMES_Transformation {
 				this.is_playing[idx] = 1;
 				// Jump target to match transformation input start values
 				if (this.tf_space_absolute) {
-					let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
-					this.set_artwork_value_to(a, sv);
+					if (this.mapping == this.PLAYBACK) {
+						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						this.target.set_artwork_value_to(a, sv);
+					} else {
+						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						this.set_artwork_value_to(a, sv);
+					}
 				}
-				this.play_helper(state_idx, a, idx);
+
+				this.play_helper({
+					"state_idx": state_idx,
+					"a": a,
+					"a_idx": idx
+				});
 			}
 
 		}
@@ -970,16 +1031,26 @@ export class AMES_Transformation {
 
 			// Jump target to match transformation input start values
 			if (this.tf_space_absolute) {
-				let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
-				this.set_artwork_value_to(a, sv);
+				if (this.mapping == this.PLAYBACK) {
+					let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+					this.target.set_artwork_value_to(a, sv);
+				} else {
+					let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+					this.set_artwork_value_to(a, sv);
+				}
 			}
 
-			this.play_helper(0, a, idx);
+			this.play_helper({"state_idx": 0, "a": a, "idx": idx});
 		} else {
 			if (this.tf_space_absolute) {
 				if (this.tf_space_absolute) {
-					let sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
-					this.set_artwork_value_to(a, sv);
+					if (this.mapping == this.PLAYBACK) {
+						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						this.target.set_artwork_value_to(a, sv);
+					} else {
+						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						this.set_artwork_value_to(a, sv);
+					}
 				}
 				let v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index")
 				this.set_artwork_value_to(a, v);
@@ -987,94 +1058,72 @@ export class AMES_Transformation {
 		}
 	}
 
-	play_helper = async function(state_idx, a, a_idx, a_smooth, v_idx) {
+	play_helper = async function(opt) {
+		opt = opt || {};
+
+		let state_idx; let a; let a_idx; let a_smooth; let v_idx; let stop_state_idx; let timing_factor; let reverse;
+		if (opt.state_idx != null) state_idx = Number(opt.state_idx);
+		if (opt.a != null) a = opt.a;
+		if (opt.a_idx != null) a_idx = Number(opt.a_idx);
+		if (opt.a_smooth != null) a_smooth = opt.a_smooth;
+		if (opt.v_idx != null) v_idx = Number(opt.v_idx);
+		if (opt.stop_state_idx != null) stop_state_idx = Number(opt.stop_state_idx);
+		else stop_state_idx = this.tf_space_path_nsegments;
+		if (opt.timing_factor != null) timing_factor = Number(opt.timing_factor);
+		else timing_factor = 1;
+		if (opt.reverse != null) reverse = opt.reverse;
+		else reverse = false;
+
+		let nxt_state_idx = state_idx + 1;
+		if (reverse) nxt_state_idx = state_idx - 1;
+
+
+
 		// Base case with support for looping
-		if (state_idx == this.tf_space_path_nsegments) {
-			if (false) {
-				if (this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx][v_idx] < this.loop_max_count)) {
-					state_idx = 0;
-					if (this.loop_max_count != this.LOOP_INFINITY) {
-						this.loop_count[a_idx][v_idx] += 1;
-					}
-				} else {
-					this.is_playing[a_idx][v_idx] = 0;
-					this.trigger_end(a, a_idx, v_idx);
-					return;
-				}
-			} else {
+		if ( (!reverse && state_idx >= stop_state_idx) || (reverse && state_idx <= stop_state_idx) ) {
+			// if (false) {
+			// 	if (this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx][v_idx] < this.loop_max_count)) {
+			// 		state_idx = 0;
+			// 		if (this.loop_max_count != this.LOOP_INFINITY) {
+			// 			this.loop_count[a_idx][v_idx] += 1;
+			// 		}
+			// 	} else {
+			// 		this.is_playing[a_idx][v_idx] = 0;
+			// 		this.trigger_end(a, a_idx, v_idx);
+			// 		return;
+			// 	}
+			// } else {
+			if (stop_state_idx == this.tf_space_path_nsegments) {
+				// console.log(this.name, a.name, "play from state a to b", state_idx, nxt_state_idx, "reverse?", reverse);
 				if (this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx] < this.loop_max_count)) {
-					state_idx = 0;
+					// console.log("reset?");
+					state_idx = 0; nxt_state_idx = 1;
 					if (this.loop_max_count != this.LOOP_INFINITY) {
 						this.loop_count[a_idx] += 1;
 					}
+					if (this.target.is_transformation) this.target.setup_playback_trackers();
 				} else {
 					this.is_playing[a_idx] = 0;
 					this.trigger_end(a, a_idx);
 					return;
 				}
+			} else {
+				return;
 			}
+
+			// }
 		}
 
 		let DELTA = 0; let DURATION = 1;
 
 		// For a vertex animation
 		if (this.vertex_mapping) {
-			// Get the update across all vertices for this object
-			// let a_smooth = a.poly.clone(); a_smooth.smooth();
-			// a_smooth.visible = false;
-			// if (state_idx == 0) a.poly.clone();
-			// return;
+
 			let n_segments = a.poly.segments.length;
-			//
-			// let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx);
-			// let d = vertex_update[DELTA];
-			// let time = vertex_update[DURATION];
-			// let t_frame = 1000/ames.fps;
-			// let nframes = Math.ceil(time / t_frame);
-			//
-			// let p = a_smooth.getNearestPoint(a.poly.segments[v_idx].point);
-			// let o = a_smooth.getOffsetOf(p);
-			// let n = a_smooth.getNormalAt(o);
-			// let center = a.poly.position;
-			// if (n.dot(center.subtract(p)) < 0) n = n.multiply(-1);
-			// let t = a_smooth.getTangentAt(o);
-			//
-			// let npath = new Path({
-			// 	segments: [p, p.add(n.multiply(5))],
-			// 	strokeColor: "red",
-			// 	strokeWidth: 1
-			// });
-			// npath.visible = false;
-			//
-			// let tpath = new Path({
-			// 	segments: [p, p.add(t.multiply(5))],
-			// 	strokeColor: "green",
-			// 	strokeWidth: 1
-			// });
-			// tpath.visible = false;
-			//
-			//
-			// let nx = d.y*n.x + d.x*t.x;
-			// let ny = d.y*n.y + d.x*t.y;
-			// let vu = new Point(nx, ny);
-			//
-			// let perturb_path = new Path({
-			// 	segments: [p, p.add(vu.multiply(20))],
-			// 	strokeColor: "black",
-			// 	strokeWidth: 1
-			// });
-			// perturb_path.visible = false;
-			//
-			// this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-			//
-			// for (let n = 1;  n < nframes; n++) {
-			// 	setTimeout(() => {
-			// 		this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-			// 	}, n*t_frame);
-			// }
+
 			let time = []; let vertex_delta = []; let max_time = 0;
 			for (let v_idx = 0; v_idx < n_segments; v_idx++) {
-				let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx);
+				let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx, nxt_state_idx);
 				let d = vertex_update[DELTA];
 				time[v_idx] = vertex_update[DURATION];
 				if (time[v_idx] > max_time) max_time = time[v_idx];
@@ -1111,8 +1160,6 @@ export class AMES_Transformation {
 				}, n*t_frame);
 			}
 
-
-
 			// TODO deal with vertex duplication??
 			// Tween the updates across all vertices
 			// let t_frame = 1000/ames.fps;
@@ -1128,11 +1175,19 @@ export class AMES_Transformation {
 			// }
 
 			setTimeout(() => {
-				this.play_helper(state_idx + 1, a, a_idx, a_smooth, v_idx);
-			}, max_time);
+				this.play_helper({
+					"state_idx": nxt_state_idx,
+					"a": a,
+					"a_idx": a_idx,
+					"a_smooth": a_smooth,
+					"v_idx": v_idx,
+					"stop_state_idx": stop_state_idx,
+					"reverse": reverse,
+				});
+			}, max_time*timing_factor);
 
 		} else {
-			let update = this.get_transform_artwork_at_state(state_idx, a_idx);
+			let update = this.get_transform_artwork_at_state(state_idx, a_idx, nxt_state_idx);
 
 			let d = update[DELTA];
 			let t = update[DURATION];
@@ -1152,10 +1207,15 @@ export class AMES_Transformation {
 			}
 
 			setTimeout(() => {
-				this.play_helper(state_idx + 1, a, a_idx);
-			}, t);
+				this.play_helper({
+					"state_idx": nxt_state_idx,
+					"a": a,
+					"a_idx": a_idx,
+					"stop_state_idx": stop_state_idx,
+					"reverse": reverse,
+				});
+			}, t*timing_factor);
 		}
-
 
 	}
 
@@ -1195,6 +1255,48 @@ export class AMES_Transformation {
 				a.poly.segments[idx].point = p;
 			}
 			a.poly.clearHandles();
+		}
+
+		if (this.mapping == this.PLAYBACK) {
+			let reverse = false;
+			if (d.y < 0) {
+				reverse = true;
+				d.y = -d.y;
+			}
+
+			let qt = d.y/f - Math.floor(d.y/f);
+			let frame_progression = this.target.tf_space_path_nsegments*qt;
+			let target_frames = Math.floor(frame_progression);
+
+			this.curr_remainder[a_idx] += frame_progression - target_frames;
+
+			if (Math.round(this.curr_remainder[a_idx]) == 1) {
+				this.curr_remainder[a_idx] -= 1;
+				target_frames += 1;
+			}
+
+
+			let stop_state_idx = this.curr_state[a_idx] + target_frames;
+			if (reverse) stop_state_idx = this.curr_state[a_idx] - target_frames;
+
+
+			// TO DO... timing factor?
+			if (stop_state_idx >= 0 && this.curr_state[a_idx] != stop_state_idx) {
+				if (a_idx == 0) {
+					// console.log("playback transform", a.name, d.y.toFixed(4), this.curr_state[a_idx], stop_state_idx, "reverse?", reverse);
+				}
+
+				this.target.play_helper({
+					"state_idx": this.curr_state[a_idx],
+					"stop_state_idx": stop_state_idx,
+					"a": a,
+					"a_idx": a_idx,
+					"v_idx": v_idx,
+					"reverse": reverse
+				});
+
+				this.curr_state[a_idx] = stop_state_idx;
+			}
 		}
 	}
 
@@ -1489,15 +1591,14 @@ export class AMES_Transformation {
 	}
 
 	// Assump a_target is always a shape
-	get_transform_artwork_at_state(state_idx, a_idx) {
+	get_transform_artwork_at_state(state_idx, a_idx, nxt_i) {
 		let i = state_idx;
-		let nxt_i = state_idx + 1;
+		if (nxt_i == null) nxt_i = state_idx + 1;
 
 		let d; let dx; let dy;
 		let delta; let seg_change_value;
 
 		if (this.input.is_shape) {
-
 			d = this.get_delta_from_state(i, nxt_i);
 			seg_change_value = this.get_change_in_segment_at_state(i, nxt_i);
 			dx = d.x; dy = d.y;
@@ -1537,7 +1638,7 @@ export class AMES_Transformation {
 		if (seg_change_value > 0.5) change_segment = true;
 		delta = {"x": dx, "y": dy, "v": d, "change_segment": change_segment};
 
-		let duration = 1000/ames.fps * (1/this.tf_space_speed_factor);
+		let duration = 1000/ames.fps;
 		if (this.tf_space_speed == this.SPEED_CONSTANT) { duration = duration; }
 		if (this.tf_space_speed == this.SPEED_LINEAR) { duration *= d };
 		if (this.tf_space_speed == this.SPEED_XAXIS) { duration *= Math.abs(dx) };
@@ -1545,8 +1646,14 @@ export class AMES_Transformation {
 		if (this.tf_space_speed == this.SPEED_MAP) {} // TBD
 		if (duration == 0) duration = .001;
 
-		let rate = (delta.v) / duration; // This is actually the time per segment
-		// if (a_idx == 4) console.log(delta.v.toFixed(4), rate.toFixed(4));
+		if (a_idx == 0) {
+			if (!this.debug_sum) this.debug_sum = 0;
+			this.debug_sum += delta.y;
+			if (!this.tracker_dot) this.tracker_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+			if (!this.og_dot) this.og_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+			// if (state_idx == 0) this.tracker_dot.position = new Point(150, 150);
+			this.tracker_dot.position.add(new Point(delta.x, delta.y));
+		}
 
 		return [delta, duration];
 	}
@@ -1583,6 +1690,7 @@ export class AMES_Transformation {
 	get_artwork_value_at_offset(artwork, off) {
 		if (off > artwork.length) off = artwork.length;
 		let p = artwork.getPointAt(off);
+
 		let t = this.tf_space_map_x_y(p.x, p.y);
 		p.x = t.x; p.y = t.y;
 		return p;
