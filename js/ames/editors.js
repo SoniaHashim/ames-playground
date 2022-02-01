@@ -19,14 +19,14 @@ class AMES_Editor {
 	is_visible = false;
 	pos_is_set = false;
 
-	constructor(obj) {
+	constructor(obj, opt) {
 		let box = new Group();
-
+		opt = opt || {};
 
 		// Add background rectangle
-		let e_width = 150;
+		let e_width = 167.5;
 		this.box_width = e_width;
-		let e_height = this.e_height || 150;
+		let e_height = opt.e_height || 150;
 		let rect = new Shape.Rectangle({
 			point: [0, 0],
 			size: [e_width, e_height],
@@ -37,6 +37,7 @@ class AMES_Editor {
 			opacity: 0.5
 		});
 		box.addChild(rect);
+		this.box_rect = rect;
 		// Add obj name
 		let by = utils.LAYER_HEIGHT;
 		let n_text = new PointText({
@@ -140,18 +141,20 @@ class AMES_Editor {
 
 export class AMES_Transformation_Editor extends AMES_Editor {
 	box_width;
-	e_height = 275;
+	static e_height = 245;
 
 	constructor(obj) {
-		super(obj);
+		super(obj, {"e_height": AMES_Transformation_Editor.e_height});
 		let box = this.box;
 		let by = utils.LAYER_HEIGHT;
 		let e_width = this.box_width;
 
+
+
 		// Make geometry link button for artwork
 		this.geometry_field_info = {};
 		let x_off = 4*utils.ICON_OFFSET;
-		let y_off = utils.LAYER_HEIGHT*3.5;
+		let y_off = utils.LAYER_HEIGHT*3;
 		this.make_link_button([x_off, y_off], 'target')
 		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'input')
 
@@ -159,8 +162,131 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.make_button(0, "brush", "change_transformation_property");
 		this.make_button(0, "play", "transform");
 		this.make_button(0, "loop", "toggle_loop", {"deactivate_required": true});
+
+
+		// this.make_dropdown([x_off,utils.LAYER_HEIGHT], 'mapping', 'change_mapping');
+		this.make_dropdown([x_off, y_off + utils.LAYER_HEIGHT*3], 'behavior', 'set_mapping_behavior');
+		this.make_dropdown([x_off, y_off + utils.LAYER_HEIGHT*4.5], 'mode', 'set_mapping_mode');
+
 		// Initialize editor position
 		this.set_editor_position();
+	}
+
+	make_dropdown(editor_location, field, dropdown_function, args) {
+		// this.obj[btn_function](args);
+		if (!this.dropdown) this.dropdown = {};
+		this.dropdown[field] = {};
+
+		let x_off = editor_location[0];
+		let y_off = editor_location[1];
+
+		let dropdown = new Group();
+
+		let label = new PointText({
+			point: [2*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
+			content: field[0].toUpperCase() + field.substring(1)+ ":",
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+		y_off += 10;
+		let box = new Path.Rectangle({
+			point: new Point(x_off-5, y_off),
+			size: new Size(100, utils.LAYER_HEIGHT*.75),
+			fillColor: utils.INACTIVE_DARK_COLOR,
+			strokeColor: utils.INACTIVE_S_COLOR,
+			strokeWidth: 1,
+			radius: 1.25,
+		});
+		let caret_a = ames.icons['caret-down'].clone();
+		caret_a.scaling = .625;
+		caret_a.position = new Point(x_off + 2.5, y_off + 12.5);
+		caret_a.visible = true;
+		let caret_b = caret_a.clone();
+		caret_b.position = new Point(x_off + 2.5, y_off + 5);
+		caret_b.rotation = 180;
+
+		let opts = this.obj.get_dropdown_opts(field);
+		this.dropdown[field].selected_opt = this.obj.get_mapping_opt(field);
+
+		let selected_label = new PointText({
+			point: [x_off + 25, y_off + 12.5],
+			content: this.dropdown[field].selected_opt,
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+		this.dropdown[field].label = selected_label;
+
+		this.dropdown[field].opts_visible = false;
+
+		let set_dropdown_selected = (field, opt, drop_opts) => {
+			console.log("editor dropdown selection: ", field, opt);
+			this.obj[dropdown_function](opt);
+			this.dropdown[field].label.content = opt;
+			this.dropdown[field].selected_opt = opt;
+			if (drop_opts) drop_opts.remove();
+			this.dropdown[field].opts_visible = false;
+		};
+
+		let get_dropdown_position = () => {
+			let position = dropdown.position;
+			return {"x_off": position.x, "y_off": position.y}
+		}
+
+
+		// On click show menu with remaining options that enable selection
+		let drop_opts;
+		dropdown.onMouseDown = (e) => {
+			console.log("Clicked on dropdown")
+			e.stopPropagation();
+			if (this.dropdown[field].opts_visible) {
+				console.log("Hide drop opts")
+				// Click on same opt resets the menu and hides the visible options
+				set_dropdown_selected(field, this.dropdown[field].selected_opt, drop_opts);
+			} else {
+				this.dropdown[field].opts_visible = true;
+				console.log("Show drop opts")
+				// Show the visible options so the user can select them
+				drop_opts = new Group();
+				let p = get_dropdown_position();
+				p.x_off -= 44;
+				for (let i in opts) {
+					let opt = opts[i];
+					if (opt != this.dropdown[field].selected_opt) {
+						console.log(opt, p);
+						let opt_group = new Group();
+						p.y_off += box.bounds.height;
+
+						let opt_box = new Path.Rectangle({
+							point: new Point(p.x_off-5, p.y_off - 0.25),
+							size: new Size(100, utils.LAYER_HEIGHT*.75),
+							fillColor: utils.INACTIVE_DARK_COLOR,
+							strokeColor: utils.INACTIVE_S_COLOR,
+							strokeWidth: 1,
+							radius: 1.25
+						});
+						let opt_label = new PointText({
+							point: [p.x_off + 25, p.y_off + 12.5],
+							content: opt,
+							fillColor: utils.INACTIVE_S_COLOR,
+							fontFamily: utils.FONT,
+							fontSize: utils.FONT_SIZE,
+						});
+						opt_group.addChildren([opt_box, opt_label]);
+						drop_opts.addChild(opt_group);
+						opt_group.onMouseDown = (e) => {
+							console.log("clicked on drop opt", opt);
+							set_dropdown_selected(field, opt, drop_opts);
+						}
+					}
+				}
+			}
+
+		}
+
+		dropdown.addChildren([label, box, caret_a, caret_b, selected_label]);
+		this.box.addChild(dropdown);
 	}
 
 	make_button(btn_row, icon_name, btn_function, args) {
@@ -189,9 +315,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 			if (btn.active) {
 				btn.deactivate();
 			} else {
-				console.log("activating btn?", btn.active)
 				btn.strokeColor = utils.ACTIVE_S_COLOR;
-				console.log(btn.strokeColor.toCSS());
 				btn.fillColor = utils.ACTIVE_S_COLOR;
 				this.obj[btn_function](args);
 				btn.active = true;
@@ -338,7 +462,6 @@ export class AMES_Shape_Editor extends AMES_Editor {
 			this.nsides.onMouseDrag = (e) => {
 				// ames.canvas.style.cursor = null;
 				total_drag += e.event.movementX;
-				console.log(total_drag);
 				if (total_drag < 0) {
 					if (total_drag > 0) total_drag = 0;
 					ames.canvas.style.cursor = 'w-resize';

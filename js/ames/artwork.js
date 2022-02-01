@@ -1167,17 +1167,30 @@ export class AMES_Polygon extends AMES_Artwork {
 		AMES_Polygon.type_count += 1;
 	}
 
-	set_scaling(x) {
-		super.set_scaling(x);
-		this.radius *= x;
-	}
-
 	set_number_of_sides(nsides) {
 		let style = this.poly.style;
 		let position = this.poly.position;
+		let radius;
+		// Find the radius (the distance between the centroid and the farthest)
+		let n = this.poly.segments.length;
+		let x_sum = 0;
+		let y_sum = 0;
+		for (let i = 0; i < n; i++) {
+			x_sum += this.poly.segments[i].point.x;
+			y_sum += this.poly.segments[i].point.y;
+		}
+		let centroid = new Point(x_sum / n, y_sum / n);
+		let max_dist = 0;
+		for (let i = 0; i < n; i++) {
+			let p = this.poly.segments[i].point;
+			let x = p.x - centroid.x;
+			let y = p.y - centroid.y;
+			let dist = Math.sqrt(x*x + y*y);
+			if (dist > max_dist) radius = dist;
+		}
 		this.poly.remove();
 
-		this.poly = new Path.RegularPolygon(position, nsides, this.radius);
+		this.poly = new Path.RegularPolygon(position, nsides, radius);
 		this.poly.style = style;
 
 		if (nsides == 6) {
@@ -1276,6 +1289,7 @@ export class AMES_Artwork_Path extends AMES_Artwork {
 	}
 
 	finish_creating_path() {
+		console.log("finished path", this.name, this.poly);
 		this.create_in_ames();
 	}
 

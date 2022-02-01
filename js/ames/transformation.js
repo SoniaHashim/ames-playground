@@ -276,15 +276,6 @@ export class AMES_Transformation {
 		return true;
 	}
 
-	set_mapping_behavior(behavior) {
-		let is_valid_behavior = false;
-		if (behavior == "alternate") is_valid_behavior = true;
-		if (behavior == "interpoalte") is_valid_behavior = true;
-		if (behavior == "random") is_valid_behavior = true;
-
-		if (is_valid_behavior) this.mapping_behavior = behavior;
-	}
-
 	// check_valid_target_for_mapping
 	// ------------------------------------------------------------------------
 	// Returns bool indicating if target matches type necessary for a typed
@@ -686,7 +677,7 @@ export class AMES_Transformation {
 	// otherwise it applies the transformation function to the objects
 	// properties
 	transform(args) {
-		if (!this.mapping) this.set_mapping();
+		if (this.mapping == null) this.set_mapping();
 		if (!this.input || !this.target) return;
 
 		if (this.is_playable) {
@@ -704,6 +695,69 @@ export class AMES_Transformation {
 	}
 
 	_clear_cb_helpers() {
+	}
+
+
+	get_dropdown_opts(field) {
+		if (field == "behavior") {
+			// "interpolate", "alternate", "random"
+			return ["interpolate", "alternate", "random"];
+		}
+
+		if (field == "mode") {
+			// "absolute", "relative"
+			return ["absolute", "relative"];
+		}
+
+		if (field == "mapping") {
+			let mappings = [];
+			let idx = 0;
+			for (let i in this.mappings) {
+				mappings[idx++] = this.mappings[i];
+				idx++;
+			}
+			for (let i in this.typed_mappings) {
+				mappings[idx++] = this.typed_mappings[i].mapping_type + ": " + this.typed_mappings[i].mapping;
+			}
+			return mappings;
+		}
+	}
+
+	get_mapping_opt(field) {
+		if (field == "behavior") {
+			if (!this.mapping_behavior) return "interpolate";
+			else return this.mapping_behavior;
+		}
+
+		if (field == "mode") {
+			if (this.tf_space_absolute) return "absolute";
+			else return "relative";
+		}
+
+		if (field == "mapping") {
+			return this.get_mapping();
+		}
+	}
+
+	set_mapping_behavior(behavior) {
+		let is_valid_behavior = false;
+		if (behavior == "alternate") is_valid_behavior = true;
+		if (behavior == "interpoalte") is_valid_behavior = true;
+		if (behavior == "random") is_valid_behavior = true;
+
+		if (is_valid_behavior) this.mapping_behavior = behavior;
+	}
+
+	set_mapping_mode(opt) {
+		if (opt == "absolute") {
+			this.tf_space_absolute = true;
+		}
+
+		if (opt == "relative") {
+			this.tf_space_absolute = false;
+		}
+
+		console.log("Set mapping mode... absolute?", this.tf_space_absolute);
 	}
 
 	toggle_loop(args) {
@@ -732,6 +786,16 @@ export class AMES_Transformation {
 
 		if (field == "target") {
 			this.set_target(obj);
+		}
+	}
+
+	change_mapping(property) {
+		property = property.split(": ")
+		if (property.length == 1) {
+			this.set_mapping(property[0]);
+
+		} else {
+			this.set_mapping({"type": property[0], "mapping": property[1]});
 		}
 	}
 
@@ -798,6 +862,7 @@ export class AMES_Transformation {
 				for (let v_idx = 0; v_idx < n_segments; v_idx++) {
 					let v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0);
 					let v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end");
+					console.log(v1);
 					let v = {"x":v1.x-v0.x, "y": v1.y-v0.y, "v": v1.v.subtract(v0.v)};
 					vertex_update[v_idx] = this.get_vertex_value_update_at(a, v_idx, v, a_smooth);
 				}

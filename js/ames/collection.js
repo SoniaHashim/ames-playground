@@ -200,7 +200,7 @@ export class AMES_Collection {
 			let og = this.shapes[0];
 			// this.shapes = [];
 			for (let i = 1; i < n; i++) {
-				let a = og.clone(); 
+				let a = og.clone();
 				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
@@ -304,6 +304,9 @@ export class AMES_Collection {
 
 	remove_item() {
 		if (this.count == 1) return;
+		let shape = this.shapes[this.shapes.length-1];
+		shape.remove();
+		this.shapes.pop();
 		this.count = this.count - 1;
 		this.update_show_box();
 	}
@@ -380,11 +383,11 @@ export class AMES_Collection {
 				total_drag += e.event.movementX;
 				if (total_drag < 0) ames.canvas.style.cursor = 'w-resize';
 				if (total_drag > 0) ames.canvas.style.cursor = 'e-resize';
-				if (total_drag < -10) {
+				if (total_drag < -5) {
 					this.remove_item();
 					total_drag = 0;
 				}
-				if (total_drag > 10) {
+				if (total_drag > 5) {
 					this.add_item();
 					total_drag = 0;
 				}

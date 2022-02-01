@@ -108,7 +108,39 @@ export class AMES {
 	}
 
 	test() {
-		// let a = new AMES_Ellipse();
+		let line1 = new AMES_Artwork_Path();
+		let line2 = new AMES_Artwork_Path();
+		line1.add_points([new Point(75, 100), new Point(75, 90)]);
+		line1.finish_creating_path();
+		line2.add_points([new Point(100, 100), new Point(100, 110)]);
+		line2.finish_creating_path();
+
+		let line3 = new AMES_Artwork_Path();
+		line3.add_points([new Point(500, 525), new Point(500, 500)]);
+		line3.finish_creating_path();
+		
+		let lines = new AMES_Collection([line1, line2]);
+		console.log(line1.poly);
+
+		// let e = new AMES_Ellipse({
+		// 	"centroid": new Point(150, 150),
+		// });
+		// let p = new AMES_Polygon({
+		// 	"centroid": new Point(300, 300),
+		// 	 "nsides": 12,
+		// 	 "radius": 50
+		//  });
+
+
+		// let t = new AMES_Transformation({
+		// 	"input": lines,
+		// 	"target": p,
+		// });
+		// t.set_mapping({"type": "Vertex", "mapping": "relative position"});
+		// t.set_mapping_behavior("alternate");
+		// t.tf_space_absolute = false;
+		// t.show(true);
+
 		// a.poly.strokeColor = "pink";
 		// let b = new AMES_Ellipse();
 		// b.poly.sendToBack();
@@ -122,7 +154,7 @@ export class AMES {
 		// }
 		// let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
 		// t.set_target(c);
-		ames.starfield(6)
+		// ames.starfield(6)
 	}
 
 	create_toolbar() {
@@ -979,6 +1011,22 @@ export class AMES {
 		if (step == null) step = 5;
 		console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
 
+		if (step == -1) {
+			let line1 = new AMES_Artwork_Path();
+			let line2 = new AMES_Artwork_Path();
+			line1.add_points([new Point(75, 100), new Point(75, 90)]);
+			line2.add_points([new Point(100, 100), new Point(100, 110)]);
+			let lines_perturb = new AMES_Collection([line1, line2]);
+		}
+		let lines_collection;
+		if (step == 0) {
+			let line1 = new AMES_Artwork_Path();
+			let line2 = new AMES_Artwork_Path();
+			line1.add_points([new Point(75, 100), new Point(75, 90)]);
+			line2.add_points([new Point(100, 100), new Point(100, 110)]);
+			lines_collection = new AMES_Collection([line1, line2]);
+		}
+
 		// if (step != 5) project.activeLayer.removeChildren();
 		let oct;
 		if (step >= 0) {
@@ -992,7 +1040,7 @@ export class AMES {
 		let poly_collection;
 		if (step >= 1) {
 			poly_collection = new AMES_Collection([oct]);
-			poly_collection.set_count(24);
+			poly_collection.set_count(12);
 		}
 
 		let tf_position; let line_position;
