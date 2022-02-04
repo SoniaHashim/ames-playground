@@ -25,7 +25,7 @@
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_Shape} from './shapes.js'
-import {AMES_List_Editor} from './editors.js'
+import {AMES_Collection_Editor} from './editors.js'
 import {AMES_Artwork} from './artwork.js'
 
 export class AMES_Collection {
@@ -37,6 +37,7 @@ export class AMES_Collection {
 	is_collection = true;
 	shapes = [];
 	original = [];
+	transformations = [];
 	count = 1;
 	box;
 	editor;
@@ -146,7 +147,7 @@ export class AMES_Collection {
 	}
 
 	create_editor() {
-		this.editor = new AMES_List_Editor(this);
+		this.editor = new AMES_Collection_Editor(this);
 		let bounds = this.editor.box.bounds
 		let w = bounds.width/2 + utils.ICON_OFFSET*3 + 12.5;
 		let x = ames.toolbar.get_position().x + w;
@@ -159,6 +160,22 @@ export class AMES_Collection {
 			this.list_constraints[i].offset_mode = this.offset_mode;
 		}
 	}
+
+	add_transformation(transformation) {
+		this.transformations.push(transformation);
+	}
+
+	remove_transformation(transformation) {
+		let idx = -1;
+		for (let i in this.transformations) {
+			if (this.transformations[i] == transformation) {
+				idx = i;
+				break;
+			}
+		}
+		if (idx >= 0) this.transformations.splice(idx, 1);
+	}
+
 
 	// show_editor: if true open editor; otherwise close;
 	show_editor(bool) {
@@ -188,6 +205,8 @@ export class AMES_Collection {
 			let shape = original_shape.clone();
 			console.log("duplicated shape...", shape.name);
 			this.shapes.push(shape);
+			shape.add_collection(this);
+			// this.add_to_collection(shape, true);
 			ames.hide_editors(this);
 			this.show(true);
 		}
@@ -204,6 +223,7 @@ export class AMES_Collection {
 				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
+				// this.add_to_collection(a, true);
 				ames.hide_editors(this);
 				this.show(true);
 			}
@@ -221,8 +241,8 @@ export class AMES_Collection {
 	}
 
 
-	add_to_collection(s) {
-		if (!this.is_para_style_list && this.shapes.length > 0) {
+	add_to_collection(s, use_constraints) {
+		if (use_constraints || (!this.is_para_style_list && this.shapes.length > 0)) {
 			let fs = this.shapes[0];
 			let ls = this.shapes[this.shapes.length - 1];
 			// Remove constraint connecting ls to fs
@@ -262,7 +282,7 @@ export class AMES_Collection {
 	}
 
 	update_constraints() {
-		AMES_List.update_constraints(this);
+		AMES_Collection.update_constraints(this);
 	}
 
 	static update_constraints(list) {
@@ -538,6 +558,10 @@ export class AMES_Collection {
 
 	remove() {
 		console.log("To do -- List.remove()");
+		for (i in this.shapes) {
+			let a = this.shapes[i];
+			a.remove_collection(this);
+		}
 	}
 
 	make_list_group() {

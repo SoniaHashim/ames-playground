@@ -50,6 +50,8 @@ export class AMES_Artwork {
 		'path': this._path_cb,
 	}
 	cb_helpers = {'shapes': []};
+	collections = [];
+	transformations = [];
 	lists = {};
 	c_inbound = {
 		"position" : {"all": {}, "x": {}, "y": {}},
@@ -74,6 +76,36 @@ export class AMES_Artwork {
 	// can update the list helper shapes
 	add_list(list) {
 		this.lists[list.name] = list;
+	}
+
+	add_collection(collection) {
+		this.collections.push(collection);
+	}
+
+	add_transformation(transformation) {
+		this.transformations.push(transformation);
+	}
+
+	remove_collection(collection) {
+		let idx = -1;
+		for (let i in this.collections) {
+			if (this.collections[i] == collection) {
+				idx = i;
+				break;
+			}
+		}
+		if (idx >= 0) this.collections.splice(idx, 1);
+	}
+
+	remove_transformation(transformation) {
+		let idx = -1;
+		for (let i in this.transformations) {
+			if (this.transformations[i] == transformation) {
+				idx = i;
+				break;
+			}
+		}
+		if (idx >= 0) this.transformations.splice(idx, 1);
 	}
 
 	// set_pos(pt, is_delta)
@@ -158,6 +190,10 @@ export class AMES_Artwork {
 		return;
 	}
 
+	update_bbox() {
+		this.bbox = this.get_bbox();
+	}
+
 	// get_pos: returns the position of this shape
 	get_pos() {
 		return this.poly.position;
@@ -172,6 +208,13 @@ export class AMES_Artwork {
 			return p.isInside(bounds);
 		}
 		return;
+	}
+
+	get_distance_from_bbox_center_to_point(p) {
+		let c  = this.get_bbox().center;
+		let x = c.x - p.x;
+		let y = c.y - p.y;
+		return Math.sqrt(x*x + y*y);
 	}
 
 	// manipulate: enable interaction on a given property with opt sub properties
@@ -255,6 +298,22 @@ export class AMES_Artwork {
 		this.cbs[this.active_prop](this, this.cb_helpers, sub);
 	}
 
+	// Update helpers after a transformation that changes the artwork
+	// If the transformation is geometric (changes the scale, position, rotation,
+	// stroke width of the shape)... ie anything that can change its bbox the
+	// bbox for the artwork is updated as well as the bbox for any collections
+	// that it belongs to and the transformation space bounds of any transformation
+	// spaces where it is an input
+	update_helpers(artwork, is_geometric) {
+		console.log(artwork);
+		artwork.update_constraints();
+		if (is_geometric) {
+			artwork.update_bbox();
+			artwork.update_collections();
+			artwork.update_transformations();
+		}
+	}
+
 	update_constraints() {
 		let p = this.active_prop;
 		let s = this.active_sub_p;
@@ -265,6 +324,21 @@ export class AMES_Artwork {
 		}
 		for (let i in ames.lists) {
 			ames.lists[i].update_show_box_bounds();
+		}
+	}
+
+	update_collections() {
+		for (let i in this.collections) {
+			this.collections[i].update_show_box();
+			for (let j in this.collections[i].tranformations) {
+				this.collections[i].transformations[j].update_tf_space();
+			}
+		}
+	}
+
+	update_transformations() {
+		for (let i in this.transformations) {
+			this.transformations[i].update_tf_space();
 		}
 	}
 
@@ -316,8 +390,8 @@ export class AMES_Artwork {
 
 				if (offset) shape.set_pos(point);
 
-				// Update constraints
-				shape.update_constraints();
+				// Update helpers
+				shape.update_helpers(shape, true);
 			}
 		}
 	}
@@ -389,8 +463,8 @@ export class AMES_Artwork {
 						scale_dots[n].position = scale_box.segments[n].point;
 					}
 
-					// Update constraints
-					shape.update_constraints();
+					// Update helpers
+					shape.update_helpers(shape, true);
 				}
 			}
 		}
@@ -469,8 +543,8 @@ export class AMES_Artwork {
 				dt.position = e.point
 				line.lastSegment.point = dt.position;
 
-				// Update constraints
-				shape.update_constraints();
+				// Update helpers
+				shape.update_helpers(shape, true);
 			}
 		}
 	}
@@ -510,7 +584,8 @@ export class AMES_Artwork {
 
 			let shape_color_target = (c) => {
 				color_function(c);
-				shape.update_constraints();
+				// Update helpers
+				shape.update_helpers(shape);
 			}
 
 			ames.colorpicker.color_target = shape_color_target;
@@ -546,8 +621,8 @@ export class AMES_Artwork {
 					shape.poly.strokeWidth = nw;
 				}
 
-				// Update constraints
-				shape.update_constraints();
+				// Update helpers
+				shape.update_helpers(shape, true);
 			}
 		}
 	}
@@ -587,7 +662,8 @@ export class AMES_Artwork {
 
 			let shape_color_target = (c) => {
 				color_function(c);
-				shape.update_constraints();
+				// Update helpers
+				shape.update_helpers(shape);
 			}
 
 			ames.colorpicker.color_target = shape_color_target;
@@ -1307,13 +1383,13 @@ export class AMES_Artwork_Path extends AMES_Artwork {
 		}
 	}
 
-	update_bbox() {
-		this.bbox = new Path.Rectangle(this.poly.strokeBounds);
-		this.bbox.visible = true;
-		this.bbox.sendToBack();
-		this.bbox.fillColor = "lavender";
-		this.bbox.opacity = 0;
-	}
+	// update_bbox() {
+	// 	this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+	// 	this.bbox.visible = true;
+	// 	this.bbox.sendToBack();
+	// 	this.bbox.fillColor = "lavender";
+	// 	this.bbox.opacity = 0;
+	// }
 
 	make_path_helper() {
 		// If last point is very close to the previous point close the path

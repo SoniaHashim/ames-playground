@@ -108,8 +108,11 @@ export class AMES_Transformation {
 
 		this.tf_space_setup_visuals();
 		if (opt.input) this.set_input(opt.input);
+		else this.input = null;
 		if (opt.target) this.set_target(opt.target);
+		else this.target = null;
 		if (opt.mapping) this.set_mapping(opt.mapping);
+		else this.mapping = null;
 		this.create_in_ames();
 	}
 
@@ -137,10 +140,22 @@ export class AMES_Transformation {
 	// @param: input - artwork or collection that represents transformation
 	// or null
 	set_input(input) {
+		if (!input) {
+			for (let x in this.tf_s) {
+				this.tf_s[x].remove();
+			}
+
+			if (this.input != null) this.input.remove_transformation(this);
+		}
+
 		this.input = input;
 
 		if (input.is_collection) this.update_count(input);
 		else this.n_input = 1;
+
+		if (input.is_artwork || input.is_collection) {
+			input.add_transformation(this);
+		}
 
 		this.tf_space_speed = this.SPEED_CONSTANT;
 		// # of segments in the path,
@@ -157,9 +172,9 @@ export class AMES_Transformation {
 		}
 		this.avg_path_length = avg_path_length;
 		this.tf_space_path_nsegments = Math.round(avg_path_length);
-		console.log(this.name, "SEGMENTS", this.tf_space_path_nsegments);
+
 		// if (this.target && this.input) this.transform();
-		if (this.mapping) this.set_tf_space_to_defaults();
+		if (this.input && this.mapping) this.set_tf_space_to_defaults();
 	}
 
 	// set_target_artwork
@@ -401,6 +416,11 @@ export class AMES_Transformation {
 				"sx1": TL.x, "sx2": TR.x, "sy1": TL.y, "sy2": BL.y
 			}); return;
 		}
+	}
+
+	update_tf_space() {
+		// For now see how this feels
+		if (this.mapping) this.set_tf_space_to_defaults();
 	}
 
 	set_tf_space(opt) {
@@ -1382,6 +1402,7 @@ export class AMES_Transformation {
 		this.check_playback_points = true;
 	}
 
+
 	trigger_end(a, a_idx, v_idx) {
 		for (let x in this.transformation_functions_to_trigger) {
 			let tf = this.transformation_functions_to_trigger[x];
@@ -1867,6 +1888,7 @@ export class AMES_Transformation {
 		for (let x in this.tf_s) {
 			this.tf_s[x].remove();
 		}
+		if (this.input) this.input.remove_transformation(this);
 		this.input = null;
 		this.target = null;
 	}

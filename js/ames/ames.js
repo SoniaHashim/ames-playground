@@ -9,7 +9,7 @@ import {AMES_Utils as utils} from './utils.js'
 import {AMES_Viewfoil as AMES_Viewfoil} from './viewfoil.js'
 // import {AMES_Shape, AMES_Square, AMES_Circle, AMES_Path} from './shapes.js'
 import {AMES_Artwork, AMES_Polygon, AMES_Ellipse, AMES_Artwork_Path} from './artwork.js'
-import {AMES_Shape_Editor, AMES_List_Editor, AMES_Transformation_Editor} from './editors.js'
+import {AMES_Shape_Editor, AMES_Collection_Editor, AMES_Transformation_Editor} from './editors.js'
 import {AMES_Constraint} from './constraints.js'
 import {AMES_List, AMES_Duplicator} from './lists.js'
 import {AMES_Collection} from './collection.js'
@@ -118,7 +118,7 @@ export class AMES {
 		let line3 = new AMES_Artwork_Path();
 		line3.add_points([new Point(500, 525), new Point(500, 500)]);
 		line3.finish_creating_path();
-		
+
 		let lines = new AMES_Collection([line1, line2]);
 		console.log(line1.poly);
 
@@ -2354,40 +2354,50 @@ export class AMES {
 			//line.lastSegment.point = e.point;
 			if (!line) { clean_animation_link_tool(); return; }
 			point_in_box = false;
+			let containing_objs = [];
 			// If end point is the bounding box of an active object
 			for (let k in this.objs) {
 				// Snap the endpoint to the closest bounding box corner
 				let obj = this.objs[k];
-				if (obj.is_geometry) {
+				if (obj.is_artwork) {
 					if (obj.contains(e.point)) {
-						// Attach line to bbox corner with closest match
-						let p = obj.get_closest_bbox_corner(line_start);
-						if (p) line.lastSegment.point = p;
-						else line.lastSegment.point = e.point;
-						if (obj != curr_obj) {
-							// Update highlighted object
-							if (c_reference_box) {
-								c_reference_box.remove();
-							}
-							c_reference_box = obj.highlight(utils.C_REFERENCE_HIGHLIGHT);
-							curr_obj = obj;
-							// If list, hide list box
-							if (curr_obj.is_list) curr_obj.list_box.visible = false;
-
-						}
+						containing_objs.push(obj);
 						point_in_box = true;
 					}
 				}
 			}
 
-			if (!point_in_box) {
-				line.lastSegment.point = e.point;
+			if (point_in_box) {
+				let min_dist = Number.MAX_SAFE_INTEGER;
+				let closest_obj = null;
+				for (let i in containing_objs) {
+					let obj = containing_objs[i];
+					let d = obj.get_distance_from_bbox_center_to_point(e.point);
+					if (d < min_dist) {
+						min_dist = d;
+						closest_obj = obj;
+					}
+				}
+
+				if (curr_obj != closest_obj) {
+					// Update highlighted object
+					if (c_reference_box) {
+						c_reference_box.remove();
+					}
+					c_reference_box = closest_obj.highlight(utils.C_REFERENCE_HIGHLIGHT);
+					curr_obj = closest_obj;
+					// If list, hide list box
+					if (curr_obj.is_list) curr_obj.list_box.visible = false;
+				}
+
+			} else {
 				if (c_reference_box) {
 					c_reference_box.remove();
 					c_reference_box = null;
 				}
 				curr_obj = null;
 			}
+			line.lastSegment.point = e.point;
 		}
 
 		let cb_enable_animation_link = (e) => {

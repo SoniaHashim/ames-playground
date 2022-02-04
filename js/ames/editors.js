@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------
 import {AMES_Utils as utils} from './utils.js'
 import {AMES_Artwork, AMES_Polygon, AMES_Ellipse, AMES_Artwork_Path} from './artwork.js'
-import {AMES_List} from './lists.js'
+import {AMES_Collection} from './collection.js'
 
 // AMES_Editor
 // ----------------------------------------------------------------------------
@@ -172,6 +172,14 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.set_editor_position();
 	}
 
+	editor_close_cleanup() {
+		for (let f in this.dropdown) {
+			if (this.dropdown[f].drop_opts) {
+				this.dropdown[f].drop_opts.remove();
+			}
+		}
+	}
+
 	make_dropdown(editor_location, field, dropdown_function, args) {
 		// this.obj[btn_function](args);
 		if (!this.dropdown) this.dropdown = {};
@@ -220,12 +228,14 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 
 		this.dropdown[field].opts_visible = false;
 
-		let set_dropdown_selected = (field, opt, drop_opts) => {
+		let set_dropdown_selected = (field, opt) => {
 			console.log("editor dropdown selection: ", field, opt);
 			this.obj[dropdown_function](opt);
 			this.dropdown[field].label.content = opt;
 			this.dropdown[field].selected_opt = opt;
-			if (drop_opts) drop_opts.remove();
+			if (this.dropdown[field].drop_opts) {
+				this.dropdown[field].drop_opts.remove();
+			}
 			this.dropdown[field].opts_visible = false;
 		};
 
@@ -236,19 +246,18 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 
 
 		// On click show menu with remaining options that enable selection
-		let drop_opts;
+		this.dropdown[field].drop_opts;
 		dropdown.onMouseDown = (e) => {
 			console.log("Clicked on dropdown")
 			e.stopPropagation();
 			if (this.dropdown[field].opts_visible) {
-				console.log("Hide drop opts")
 				// Click on same opt resets the menu and hides the visible options
-				set_dropdown_selected(field, this.dropdown[field].selected_opt, drop_opts);
+				set_dropdown_selected(field, this.dropdown[field].selected_opt);
 			} else {
 				this.dropdown[field].opts_visible = true;
 				console.log("Show drop opts")
 				// Show the visible options so the user can select them
-				drop_opts = new Group();
+				this.dropdown[field].drop_opts = new Group();
 				let p = get_dropdown_position();
 				p.x_off -= 44;
 				for (let i in opts) {
@@ -274,10 +283,9 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 							fontSize: utils.FONT_SIZE,
 						});
 						opt_group.addChildren([opt_box, opt_label]);
-						drop_opts.addChild(opt_group);
+						this.dropdown[field].drop_opts.addChild(opt_group);
 						opt_group.onMouseDown = (e) => {
-							console.log("clicked on drop opt", opt);
-							set_dropdown_selected(field, opt, drop_opts);
+							set_dropdown_selected(field, opt);
 						}
 					}
 				}
@@ -832,7 +840,7 @@ export class AMES_Shape_Editor extends AMES_Editor {
 
 
 
-export class AMES_List_Editor extends AMES_Shape_Editor {
+export class AMES_Collection_Editor extends AMES_Shape_Editor {
 	rel_idx_val;
 	e_height = 175;
 
