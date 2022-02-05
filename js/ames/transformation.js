@@ -140,41 +140,44 @@ export class AMES_Transformation {
 	// @param: input - artwork or collection that represents transformation
 	// or null
 	set_input(input) {
-		if (!input) {
+		console.log("set input", input);
+
+		if (this.input && this.input.remove_transformation) this.input.remove_transformation(this);
+		this.input = input;
+
+		if (input) {
+			if (input.is_collection) this.update_count(input);
+			else this.n_input = 1;
+
+			if (input.is_artwork || input.is_collection) {
+				input.add_transformation(this);
+			}
+
+			this.tf_space_speed = this.SPEED_CONSTANT;
+			// # of segments in the path,
+			// i.e. if speed is 1, # of frames at frame rate to traverse transform
+			// this.tf_space_path_nsegments = 1000;
+			let avg_path_length;
+			if (input.is_artwork) avg_path_length = this.input.poly.length;
+			if (input.is_collection) {
+				let total_length = 0;
+				for (let idx = 0; idx < this.n_input; idx++) {
+					total_length += this.input.shapes[idx].poly.length;
+				}
+				avg_path_length = total_length/this.n_input;
+			}
+			this.avg_path_length = avg_path_length;
+			this.tf_space_path_nsegments = Math.round(avg_path_length);
+
+			// if (this.target && this.input) this.transform();
+			if (this.input && this.mapping) this.set_tf_space_to_defaults();
+		} else {
 			for (let x in this.tf_s) {
 				this.tf_s[x].remove();
 			}
 
-			if (this.input != null) this.input.remove_transformation(this);
 		}
 
-		this.input = input;
-
-		if (input.is_collection) this.update_count(input);
-		else this.n_input = 1;
-
-		if (input.is_artwork || input.is_collection) {
-			input.add_transformation(this);
-		}
-
-		this.tf_space_speed = this.SPEED_CONSTANT;
-		// # of segments in the path,
-		// i.e. if speed is 1, # of frames at frame rate to traverse transform
-		// this.tf_space_path_nsegments = 1000;
-		let avg_path_length;
-		if (input.is_artwork) avg_path_length = this.input.poly.length;
-		if (input.is_collection) {
-			let total_length = 0;
-			for (let idx = 0; idx < this.n_input; idx++) {
-				total_length += this.input.shapes[idx].poly.length;
-			}
-			avg_path_length = total_length/this.n_input;
-		}
-		this.avg_path_length = avg_path_length;
-		this.tf_space_path_nsegments = Math.round(avg_path_length);
-
-		// if (this.target && this.input) this.transform();
-		if (this.input && this.mapping) this.set_tf_space_to_defaults();
 	}
 
 	// set_target_artwork
@@ -188,7 +191,7 @@ export class AMES_Transformation {
 		if (target) {
 			// If the mapping is typed, check the target is of the correct type
 			if (this.mapping < 0) {
-				let mapping = this.typed_mappings[-1*this.mapping].mapping_type;
+				let mapping_type = this.typed_mappings[-1*this.mapping].mapping_type;
 				valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
 				if (!valid_type) change_target = false;
 			}
@@ -200,12 +203,15 @@ export class AMES_Transformation {
 		if (change_target) {
 			this.target = target;
 
-			if (target.is_collection) this.update_count(target);
-			else this.n_target = 1;
+			if (target) {
+				if (target.is_collection) this.update_count(target);
+				else this.n_target = 1;
 
-			this.setup_playback_trackers();
+				this.setup_playback_trackers();
 
-			ames.update_layers({parent: true, parent_box: this.target.obj_box, box: this.obj_box});
+				ames.update_layers({parent: true, parent_box: this.target.obj_box, box: this.obj_box});
+			}
+
 		}
 
 	}
@@ -268,8 +274,10 @@ export class AMES_Transformation {
 			}
 		}
 		// If the mapping changed update the transfromation space or throw err
- 		if (!changed_mapping) { console.log("Transformation: Invalid mapping"); return false }
-		else this.set_tf_space_to_defaults();
+ 		if (!changed_mapping) { console.log("Transformation: Invalid mapping"); return false; }
+		else {
+			if (this.input) this.set_tf_space_to_defaults();
+		}
 
 		if (this.obj_box) this.obj_box.change_name();
 
@@ -1046,6 +1054,7 @@ export class AMES_Transformation {
 		if (this.mapping == this.PLAYBACK) {
 			this.target.setup_playback_trackers();
 			n_target = this.target.n_target;
+			this.tf_space_path_nsegments = 2*this.target.tf_space_path_nsegments;
 			console.log("Playing playback transform to drive ", this.target.name);
 			console.log("The parent transform has n segments:", this.tf_space_path_nsegments);
 			console.log("The child transform has n segements: ", this.target.tf_space_path_nsegments);
@@ -1054,9 +1063,13 @@ export class AMES_Transformation {
 
 		for (let idx = 0; idx < n_target; idx++) {
 			let a;
+
 			if (this.target.is_collection) a = this.target.shapes[idx];
 			if (this.target.is_artwork) a = this.target;
-			if (this.target.is_transformation) a = this.target.target.shapes[idx];
+			if (this.target.is_transformation) {
+				if (this.target.target.is_artwork) a = this.target.target;
+				if (this.target.target.is_collection) a = this.target.target.shapes[idx];
+			}
 
 			if (false) {
 				this.loop_count[idx] = [];

@@ -382,7 +382,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		}
 		link_remove.onMouseDown = (e) => {
 			// Remove obj field
-			this.obj.set_geometry_field(field, "null");
+			this.obj.set_geometry_field(field, null);
 			this.geometry_field_info[field].label.content = field;
 			link.visible = true;
 			link_remove.visible = false;

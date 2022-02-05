@@ -114,22 +114,23 @@ export class AMES {
 		line1.finish_creating_path();
 		line2.add_points([new Point(100, 100), new Point(100, 110)]);
 		line2.finish_creating_path();
-
-		let line3 = new AMES_Artwork_Path();
-		line3.add_points([new Point(500, 525), new Point(500, 500)]);
-		line3.finish_creating_path();
-
+		//
+		// let line3 = new AMES_Artwork_Path();
+		// line3.add_points([new Point(500, 525), new Point(500, 500)]);
+		// line3.finish_creating_path();
+		//
 		let lines = new AMES_Collection([line1, line2]);
-		console.log(line1.poly);
+		// console.log(line1.poly);
 
 		// let e = new AMES_Ellipse({
 		// 	"centroid": new Point(150, 150),
 		// });
-		// let p = new AMES_Polygon({
-		// 	"centroid": new Point(300, 300),
-		// 	 "nsides": 12,
-		// 	 "radius": 50
-		//  });
+
+		let p = new AMES_Polygon({
+			"centroid": new Point(300, 300),
+			 "nsides": 12,
+			 "radius": 50
+		 });
 
 
 		// let t = new AMES_Transformation({
@@ -2384,8 +2385,10 @@ export class AMES {
 					if (c_reference_box) {
 						c_reference_box.remove();
 					}
+					if (curr_obj) curr_obj.hide_selection_opts();
 					c_reference_box = closest_obj.highlight(utils.C_REFERENCE_HIGHLIGHT);
-					curr_obj = closest_obj;
+					curr_obj = ames.selected_obj;
+					console.log("Selected", curr_obj);
 					// If list, hide list box
 					if (curr_obj.is_list) curr_obj.list_box.visible = false;
 				}
@@ -2395,6 +2398,7 @@ export class AMES {
 					c_reference_box.remove();
 					c_reference_box = null;
 				}
+				if (curr_obj) curr_obj.hide_selection_opts();
 				curr_obj = null;
 			}
 			line.lastSegment.point = e.point;
@@ -2403,12 +2407,14 @@ export class AMES {
 		let cb_enable_animation_link = (e) => {
 			// Set animation geometry field as specified
 			let geometry_field_info = ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field]
+
 			let link = geometry_field_info.link;
 			let link_remove = geometry_field_info.link_remove;
 			if (curr_obj) {
+				curr_obj.hide_selection_opts();
 				let rel = ames.active_linking_transformation;
-				ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, curr_obj);
-				ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = curr_obj.name;
+				ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, ames.selected_obj);
+				ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = ames.selected_obj.name;
 				link.visible = false;
 				link_remove.visible = true;
 			}

@@ -162,7 +162,11 @@ export class AMES_Collection {
 	}
 
 	add_transformation(transformation) {
-		this.transformations.push(transformation);
+		let missing = true;
+		for (let i in this.transformations) {
+			if (this.transformations[i] == transformation) missing = false;
+		}
+		if (missing) this.transformations.push(transformation);
 	}
 
 	remove_transformation(transformation) {
@@ -279,6 +283,7 @@ export class AMES_Collection {
 		}
 		this.shapes.push(s);
 		s.add_list(this);
+		s.add_collection(this);
 	}
 
 	update_constraints() {

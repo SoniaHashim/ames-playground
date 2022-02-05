@@ -34,6 +34,7 @@ export class AMES_Artwork {
 	poly;
 	// State
 	is_selected = false;
+	selection_opts = [];
 	path_control_shapes = [];
 	scale_control_shapes = {'scale_box': null, 'scale_dots': null};
 	rotation_control_shapes = {}
@@ -79,11 +80,20 @@ export class AMES_Artwork {
 	}
 
 	add_collection(collection) {
-		this.collections.push(collection);
+		let missing = true;
+		for (let i in this.collections) {
+			if (this.collections[i] == collection) missing = false;
+		}
+		if (missing) this.collections.push(collection);
+		if (missing) console.log("add collection", this.collections, collection);
 	}
 
 	add_transformation(transformation) {
-		this.transformations.push(transformation);
+		let missing = true;
+		for (let i in this.transformations) {
+			if (this.transformations[i] == transformation) missing = false;
+		}
+		if (missing) this.transformations.push(transformation);
 	}
 
 	remove_collection(collection) {
@@ -190,6 +200,23 @@ export class AMES_Artwork {
 		return;
 	}
 
+	get_large_bbox() {
+		let r = this.get_bbox();
+
+
+		this.update_selection_opts();
+		let h_min = this.selection_opt_names.length * utils.LAYER_HEIGHT*.75;
+		let w_min = 20;
+
+		let h = r.height; if (r.height < h_min) h = h_min; if (h < 30) h = 30;
+		let w = r.width; if (w < w_min) w = w_min;
+
+		let bbox = new Rectangle(r.point, new Size(w, h));
+		bbox.center = r.center;
+
+		return bbox;
+	}
+
 	update_bbox() {
 		this.bbox = this.get_bbox();
 	}
@@ -203,15 +230,14 @@ export class AMES_Artwork {
 	// Description: Checks if the point p is within the bounding box of shape
 	contains(p) {
 		if (this.poly) {
-			let bounds = this.poly.strokeBounds;
-			if (!bounds) bounds = this.poly.bounds;
+			let bounds = this.get_large_bbox();
 			return p.isInside(bounds);
 		}
 		return;
 	}
 
 	get_distance_from_bbox_center_to_point(p) {
-		let c  = this.get_bbox().center;
+		let c  = this.get_large_bbox().center;
 		let x = c.x - p.x;
 		let y = c.y - p.y;
 		return Math.sqrt(x*x + y*y);
@@ -1025,11 +1051,126 @@ export class AMES_Artwork {
 	}
 
 	highlight(color) {
+		this.show_selection_opts();
 		if (this.poly) {
-			let bbox = this.get_bbox();
+			let bbox = this.get_large_bbox();
 			return utils.make_rect(bbox, color);
 		}
 		return null;
+	}
+
+	update_selection_opts() {
+		let opts = {}; let opt_names = [];
+		this.selection_opt_names = null;
+		this.selection_opt_references = null;
+
+		opt_names.push(this.name)
+		opts[this.name] = this;
+
+		for (let i in this.collections) {
+			let c = this.collections[i];
+			opt_names.push(c.name);
+			opts[c.name] = c;
+		}
+
+		if (ames.transformation_active_field != "input") {
+			for (let i in this.transformations) {
+				let t = this.transformations[i];
+				let str = t.name + " input( " + this.name + ")";
+				opt_names.push(str);
+				opts[str] = t;
+			}
+
+			for (let i in this.collections) {
+				let c = this.collections[i];
+				for (let j in c.transformations) {
+					let t = c.transformations[j];
+					let str = t.name + " input(" +c.name+")";
+					opt_names.push(str);
+					opts[str] = t;
+				}
+			}
+		}
+
+		this.selection_opt_names = opt_names;
+		this.selection_opt_references = opts;
+	}
+
+	show_selection_opts() {
+		this.update_selection_opts();
+
+		let opt_names = this.selection_opt_names;
+		let opts = this.selection_opt_references;
+		console.log(opt_names, opts);
+
+		let box = this.get_large_bbox();
+		let bx = box.topRight.x; let by = box.topRight.y;
+
+		let selected_opt_box; let a_opt_box;
+		for (let i in opt_names) {
+			let opt = new Group();
+			let opt_box = new Path.Rectangle({
+				point: new Point(bx-7.5, by - 0.25),
+				size: new Size(100, utils.LAYER_HEIGHT*.75),
+				fillColor: utils.INACTIVE_DARK_COLOR,
+				strokeColor: utils.INACTIVE_S_COLOR,
+				strokeWidth: 0,
+				radius: 1.25
+			});
+			let opt_label = new PointText({
+				point: [bx + 15, by + 12.5],
+				content: opt_names[i],
+				fillColor: utils.INACTIVE_S_COLOR,
+				fontFamily: utils.FONT,
+				fontSize: utils.FONT_SIZE,
+			});
+			opt_label.sendToBack(); opt_box.sendToBack();
+
+			if (opt_names[i] == this.name) {
+				opt_box.strokeWidth = 1;
+				ames.selected_obj = this;
+				a_opt_box = opt_box;
+				selected_opt_box = opt_box;
+				ames.selected_obj = this;
+			}
+
+			by += opt_box.bounds.height;
+
+			opt.addChildren([opt_box, opt_label]);
+			opt.sendToBack();
+
+			opt.onMouseEnter = (e) => {
+				selected_opt_box = opt_box;
+				if (opt_box != a_opt_box) a_opt_box.strokeWidth = 0;
+				selected_opt_box.strokeWidth = 1;
+				ames.selected_obj = opts[opt_names[i]];
+			};
+			opt.onMouseLeave = (e) => {
+				selected_opt_box.strokeWidth = 0;
+				selected_opt_box = null;
+				setTimeout(() => {
+					if (!selected_opt_box) {
+						a_opt_box.strokeWidth = 1
+						selected_opt_box = a_opt_box;
+						ames.selected_obj = this;
+					}
+				}, 250);
+			}
+			opt.onMouseUp = (e) => {
+				ames.selected_obj = opts[opt_names[i]];
+				console.log("mouse up on", opt_names[i]);
+				this.hide_selection_opts();
+			}
+			this.selection_opts.push(opt);
+		}
+
+		console.log(opts);
+	}
+
+	hide_selection_opts() {
+		for (let i in this.selection_opts) {
+			this.selection_opts[i].remove();
+		}
 	}
 
 	get_bbox() {
