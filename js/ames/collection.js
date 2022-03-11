@@ -202,15 +202,18 @@ export class AMES_Collection {
 	}
 
 	duplicate() {
-		let original_shape = this.original[0];
-		// if (!this.bottom) this.bottom = original_shape;
+		let original_shape = this.shapes[0];
+
 		if (this.is_duplicator) {
 			// TO DO: insertion order bug. Having trouble changing relative ordering of shapes.
 			let shape = original_shape.clone();
-			console.log("duplicated shape...", shape.name);
+
+			let prev = this.shapes[this.shapes.length-1];
+			shape.poly.insertBelow(prev.poly);
+
 			this.shapes.push(shape);
 			shape.add_collection(this);
-			// this.add_to_collection(shape, true);
+
 			ames.hide_editors(this);
 			this.show(true);
 		}
@@ -227,6 +230,7 @@ export class AMES_Collection {
 				let c = i*10;
 				a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
 				this.shapes.push(a);
+				a.add_collection(this);
 				// this.add_to_collection(a, true);
 				ames.hide_editors(this);
 				this.show(true);
@@ -282,7 +286,7 @@ export class AMES_Collection {
 			}
 		}
 		this.shapes.push(s);
-		s.add_list(this);
+		// s.add_list(this);
 		s.add_collection(this);
 	}
 
@@ -311,6 +315,7 @@ export class AMES_Collection {
 		this.update_show_box();
 
 		if (bool) {
+			// let prev = null; let res;
 			this._update_list();
 		}
 	}
@@ -438,6 +443,9 @@ export class AMES_Collection {
 
 	manipulate(p, sub) {
 		this._clear_cb_helpers();
+		for (let i in this.shapes) {
+			this.shapes[i]._clear_cb_helpers();
+		}
 		console.log("Manipulate list", p, sub);
 		// Turn off the active property
 		if (this.active_prop) {
@@ -563,33 +571,45 @@ export class AMES_Collection {
 
 	remove() {
 		console.log("To do -- List.remove()");
-		for (i in this.shapes) {
+		for (let i in this.shapes) {
 			let a = this.shapes[i];
 			a.remove_collection(this);
 		}
 	}
 
-	make_list_group() {
-		let box = new Group();
-		for (let i in this.shapes) {
-			box.addChild(this.shapes[i].poly);
-		}
-		return box;
-	}
-
-	empty_list_group(box) {
-		for (let i in box.children) {
-			box.children[i].addTo(ames.canvas_view._project);
-		}
-	}
+	// make_list_group() {
+	// 	let box = new Group();
+	// 	for (let i in this.shapes) {
+	// 		box.addChild(this.shapes[i].poly);
+	// 	}
+	// 	return box;
+	// }
+	//
+	// empty_list_group(box) {
+	// 	for (let i in box.children) {
+	// 		box.children[i].addTo(ames.canvas_view._project);
+	// 	}
+	// }
 
 	// get_bbox: returns the bounding box of the group containing the list items
 	get_bbox() {
-		let bbox;
-		let box = this.make_list_group();
-		if (box.strokeBounds) bbox = box.strokeBounds;
-		else bbox = box.bounds;
-		this.empty_list_group(box);
+		// let bbox;
+		// let box = this.make_list_group();
+		// if (box.strokeBounds) bbox = box.strokeBounds;
+		// else bbox = box.bounds;
+		// this.empty_list_group(box);
+		let xmin = Number.MAX_VALUE; let ymin = Number.MAX_VALUE;
+		let xmax = Number.MIN_VALUE; let ymax = Number.MIN_VALUE;
+		for (let i in this.shapes) {
+			let box = this.shapes[i].get_bbox();
+			let TL = box.topLeft;
+			let BR = box.bottomRight;
+			if (TL.x < xmin) xmin = TL.x;
+			if (TL.y < ymin) ymin = TL.y;
+			if (BR.x > xmax) xmax = BR.x;
+			if (BR.y > ymax) ymax = BR.y;
+		}
+		let bbox = new Rectangle(new Point(xmin, ymin), new Point(xmax, ymax));
 		return bbox;;
 	}
 

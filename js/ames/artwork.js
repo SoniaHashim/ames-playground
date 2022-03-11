@@ -272,7 +272,7 @@ export class AMES_Artwork {
 		// If the new propety is not the property just turned off, turn it on
 		if (this.active_prop != p) {
 			// Turn off selection toggle and hide path control shapes
-			this.attach_interactivity(false);
+			// this.attach_interactivity(false);
 			this.show_path_control_shapes(false);
 
 			this.active_prop = p;
@@ -390,13 +390,33 @@ export class AMES_Artwork {
 		if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
 		this.cb_helpers = {};
 		this.cb_helpers['shapes'] = [];
+		this.attach_interactivity(true);
 	}
+
+	_apply_cb_to_collections(cb, e) {
+		for (let i in this.collections) {
+			let c = this.collections[i];
+			if (c.active_prop == this.active_prop) {
+				if (c.active_sub_p == this.active_sub_p) {
+					for (let j in c.shapes) {
+						let s = c.shapes[j];
+						if (s != this)  {
+							console.log(s.name);
+							s.poly[cb](e, true);
+						}
+					}
+				}
+			}
+		}
+	}
+
 
 	_position_cb(shape, cb_helpers, sub) {
 		if (shape.poly) {
-			shape.poly.onMouseDown = (e) => {
-				ames.hide_editors(shape);
-				shape.show_all_editors();
+			shape.poly.onMouseDown = (e, in_chain) => {
+				// ames.hide_editors(shape);
+				// shape.show_all_editors();
+				console.log(shape.name, 'onMouseDown', e, in_chain)
 				shape.notify_lists_shape_is_active();
 				let pos = shape.poly.position;
 				let offset = pos.subtract(e.point);
@@ -406,8 +426,10 @@ export class AMES_Artwork {
 
 				cb_helpers['offset'] = offset;
 
+				if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
+
 			}
-			shape.poly.onMouseDrag = (e) => {
+			shape.poly.onMouseDrag = (e, in_chain) => {
 				let offset = cb_helpers['offset'];
 				let point = e.point.add(offset);
 
@@ -418,6 +440,8 @@ export class AMES_Artwork {
 
 				// Update helpers
 				shape.update_helpers(shape, true);
+
+				if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
 			}
 		}
 	}
@@ -432,8 +456,8 @@ export class AMES_Artwork {
 			let scale_dots = shape.scale_control_shapes.scale_dots;
 
 			shape.poly.onMouseDown = (e) => {
-				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// ames.hide_editors(shape);
+				// shape.show_all_editors();
 			}
 
 			let bbox = shape.get_bbox();
@@ -446,7 +470,7 @@ export class AMES_Artwork {
 				d.replaceWith(d.insertBelow(scale_box));
 				let d_pair = scale_dots[dot_pairs[d_idx]];
 				let scale_start_x = 1; let scale_start_y = 1;
-				d.onMouseDown = (e) => {
+				d.onMouseDown = (e, in_chain) => {
 					shape.notify_lists_shape_is_active();
 					pf = 1;
 					scale_start_x = shape.scale.x;
@@ -456,8 +480,10 @@ export class AMES_Artwork {
 					bf = b.length;
 					if (sub == 'x') bf = b.x;
 					if (sub == 'y') bf = b.y;
+
+					if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
 				}
-				d.onMouseDrag = (e) => {
+				d.onMouseDrag = (e, in_chain) => {
 					let p = shape.poly.position.subtract(e.point);
 					let f = p.length/bf;
 					let fx = scale_start_x * p.x/bf;
@@ -491,6 +517,8 @@ export class AMES_Artwork {
 
 					// Update helpers
 					shape.update_helpers(shape, true);
+
+					if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
 				}
 			}
 		}
@@ -509,11 +537,11 @@ export class AMES_Artwork {
 			cb_helpers['rotation'] = true;
 
 			let line = shape.rotation_control_shapes.line;
-			let da = shape.rotation_control_shapes.da;
+			shape.da = shape.rotation_control_shapes.da;
 			let dt = shape.rotation_control_shapes.dt;
 
-			let anchor = da.position;
-			let x_base = dt.position.subtract(da.position);
+			let anchor = shape.da.position;
+			let x_base = dt.position.subtract(shape.da.position);
 
 			let prev_ro = 0;
 
@@ -527,35 +555,39 @@ export class AMES_Artwork {
 			}
 
 			shape.poly.onMouseDown = (e) => {
-				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// ames.hide_editors(shape);
+				// shape.show_all_editors();
 			}
 
 			// Update anchor point for rotation
-			da.onMouseDrag = (e) => {
-				da.position = e.point;
+			shape.da.onMouseDrag = (e, in_chain) => {
+				shape.da.position = e.point;
 				// Update line
 				line.firstSegment.point = e.point;
 				// Update x_base and total rotation using new reference
-				anchor = da.position;
+				anchor = shape.da.position;
 				x_base = dt.position.subtract(anchor);
 				prev_ro = 0;
 				shape.rotation_control_shapes.a_offset = e.point.subtract(shape.poly.position);
 				console.log(shape.rotation_control_shapes.a_offset);
-				console.log(da.position);
+				console.log(shape.da.position);
+
+
 			}
 
 			// Rotate based on angle between subsequent rays created by dragging
 			let ro;
 			let asum = 0;
-			dt.onMouseDown = (e) => {
+			dt.onMouseDown = (e, in_chain) => {
 				shape.notify_lists_shape_is_active();
 				ro = dt.position;
 				prev_ro = shape.poly.rotation;
-				x_base = dt.position.subtract(da.position);
+				x_base = dt.position.subtract(shape.da.position);
+
+				if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
 			}
 			// Update rotation
-			dt.onMouseDrag = (e) => {
+			dt.onMouseDrag = (e, in_chain) => {
 				anchor = shape.rotation_control_shapes.da.position;
 				let a = get_rotation_a(e.point, anchor);
 				shape.set_rotation(a, anchor);
@@ -571,6 +603,8 @@ export class AMES_Artwork {
 
 				// Update helpers
 				shape.update_helpers(shape, true);
+
+				if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
 			}
 		}
 	}
@@ -618,7 +652,7 @@ export class AMES_Artwork {
 
 			shape.poly.onMouseDown = (e) => {
 				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				ames.colorpicker.color_target = shape_color_target;
 			}
@@ -633,7 +667,7 @@ export class AMES_Artwork {
 			let w;
 			shape.poly.onMouseDown = (e) => {
 				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				yo = e.point.y;
 				w = shape.poly.strokeWidth;
@@ -696,7 +730,7 @@ export class AMES_Artwork {
 
 			shape.poly.onMouseDown = (e) => {
 				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// shape.show_all_editors();
 				shape.notify_lists_shape_is_active();
 				ames.colorpicker.color_target = shape_color_target;
 			}
@@ -713,7 +747,7 @@ export class AMES_Artwork {
 
 			shape.onMouseDown = (e) => {
 				ames.hide_editors(shape);
-				shape.show_all_editors();
+				// shape.show_all_editors();
 			}
 		}
 	}
@@ -1064,14 +1098,16 @@ export class AMES_Artwork {
 		this.selection_opt_names = null;
 		this.selection_opt_references = null;
 
-		opt_names.push(this.name)
-		opts[this.name] = this;
+		if (ames.transformation_active_field != 'playback_transformation') {
+			opt_names.push(this.name)
+			opts[this.name] = this;
 
-		for (let i in this.collections) {
-			let c = this.collections[i];
-			opt_names.push(c.name);
-			opts[c.name] = c;
-		}
+			for (let i in this.collections) {
+				let c = this.collections[i];
+				opt_names.push(c.name);
+				opts[c.name] = c;
+			}
+		}		
 
 		if (ames.transformation_active_field != "input") {
 			for (let i in this.transformations) {
@@ -1124,7 +1160,7 @@ export class AMES_Artwork {
 				fontFamily: utils.FONT,
 				fontSize: utils.FONT_SIZE,
 			});
-			opt_label.sendToBack(); opt_box.sendToBack();
+			opt_box.bringToFront(); opt_label.bringToFront();
 
 			if (opt_names[i] == this.name) {
 				opt_box.strokeWidth = 1;
@@ -1137,7 +1173,7 @@ export class AMES_Artwork {
 			by += opt_box.bounds.height;
 
 			opt.addChildren([opt_box, opt_label]);
-			opt.sendToBack();
+			opt.bringToFront();
 
 			opt.onMouseEnter = (e) => {
 				selected_opt_box = opt_box;
@@ -1234,6 +1270,10 @@ export class AMES_Artwork {
 	}
 
 	remove() {
+		// this.editor.remove();
+		let idx = -1;
+		// Remove from all collections
+		// Remove from all transformations
 		this.poly.remove();
 	}
 
@@ -1250,15 +1290,13 @@ export class AMES_Artwork {
 				this.poly.onMouseDown = (e) => {
 					// Show only editors for this object
 					ames.hide_editors(this);
-					this.show_all_editors();
+					this.editor.show(true);
 				}
 				// select and de-select on click
 				this.poly.onClick = (e) => {
 					let toggle = !this.is_selected;
 					this.select(toggle);
 					// this.open_editor(toggle);
-
-
 				}
 			} else {
 				this.poly.onClick = null;
@@ -1301,7 +1339,11 @@ export class AMES_Artwork {
 
 	clone(obj) {
 		obj = Object.assign(obj, this);
-		obj.poly = this.poly.clone();
+
+		obj.poly = this.poly.clone({
+			insert: false
+		});
+
 		obj.create_in_ames();
 		return obj;
 	}
@@ -1405,12 +1447,15 @@ export class AMES_Polygon extends AMES_Artwork {
 			let dist = Math.sqrt(x*x + y*y);
 			if (dist > max_dist) radius = dist;
 		}
-		this.poly.remove();
 
-		this.poly = new Path.RegularPolygon(position, nsides, radius);
+
+		let new_poly = new Path.RegularPolygon(position, nsides, radius);
+		new_poly.remove();
+		this.poly = this.poly.replaceWith(new_poly);
+		// console.log("replaced?", replaced);
 		this.poly.style = style;
 
-		if (nsides == 6) {
+		if (nsides == 6 || nsides == 9) {
 			this.poly.rotate(-90);
 		}
 		this.poly.position = position;

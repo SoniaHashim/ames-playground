@@ -108,29 +108,29 @@ export class AMES {
 	}
 
 	test() {
-		let line1 = new AMES_Artwork_Path();
-		let line2 = new AMES_Artwork_Path();
-		line1.add_points([new Point(75, 100), new Point(75, 90)]);
-		line1.finish_creating_path();
-		line2.add_points([new Point(100, 100), new Point(100, 110)]);
-		line2.finish_creating_path();
+		// let line1 = new AMES_Artwork_Path();
+		// let line2 = new AMES_Artwork_Path();
+		// line1.add_points([new Point(75, 100), new Point(75, 90)]);
+		// line1.finish_creating_path();
+		// line2.add_points([new Point(100, 100), new Point(100, 110)]);
+		// line2.finish_creating_path();
 		//
 		// let line3 = new AMES_Artwork_Path();
 		// line3.add_points([new Point(500, 525), new Point(500, 500)]);
 		// line3.finish_creating_path();
 		//
-		let lines = new AMES_Collection([line1, line2]);
+		// let lines = new AMES_Collection([line1, line2]);
 		// console.log(line1.poly);
 
 		// let e = new AMES_Ellipse({
 		// 	"centroid": new Point(150, 150),
 		// });
 
-		let p = new AMES_Polygon({
-			"centroid": new Point(300, 300),
-			 "nsides": 12,
-			 "radius": 50
-		 });
+		// let p = new AMES_Polygon({
+		// 	"centroid": new Point(300, 300),
+		// 	 "nsides": 12,
+		// 	 "radius": 50
+		//  });
 
 
 		// let t = new AMES_Transformation({
@@ -447,7 +447,7 @@ export class AMES {
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
 			"close", "link", "link-remove", "path", "play", "axes", "brush", "pause",
 			"rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen",
-			"card-list", "nsides", "asterisk"];
+			"card-list", "nsides", "asterisk", "plus"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -1159,7 +1159,7 @@ export class AMES {
 
 		let poly_collection;
 		if (step >= 1) {
-			poly_collection = new AMES_Collection(tri);
+			poly_collection = new AMES_Collection([tri]);
 			poly_collection.set_count(6);
 		}
 
@@ -1169,7 +1169,7 @@ export class AMES {
 			dot = new AMES_Ellipse();
 			dot.poly.fillColor = "blue";
 			dot.poly.strokeWidth = 0;
-			dot_collection = new AMES_Collection(dot);
+			dot_collection = new AMES_Collection([dot]);
 			dot_collection.set_count(6)
 		}
 
@@ -1181,7 +1181,7 @@ export class AMES {
 				"target": dot_collection,
 				"mapping": "motion path"
 			});
-			tf_motion_path.tf_space_speed_factor = 1;
+			// tf_motion_path.tf_space_speed_factor = 1;
 			if (step == 3) tf_motion_path.transform();
 			if (step > 3) {
 				dot_collection.align();
@@ -1394,13 +1394,18 @@ export class AMES {
 		this.aobjs[x.name] = x;
 	}
 
-	hide_editors(obj) {
+	hide_editors(obj, force) {
 		obj = obj || {};
 		for (let i in this.objs) {
 			if (this.objs[i].name != obj.name) {
-				if (!(obj.is_shape && this.objs[i].is_list && this.objs[i].has_shape(obj))) {
+				if (force) {
 					this.objs[i].editor.show(false);
 					this.objs[i]._clear_cb_helpers();
+				} else {
+					if (!(obj.is_artwork && this.objs[i].is_collection && this.objs[i].has_shape(obj))) {
+						this.objs[i].editor.show(false);
+						this.objs[i]._clear_cb_helpers();
+					}
 				}
 			}
 		}
@@ -1542,8 +1547,14 @@ export class AMES {
 		eye_slash.onClick = (e) => {
 			eye_slash.visible = false;
 			eye.visible = true;
-			ames.hide_editors(obj);
+			ames.hide_editors(obj, true);
 			obj.show(true);
+		}
+		box_label.onClick = (e) => {
+			ames.hide_editors(obj, true);
+			obj.show(true);
+			eye.visible = false;
+			eye_slash.visible = true;
 		}
 		obj_box.addChildren([eye, eye_slash]);
 		if (obj instanceof AMES_Transformation) {
@@ -1724,37 +1735,37 @@ export class AMES {
 		// this.active_objs[n] = x;
 	}
 
-	// active_obj: Activates layers box and enables object selection
-	activate_obj(n) {
-		let x = this.objs[n];
-		x.make_interactive(true);
-		x.show_editor(true);
-
-		// // Activate layers box
-		// let box = this.obj_boxes[n];
-		// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
-		// box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
-		// box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
-		// for (let idx in utils.L_IDX_ICONS) {
-		// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
-		// }
-	}
-
-	// deactivate_obj: Deactivates layers box and disables object selection
-	deactivate_obj(n) {
-		let x = this.objs[n];
-		x.make_interactive(false);
-		x.show_editor(false);
-
-		// // Deactivate layers box
-		// let box = this.obj_boxes[n];
-		// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
-		// box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
-		// box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
-		// for (let idx in utils.L_IDX_ICONS) {
-		// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
-		// }
-	}
+	// // active_obj: Activates layers box and enables object selection
+	// activate_obj(n) {
+	// 	let x = this.objs[n];
+	// 	x.make_interactive(true);
+	// 	x.show_editor(true);
+	//
+	// 	// // Activate layers box
+	// 	// let box = this.obj_boxes[n];
+	// 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
+	// 	// box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
+	// 	// box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
+	// 	// for (let idx in utils.L_IDX_ICONS) {
+	// 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
+	// 	// }
+	// }
+	//
+	// // deactivate_obj: Deactivates layers box and disables object selection
+	// deactivate_obj(n) {
+	// 	let x = this.objs[n];
+	// 	x.make_interactive(false);
+	// 	x.show_editor(false);
+	//
+	// 	// // Deactivate layers box
+	// 	// let box = this.obj_boxes[n];
+	// 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
+	// 	// box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
+	// 	// box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
+	// 	// for (let idx in utils.L_IDX_ICONS) {
+	// 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
+	// 	// }
+	// }
 
 	remove_obj(n, t_obj) {
 		// Remove from objs in ames

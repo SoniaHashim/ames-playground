@@ -140,21 +140,19 @@ class AMES_Editor {
 }
 
 export class AMES_Transformation_Editor extends AMES_Editor {
-	box_width;
-	static e_height = 245;
+	static e_height = 305;
 
 	constructor(obj) {
+
 		super(obj, {"e_height": AMES_Transformation_Editor.e_height});
 		let box = this.box;
 		let by = utils.LAYER_HEIGHT;
-		let e_width = this.box_width;
-
-
+		this.box_width = 167.5;
 
 		// Make geometry link button for artwork
 		this.geometry_field_info = {};
 		let x_off = 4*utils.ICON_OFFSET;
-		let y_off = utils.LAYER_HEIGHT*3;
+		let y_off = utils.LAYER_HEIGHT*6.5;
 		this.make_link_button([x_off, y_off], 'target')
 		this.make_link_button([x_off, y_off + utils.LAYER_HEIGHT*1.5], 'input')
 
@@ -164,15 +162,27 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.make_button(0, "loop", "toggle_loop", {"deactivate_required": true});
 
 
-		// this.make_dropdown([x_off,utils.LAYER_HEIGHT], 'mapping', 'change_mapping');
-		this.make_dropdown([x_off, y_off + utils.LAYER_HEIGHT*3], 'behavior', 'set_mapping_behavior');
-		this.make_dropdown([x_off, y_off + utils.LAYER_HEIGHT*4.5], 'mode', 'set_mapping_mode');
+		this.make_dropdown([x_off, utils.LAYER_HEIGHT*1.5], 'mapping', 'change_mapping');
+		this.make_dropdown([x_off, utils.LAYER_HEIGHT*3], 'behavior', 'set_mapping_behavior');
+		this.make_dropdown([x_off, utils.LAYER_HEIGHT*4.5], 'mode', 'set_mapping_mode');
+
+		// Add playback points UX and button
+		this.create_playback_points_editor();
+		this.make_playback_point_btn([x_off - utils.ICON_OFFSET, utils.LAYER_HEIGHT*11]);
 
 		// Initialize editor position
 		this.set_editor_position();
 	}
 
+	set_editor_position() {
+		super.set_editor_position();
+
+		this.playback_box.position.x = this.box.position.x + this.box_width + 4*utils.ICON_OFFSET;
+		this.playback_box.position.y = this.box.position.y + AMES_Transformation_Editor.e_height/2 - this.playback_box.bounds.height/2;
+	}
+
 	editor_close_cleanup() {
+		this.playback_editor_close_cleanup();
 		for (let f in this.dropdown) {
 			if (this.dropdown[f].drop_opts) {
 				this.dropdown[f].drop_opts.remove();
@@ -180,7 +190,166 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		}
 	}
 
-	make_dropdown(editor_location, field, dropdown_function, args) {
+	make_playback_point_btn(editor_loc) {
+		let x_off = editor_loc[0];
+		let y_off = editor_loc[1];
+
+		let playback_pt_btn = new Group();
+
+
+		let box = new Path.Rectangle({
+			point: new Point(x_off-5, y_off),
+			size: new Size(150, utils.LAYER_HEIGHT*.75),
+			fillColor: utils.INACTIVE_DARK_COLOR,
+			strokeColor: utils.INACTIVE_S_COLOR,
+			strokeWidth: 1,
+			radius: 1.25,
+		});
+
+		let label = new PointText({
+			point: [3.25*utils.ICON_OFFSET + x_off, y_off + .75*utils.ICON_OFFSET + 10],
+			content: 'Edit Playback Points',
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+
+		playback_pt_btn.addChildren([box, label]);
+
+		playback_pt_btn.onClick = (e) => {
+			console.log("Edit Playback Points")
+			this.playback_box.visible = true;
+		}
+
+		this.box.addChild(playback_pt_btn);
+	}
+
+	playback_editor_close_cleanup() {
+		this.playback_box.visible = false;
+	}
+
+	load_playback_points() {
+		let triggers = this.obj.transformation_functions_to_trigger;
+		if (!triggers) return;
+
+		x_off = this.playback_box.position.x - this.playback_box.bounds.width/2 + 2*utils.ICON_OFFSET;
+		y_off = this.playback_box.position.y - this.playback_box.bounds.height/2 + utils.LAYER_HEIGHT;
+
+		this.playback_pt_ux = [];
+
+		for (let i = triggers.length-1; i >= 0; i--) {
+			let trigger = triggers[i];
+			let condition = trigger.condition;
+			let tf = trigger.tf;
+			let q = trigger.q;
+
+			let playback_pt = new Group();
+
+			// Delete button
+
+			// Box for trigger condition
+			// Label for trigger condition
+
+			// Box for trigger transformation function
+			// Label for trigger transformation function
+
+			// (opt) box for Q
+
+			// Increment y_off
+		}
+	}
+
+	create_playback_points_editor() {
+		let playback_box = new Group();
+
+		let by = utils.LAYER_HEIGHT;
+		let e_height = AMES_Transformation_Editor.e_height*3/4;
+		let box = new Shape.Rectangle({
+			point: [0, 0],
+			size: [this.box_width, e_height],
+			fillColor: utils.INACTIVE_COLOR,
+			strokeWidth: 1,
+			radius: 5,
+			strokeColor: utils.INACTIVE_S_COLOR,
+			opacity: 0.5
+		});
+		playback_box.addChild(box);
+		let n_text = new PointText({
+			point: [2*utils.ICON_OFFSET, by/2 + utils.FONT_SIZE/2],
+			content: "Playback Points" + " :\n" +this.obj.name,
+			fillColor: utils.INACTIVE_S_COLOR,
+			fontFamily: utils.FONT,
+			fontSize: utils.FONT_SIZE
+		});
+		// Add close icon
+		let close_button = ames.icons["close"].clone();
+		close_button.scaling = 0.75;
+		let close_w = close_button.bounds.width;
+		close_button.position = new Point(this.box_width - utils.ICON_OFFSET - close_w/2, by/2 - close_w/2);
+		close_button.visible = true;
+		close_button.onClick = (e) => {
+			this.playback_box.visible = false;
+			this.pos_is_set = false;
+			if (this.editor_close_cleanup) this.playback_editor_close_cleanup();
+		}
+		// Create buttons to add playback pt
+		let plus_button = ames.icons["plus"].clone();
+		plus_button.scaling = 0.75;
+		let plus_w = close_button.bounds.width;
+		plus_button.position = new Point(2*utils.ICON_OFFSET + plus_w/2, n_text.position.y + n_text.bounds.height + 2*utils.ICON_OFFSET);
+		plus_button.visible = true;
+		plus_button.onClick = (e) => {
+			console.log("Add playback point");
+		}
+		this.make_dropdown([plus_button.position.x, plus_button.position.y], 'condition', 'set_new_playback_condition', playback_box);
+		this.dropdown['condition'].field_label.position.x += plus_w;
+		this.make_link_button([plus_button.position.x + utils.ICON_OFFSET, plus_button.position.y + 1.75*utils.LAYER_HEIGHT], 'playback transformation', playback_box)
+		plus_button.onClick = (e) => {
+			let c = this.obj.new_playback_condition;
+			let tf = this.obj.new_playback_transformation;
+			let q = this.obj.new_playback_q;
+			if (c && tf) {
+				this.obj.use_playback_points_to_trigger_transformation({
+					'tf': tf,
+					'condition': c,
+					'q': q
+				});
+			}
+
+			// this.load_playback_points();
+		}
+
+
+		// Make editor draggable
+		let dragging = false;
+		let drag_offset = 0;
+
+		box.onMouseDown = (e) => {
+			let n_children = playback_box.children.length;
+			for (let idx = 1; idx < n_children; idx++) {
+				let c = playback_box.children[idx];
+				if (c.contains(e.point)) {
+					dragging = false;
+					return;
+				}
+			}
+			drag_offset = e.point.subtract(playback_box.position);
+			dragging = true;
+		}
+		box.onMouseDrag = (e) => {
+			if (dragging) playback_box.position = e.point.subtract(drag_offset);
+		}
+		box.onMouseUp = (e) => {
+			if (dragging) dragging = false;
+		}
+
+		playback_box.addChildren([n_text, close_button, plus_button]);
+		playback_box.position = ames.canvas_view.center;
+		this.playback_box = playback_box;
+		this.playback_box.visible = false;
+	}
+
+	make_dropdown(editor_location, field, dropdown_function, parent, args) {
 		// this.obj[btn_function](args);
 		if (!this.dropdown) this.dropdown = {};
 		this.dropdown[field] = {};
@@ -191,16 +360,17 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		let dropdown = new Group();
 
 		let label = new PointText({
-			point: [2*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
+			point: [3*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
 			content: field[0].toUpperCase() + field.substring(1)+ ":",
 			fillColor: utils.INACTIVE_S_COLOR,
 			fontFamily: utils.FONT,
 			fontSize: utils.FONT_SIZE
 		});
+		this.dropdown[field].field_label = label;
 		y_off += 10;
 		let box = new Path.Rectangle({
 			point: new Point(x_off-5, y_off),
-			size: new Size(100, utils.LAYER_HEIGHT*.75),
+			size: new Size(150, utils.LAYER_HEIGHT*.75),
 			fillColor: utils.INACTIVE_DARK_COLOR,
 			strokeColor: utils.INACTIVE_S_COLOR,
 			strokeWidth: 1,
@@ -255,21 +425,21 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 				set_dropdown_selected(field, this.dropdown[field].selected_opt);
 			} else {
 				this.dropdown[field].opts_visible = true;
-				console.log("Show drop opts")
+				// console.log("Show drop opts")
 				// Show the visible options so the user can select them
 				this.dropdown[field].drop_opts = new Group();
 				let p = get_dropdown_position();
-				p.x_off -= 44;
+				p.x_off -= 69;
 				for (let i in opts) {
 					let opt = opts[i];
 					if (opt != this.dropdown[field].selected_opt) {
-						console.log(opt, p);
+						// console.log(opt, p);
 						let opt_group = new Group();
 						p.y_off += box.bounds.height;
 
 						let opt_box = new Path.Rectangle({
 							point: new Point(p.x_off-5, p.y_off - 0.25),
-							size: new Size(100, utils.LAYER_HEIGHT*.75),
+							size: new Size(150, utils.LAYER_HEIGHT*.75),
 							fillColor: utils.INACTIVE_DARK_COLOR,
 							strokeColor: utils.INACTIVE_S_COLOR,
 							strokeWidth: 1,
@@ -294,17 +464,18 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		}
 
 		dropdown.addChildren([label, box, caret_a, caret_b, selected_label]);
-		this.box.addChild(dropdown);
+		if (!parent) parent = this.box;
+		parent.addChild(dropdown);
 	}
 
 	make_button(btn_row, icon_name, btn_function, args) {
 		args = args || {};
 		let btn = ames.icons[icon_name].clone();
 		let bw = btn.bounds.width;
-		let by = utils.LAYER_HEIGHT + bw*btn_row;
+		let by = 4.5*utils.LAYER_HEIGHT + bw*btn_row + 10;
 		if (!this.n_btns) this.n_btns = {};
 		if (!this.n_btns[btn_row]) this.n_btns[btn_row] = 0;
-		btn.position = new Point(2*utils.ICON_OFFSET + this.n_btns[btn_row]*(utils.ICON_OFFSET + bw) + bw/2, by*2);
+		btn.position = new Point(3.5*utils.ICON_OFFSET + this.n_btns[btn_row]*(utils.ICON_OFFSET + bw) + bw/2, by*2);
 		btn.visible = true;
 		btn.active = false;
 		args.btn = btn;
@@ -335,12 +506,12 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.box.addChild(btn);
 	}
 
-	make_link_button(editor_location, field) {
+	make_link_button(editor_location, field, parent) {
 		let x_off = editor_location[0];
 		let y_off = editor_location[1];
 
 		let field_label = new PointText({
-			point: [2*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
+			point: [3*utils.ICON_OFFSET, y_off + .75*utils.ICON_OFFSET],
 			content: field[0].toUpperCase() + field.substring(1)+ ":",
 			fillColor: utils.INACTIVE_S_COLOR,
 			fontFamily: utils.FONT,
@@ -349,7 +520,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		y_off += 15;
 		let link = ames.icons['link'].clone();
 		link.scaling = 1.25;
-		link.position = new Point(x_off, y_off);
+		link.position = new Point(x_off + utils.ICON_OFFSET, y_off);
 		link.visible = true;
 		link.strokeWidth = .25;
 		let link_remove = ames.icons['link-remove'].clone();
@@ -362,7 +533,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		if (this.obj[field]) field_name = this.obj[field].name;
 		field_name = field_name || field;
 		let label = new PointText({
-			point: [2.25*utils.ICON_OFFSET + x_off, y_off + .75*utils.ICON_OFFSET],
+			point: [3.25*utils.ICON_OFFSET + x_off, y_off + .75*utils.ICON_OFFSET],
 			content: field_name,
 			fillColor: utils.INACTIVE_S_COLOR,
 			fontFamily: utils.FONT,
@@ -389,10 +560,13 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		}
 		this.geometry_field_info[field].link = link;
 		this.geometry_field_info[field].link_remove = link_remove;
-		this.box.addChild(field_label);
-		this.box.addChild(label);
-		this.box.addChild(link);
-		this.box.addChild(link_remove);
+
+		if (!parent) parent = this.box;
+
+		parent.addChild(field_label);
+		parent.addChild(label);
+		parent.addChild(link);
+		parent.addChild(link_remove);
 	}
 }
 

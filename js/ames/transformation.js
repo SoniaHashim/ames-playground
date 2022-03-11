@@ -112,12 +112,12 @@ export class AMES_Transformation {
 		if (opt.target) this.set_target(opt.target);
 		else this.target = null;
 		if (opt.mapping) this.set_mapping(opt.mapping);
-		else this.mapping = null;
+		else this.set_mapping("motion path");
+
 		this.create_in_ames();
 	}
 
 	create_in_ames() {
-		console.log("create tf in ames");
 		this.create_editor();
 		ames.add_obj(this);
 		if (this.target)
@@ -192,7 +192,7 @@ export class AMES_Transformation {
 			// If the mapping is typed, check the target is of the correct type
 			if (this.mapping < 0) {
 				let mapping_type = this.typed_mappings[-1*this.mapping].mapping_type;
-				valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
+				let valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
 				if (!valid_type) change_target = false;
 			}
 		} else {
@@ -202,6 +202,7 @@ export class AMES_Transformation {
 
 		if (change_target) {
 			this.target = target;
+			console.log("set target to", target);
 
 			if (target) {
 				if (target.is_collection) this.update_count(target);
@@ -229,10 +230,11 @@ export class AMES_Transformation {
 
 	// Returns text describing the mapping type
 	get_mapping() {
-		if (this.mapping > 0) {
-			return this.mappings[this.mapping];
+		let m = Number(this.mapping);
+		if (m >= 0) {
+			return this.mappings[m];
 		} else {
-			let typed_mapping = this.typed_mappings[-1*this.mapping - 1];
+			let typed_mapping = this.typed_mappings[-1*m - 1];
 			if (typed_mapping) return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
 		}
 	}
@@ -244,7 +246,6 @@ export class AMES_Transformation {
 	// transformation
 	//
 	set_mapping(mapping) {
-		console.log("set_mapping", mapping);
 		let changed_mapping = false;
 		if (!mapping) {
 			this.mapping = this.MOTION_PATH;
@@ -310,6 +311,7 @@ export class AMES_Transformation {
 		if (mapping_type == "Transformation") {
 			if (!this.target || this.target.is_transformation) valid_type = true;
 		}
+		if (!target) return true;
 		if (target.is_artwork) {
 			if (target.artwork_type == mapping_type) {
 				valid_type = true;
@@ -705,6 +707,7 @@ export class AMES_Transformation {
 	// otherwise it applies the transformation function to the objects
 	// properties
 	transform(args) {
+		console.log("transform: ", this.name);
 		if (this.mapping == null) this.set_mapping();
 		if (!this.input || !this.target) return;
 
@@ -714,7 +717,6 @@ export class AMES_Transformation {
 				setTimeout(() => { args.btn.deactivate(); }, 1000);
 			}
 		} else {
-			console.log("applying transformation?")
 			this.apply();
 			if (args && args.btn) {
 				setTimeout(() => { args.btn.deactivate(); }, 1000);
@@ -749,6 +751,22 @@ export class AMES_Transformation {
 			}
 			return mappings;
 		}
+
+		if (field == "condition") {
+			// if (tf.Q) {
+			// 	if (tf.condition == "f(x,y) == Q" && (v_prev < tf.Q && tf.Q < v_next)) trigger_tf = true;
+			// 	if (tf.condition == "f(x) == Q" && (x_prev < tf.Q && tf.Q < x_next)) trigger_tf = true;
+			// 	if (tf.condition == "f(y) == Q" && (y_prev < tf.Q && tf.Q < y_next)) trigger_tf = true;
+			// } else {
+			// 	if (tf.condition == "x direction change" && x_direction_change) trigger_tf = true;
+			// 	if (tf.condition == "y direction change" && y_direction_change) trigger_tf = true;
+			// 	if (tf.condition == "x or y direction change" && (x_direction_change || y_direction_change)) trigger_tf = true;
+			// 	if (tf.condition == "x and y direction change" && (x_direction_change && y_direction_change)) trigger_tf = true;
+			// 	if (tf.condition == "slope change" && slope_change) trigger_tf = true;
+			// }
+			return ["start", "end", "slope change", "x direction change", "y direction change",
+				"f(x, y) == Q", "f(y) == Q", "new instance"];
+		}
 	}
 
 	get_mapping_opt(field) {
@@ -765,6 +783,20 @@ export class AMES_Transformation {
 		if (field == "mapping") {
 			return this.get_mapping();
 		}
+
+		if (field == "condition") {
+			if (!this.default_playback_condition) this.default_playback_condition = "slope change";
+			this.new_playback_condition = this.default_playback_condition;
+			return this.default_playback_condition;
+		}
+	}
+
+	set_new_playback_condition(condition) {
+		this.new_playback_condition = condition;
+	}
+
+	set_new_playback_transformation(transformation) {
+		this.new_playback_transformation = transformation;
 	}
 
 	set_mapping_behavior(behavior) {
@@ -814,6 +846,10 @@ export class AMES_Transformation {
 
 		if (field == "target") {
 			this.set_target(obj);
+		}
+
+		if (field == "playback transformation") {
+			this.set_new_playback_transformation(obj);
 		}
 	}
 
@@ -873,6 +909,10 @@ export class AMES_Transformation {
 	// The property of the target artwork impacted by the transformation is
 	// shifted to match the input value
 	apply() {
+		if (!this.target) return;
+		if (this.target.is_collection) this.n_target = this.target.shapes.length;
+		this.init_random_target_indices();
+
 		for (let idx = 0; idx < this.n_target; idx++) {
 			let a;
 			if (this.target.is_artwork) a = this.target;
@@ -920,8 +960,21 @@ export class AMES_Transformation {
 		}
 	}
 
+	init_random_target_indices() {
+		this.random_indices = [];
+		if (this.target.is_artwork) this.random_indices = [0];
+		if (this.target.is_collection) {
+			let n = this.target.shapes.length;
+			for (let i = 0; i < n; i++) {
+				this.random_indices[i] = Math.random()*(n-1);
+			}
+		}
+		console.log("random_indices: ", this.random_indices);
+	}
+
 	setup_playback_trackers() {
 		let n = 1;
+		console.log(this.target);
 		if (this.target.is_artwork) n = 1;
 		if (this.target.is_collection) n = this.n_target;
 
@@ -942,6 +995,8 @@ export class AMES_Transformation {
 		this.tween_helper_scale = [];
 		this.curr_state = [];
 		this.curr_remainder = [];
+
+		this.init_random_target_indices();
 
 		for (let i = 0; i < n; i++) {
 			this.loop_count[i] = 1;
@@ -1050,6 +1105,8 @@ export class AMES_Transformation {
 		let state_idx = 0;
 
 		this.setup_playback_trackers();
+		if (!this.target) return;
+		if (this.target.is_collection) this.n_target = this.target.shapes.length;
 		let n_target = this.n_target;
 		if (this.mapping == this.PLAYBACK) {
 			this.target.setup_playback_trackers();
@@ -1111,6 +1168,7 @@ export class AMES_Transformation {
 
 	// TO DO update for vertex transformations
 	trigger_function_for_target_idx(a, a_idx) {
+		console.log("trigger ", this.name, "for ", a.name, "at ", a_idx);
 		let idx = a_idx;
 
 		// Play or apply transformation
@@ -1119,38 +1177,38 @@ export class AMES_Transformation {
 			// if (this.is_playing[idx] == 1) return;
 
 			// Reset playback trackers
-			this.dx_total[idx] = 0;
-			this.dy_total[idx] = 0;
-			this.v_total[idx] = 0;
-			this.loop_count[idx] = 1;
-			this.is_playing[idx] = 1;
+			this.dx_total[a_idx] = 0;
+			this.dy_total[a_idx] = 0;
+			this.v_total[a_idx] = 0;
+			this.loop_count[a_idx] = 1;
+			this.is_playing[a_idx] = 1;
 			this.slope[a_idx] = 1;
 			this.tween_helper_scale[a_idx] = 1;
 
 			// Jump target to match transformation input start values
 			if (this.tf_space_absolute) {
 				if (this.mapping == this.PLAYBACK) {
-					let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+					let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0);
 					this.target.set_artwork_value_to(a, sv);
 				} else {
-					let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+					let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0);
 					this.set_artwork_value_to(a, sv);
 				}
 			}
-
-			this.play_helper({"state_idx": 0, "a": a, "idx": idx});
+			console.log('setup triggered transformation', this.name, 'for artwork', a, 'at ', a_idx);
+			this.play_helper({"state_idx": 0, "a": a, "a_idx": a_idx});
 		} else {
 			if (this.tf_space_absolute) {
 				if (this.tf_space_absolute) {
 					if (this.mapping == this.PLAYBACK) {
-						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0);
 						this.target.set_artwork_value_to(a, sv);
 					} else {
-						let sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+						let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0);
 						this.set_artwork_value_to(a, sv);
 					}
 				}
-				let v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index")
+				let v = this.get_value_at_target_index_for_axis_mapping(a_idx, a_idx, "index")
 				this.set_artwork_value_to(a, v);
 			}
 		}
@@ -1192,6 +1250,7 @@ export class AMES_Transformation {
 			// 	}
 			// } else {
 			if (stop_state_idx == this.tf_space_path_nsegments) {
+				this.trigger_end(a, a_idx);
 				// console.log(this.name, a.name, "play from state a to b", state_idx, nxt_state_idx, "reverse?", reverse);
 				if (this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx] < this.loop_max_count)) {
 					// console.log("reset?");
@@ -1202,7 +1261,6 @@ export class AMES_Transformation {
 					if (this.target.is_transformation) this.target.setup_playback_trackers();
 				} else {
 					this.is_playing[a_idx] = 0;
-					this.trigger_end(a, a_idx);
 					return;
 				}
 			} else {
@@ -1412,6 +1470,7 @@ export class AMES_Transformation {
 			this.transformation_functions_to_trigger = [];
 		}
 		this.transformation_functions_to_trigger.push(trigger);
+		console.log(this.transformation_functions_to_trigger);
 		this.check_playback_points = true;
 	}
 
@@ -1422,6 +1481,9 @@ export class AMES_Transformation {
 			if (tf.condition == "remove at end") {
 				// if (a_idx == 1) console.log("remove at", a_idx);
 				a.poly.remove();
+			}
+			if (tf.condition == "end") {
+				tf.tf.trigger_function_for_target_idx(a, a_idx);
 			}
 		}
 	}
@@ -1531,7 +1593,7 @@ export class AMES_Transformation {
 			}
 
 			if (trigger_tf) {
-				// console.log(a_idx, "trigger");
+				console.log(a_idx, "triggering!");
 				tf.tf.trigger_function_for_target_idx(a, a_idx);
 			}
 		}
@@ -1671,15 +1733,17 @@ export class AMES_Transformation {
 		if (this.mapping == this.HUE) {
 			let saturation; let brightness;
 			if (a.poly.fillColor) {
-				saturation = a.poly.fillColor.saturation;
-				brightness = a.poly.fillColor.brightness;
-				a.poly.fillColor.hue = Math.round(sv.y);
-				a.poly.fillColor.saturation = saturation;
-				a.poly.fillColor.brightness = brightness;
+				// saturation = a.poly.fillColor.saturation;
+				// if (saturation == 0) saturation = 1;
+				// brightness = a.poly.fillColor.brightness;
+				// a.poly.fillColor.hue = Math.round(sv.y);
+				// a.poly.fillColor.saturation = saturation;
+				// a.poly.fillColor.brightness = brightness;
 
 			}
 			if (a.poly.strokeColor) {
 				saturation = a.poly.strokeColor.saturation;
+				if (saturation == 0) saturation = 1;
 				brightness = a.poly.strokeColor.brightness;
 				a.poly.strokeColor.hue = Math.round(sv.y);
 				a.poly.strokeColor.saturation = saturation;
@@ -1706,7 +1770,7 @@ export class AMES_Transformation {
 
 		if (this.input.is_collection) {
 
-			if (this.mapping_behavior == "interpolate") {
+			if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
 				d = []; let x = []; let y = []; seg_change_value = [];
 				for (let in_idx = 0; in_idx < this.n_input; in_idx++) {
 					d[in_idx] = this.get_delta_from_state(i, nxt_i, in_idx);
@@ -1717,10 +1781,15 @@ export class AMES_Transformation {
 				y = d.map((m) => m.y);
 				d = d.map((m) => Math.sqrt(m.x*m.x + m.y*m.y));
 
-				dx = utils.interpolate_fast(x, a_idx);
-				dy = utils.interpolate_fast(y, a_idx);
-				d = utils.interpolate_fast(d, a_idx);
-				seg_change_value = utils.interpolate_fast(seg_change_value, a_idx);
+				let target_idx = a_idx;
+				if (this.mapping_behavior == "random") target_idx = this.random_indices[a_idx];
+				target_idx *= ((this.input.shapes.length-1) / (this.target.shapes.length-1));
+				// if (a_idx == 0) console.log(target_idx);
+
+				dx = utils.interpolate_fast(x, target_idx);
+				dy = utils.interpolate_fast(y, target_idx);
+				d = utils.interpolate_fast(d, target_idx);
+				seg_change_value = utils.interpolate_fast(seg_change_value, target_idx);
 			}
 
 			if (this.mapping_behavior == "alternate") {
@@ -1816,12 +1885,14 @@ export class AMES_Transformation {
 
 		let line = new Path.Line(p1, p2);
 		let intersects = artwork.getIntersections(line);
-		line.strokeWidth = 1; line.strokeColor = "lightblue"; line.dashArray = [3, 5];
+		line.visible = false;
+		// line.strokeWidth = 1; line.strokeColor = "lightblue"; line.dashArray = [3, 5];
 
 		let p3 = new Point(this.tf_sx1, intersects[0].point.y);
 		let p4 = new Point(this.tf_sx2, intersects[0].point.y);
 		let line_v = new Path.Line(p3, p4);
-		line_v.strokeWidth = 1; line_v.strokeColor = "lightblue"; line_v.dashArray = [3, 5];
+		line_v.visible = false;
+		// line_v.strokeWidth = 1; line_v.strokeColor = "lightblue"; line_v.dashArray = [3, 5];
 
 		let t = this.tf_space_map_x_y(intersects[0].point.x, intersects[0].point.y);
 		// let t_label = new PointText({
@@ -1845,20 +1916,29 @@ export class AMES_Transformation {
 
 	get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping) {
 		let p; let x; let y;
-
 		if (this.input.is_shape) {
 			if (axis_mapping) {
-				p = this.get_artwork_value_at_intersection(this.input.poly, axis_idx, axis_mapping)
+				let target_idx = axis_idx;
+				if (this.mapping_behavior == "random") {
+					target_idx = Math.random()*(this.n_target-1);
+				}
+				p = this.get_artwork_value_at_intersection(this.input.poly, target_idx, axis_mapping)
 			} else {
-				if (offset == null) offset = (a_idx+0.5)*this.input.poly.length/this.n_target;
 				if (offset == "end") offset = this.input.poly.length;
+				if (offset == null) {
+					let target_idx = a_idx;
+					if (this.mapping_behavior == "random") {
+						target_idx = Math.random()*(this.n_target-1);
+					}
+					offset = (target_idx+0.5)*this.input.poly.length/this.n_target;
+				}
 				p = this.get_artwork_value_at_offset(this.input.poly, offset);
 			}
 			x = p.x; y = p.y; p = Math.sqrt(x*x + y*y)
 		}
 
 		if (this.input.is_collection) {
-			if (this.mapping_behavior == "interpolate") {
+			if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
 				p = [];
 				for (let in_idx = 0; in_idx < this.n_input; in_idx++) {
 					let in_artwork = this.input.shapes[in_idx].poly;
@@ -1874,9 +1954,13 @@ export class AMES_Transformation {
 				y = p.map((p) => p.y);
 				p = p.map((p) => Math.sqrt(p.x*p.x + p.y*p.y))
 
-				x = utils.interpolate_fast(x, a_idx);
-				y = utils.interpolate_fast(y, a_idx);
-				p = utils.interpolate_fast(p, a_idx);
+				let target_idx = a_idx;
+				if (this.mapping_behavior == "random") target_idx = this.random_indices[a_idx];
+				target_idx *= ((this.input.shapes.length-1) / (this.target.shapes.length-1));
+
+				x = utils.interpolate_fast(x, target_idx);
+				y = utils.interpolate_fast(y, target_idx);
+				p = utils.interpolate_fast(p, target_idx);
 			}
 
 			if (this.mapping_behavior == "alternate") {

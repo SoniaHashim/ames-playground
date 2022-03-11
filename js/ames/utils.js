@@ -141,6 +141,7 @@ export class AMES_Utils {
 		let p = new Path.Rectangle(r);
 		p.strokeColor = color;
 		p.strokeWidth = 0.5;
+		p.sendToBack();
 		return p;
 	}
 
