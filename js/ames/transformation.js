@@ -309,7 +309,6 @@ export class AMES_Transformation {
 		if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
 		if (this.mapping == this.DUPLICATE_EACH) {
 			this.is_playable = true;
-			this.tf_space_path_nsegments = 1;
 		}
 		if (this.mapping == this.PLAYBACK) this.is_playable = true;
 
@@ -415,11 +414,11 @@ export class AMES_Transformation {
 		}
 
 		if (this.mapping == this.DUPLICATE_EACH) {
-			let my2 = this.linear_map(0, TR.x - TL.x, 0, 1, BL.y - TL.y);
+			let my2 = this.linear_map(0, 25, 0, 1, BL.y - TL.y);
 			this.set_tf_space({
-				"mx": "time", "mx1": 0, "mx2": 1,
+				"mx": null, "mx1": 0, "mx2": null,
 				"my": "duplicates", "my1": 1, "my2": 1 + my2,
-				"mp": null, "show": true, "yflip": true,
+				"mp": "time", "show": true, "yflip": true,
 				"sx1": TL.x, "sx2": TR.x, "sy1": TL.y, "sy2": BL.y
 			}); return;
 		}
@@ -1010,6 +1009,7 @@ export class AMES_Transformation {
 		this.loop_count = [];
 		this.is_playing = [];
 		this.tween_helper_scale = [];
+		this.n_clones = [];
 		this.curr_state = [];
 		this.curr_remainder = [];
 
@@ -1025,6 +1025,7 @@ export class AMES_Transformation {
 			this.slope[i] = 1;
 			this.prev_slope_change[i] = Date.now();
 			this.tween_helper_scale[i] = 1;
+			this.n_clones[i] = 0;
 			this.curr_state[i] = 0;
 			this.curr_remainder[i] = 0;
 		}
@@ -1208,6 +1209,7 @@ export class AMES_Transformation {
 			this.slope[a_idx] = 1;
 			this.prev_slope_change[a_idx] = Date.now();
 			this.tween_helper_scale[a_idx] = 1;
+			this.n_clones[a_idx] = 0;
 
 			// Jump target to match transformation input start values
 			if (this.tf_space_absolute) {
@@ -1422,12 +1424,18 @@ export class AMES_Transformation {
 			this.tween_helper_scale[a_idx] = sf;
 		}
 		if (this.mapping == this.DUPLICATE_EACH) {
-			let eps = .001; let inc = this.dy_total[a_idx] - 1;
-			if ((-eps < inc && inc < 0) || (0 < inc < eps)) {
+			let next_clone_num = this.n_clones[a_idx] + 1;
+			let eps = .015; let inc = this.dy_total[a_idx] - next_clone_num;
+			// if ((-eps <= inc && inc <= 0) || (0 <= inc && inc <= eps))
+			let y_prev = this.dy_total[a_idx] - d.y/f;
+			console.log(next_clone_num, y_prev.toFixed(5), this.dy_total[a_idx].toFixed(5));
+			if (y_prev <= next_clone_num && next_clone_num <= this.dy_total[a_idx]) {
 				// let new_a = Object.create(a);
 				// new_a.poly = a.poly.clone();
+				this.n_clones[a_idx] += 1;
 				let new_a = a.clone();
-				this.dy_total[a_idx] = 0;
+				new_a.poly.insertBelow(a.poly);
+				// this.dy_total[a_idx] = 0;
 
 				// if (a_idx == 1) console.log("making new instance", a_idx);
 				this.trigger_new_instance(new_a, a_idx);
@@ -1526,7 +1534,7 @@ export class AMES_Transformation {
 			if (tf.condition == "new instance")
 				console.log("trigger function for new instance", a_idx);
 
-				tf.tf.trigger_function_for_target_idx(a, a_idx, ntarget);
+				tf.tf.trigger_function_for_target_idx(a, a_idx);
 		}
 	}
 
