@@ -25,6 +25,7 @@ export class AMES_Artwork {
 	obj_type = "shape";
 	visible = false;
 	static count = 1;
+	number = 0;
 	// Visual Properties: position, scale, rotate, stroke w, stroke c, fill
 	pos = {x: ames.canvas_cy, y: ames.canvas_cy};
 	scale = {x: 1, y: 1};
@@ -71,6 +72,11 @@ export class AMES_Artwork {
 		"strokeWidth": {"all": {}, "w": {}},
 		"strokeColor": {"all": {}, "h": {}, "s": {}, "v": {}, "a": {}},
 		"path" : {}
+	}
+
+	constructor() {
+		this.number = AMES_Artwork.count;
+		AMES_Artwork.count += 1;
 	}
 
 	// add_list: adds list to track which lists the shape is in so updates to the shape
@@ -1107,7 +1113,7 @@ export class AMES_Artwork {
 				opt_names.push(c.name);
 				opts[c.name] = c;
 			}
-		}		
+		}
 
 		if (ames.transformation_active_field != "input") {
 			for (let i in this.transformations) {

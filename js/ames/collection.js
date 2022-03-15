@@ -91,7 +91,7 @@ export class AMES_Collection {
 			this.count = artwork.length;
 			this.is_duplicator = false;
 			// Sort shapes by x_position
-			artwork.sort((a, b) => a.pos.x - b.pos.x);
+			artwork.sort((a, b) => a.number - b.number);
 			for (let idx in artwork) {
 				let s = artwork[idx];
 				this.add_to_collection(s);
@@ -377,7 +377,7 @@ export class AMES_Collection {
 	// update_show_box_count: updates count box value to match list count of items in list
 	update_show_box_count() {
 		this.count = this.shapes.length;
-		this.text_count.content = this.count;
+		if (this.text_count) this.text_count.content = this.count;
 	}
 
 	_make_show_box() {

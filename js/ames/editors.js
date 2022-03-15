@@ -127,6 +127,7 @@ class AMES_Editor {
 		if (bool && !this.is_visible) { this.set_editor_position(); }
 		this.is_visible = bool;
 		this.box.visible = bool;
+		if (this.editor_close_cleanup) this.editor_close_cleanup();
 		// if (!bool) {
 		// 	// Disable property interactivity if any
 		// 	if (this.obj.active_prop) {
@@ -228,6 +229,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		this.playback_box.visible = false;
 	}
 
+
 	load_playback_points() {
 		let triggers = this.obj.transformation_functions_to_trigger;
 		if (!triggers) return;
@@ -290,7 +292,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		close_button.onClick = (e) => {
 			this.playback_box.visible = false;
 			this.pos_is_set = false;
-			if (this.editor_close_cleanup) this.playback_editor_close_cleanup();
+			if (this.editor_close_cleanup) this.editor_close_cleanup();
 		}
 		// Create buttons to add playback pt
 		let plus_button = ames.icons["plus"].clone();
@@ -307,6 +309,8 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		plus_button.onClick = (e) => {
 			let c = this.obj.new_playback_condition;
 			let tf = this.obj.new_playback_transformation;
+			if (!tf) tf = "remove";
+			console.log(c, tf);
 			let q = this.obj.new_playback_q;
 			if (c && tf) {
 				this.obj.use_playback_points_to_trigger_transformation({
@@ -532,6 +536,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		let field_name;
 		if (this.obj[field]) field_name = this.obj[field].name;
 		field_name = field_name || field;
+		if (field_name == "playback transformation") field_name = "remove";
 		let label = new PointText({
 			point: [3.25*utils.ICON_OFFSET + x_off, y_off + .75*utils.ICON_OFFSET],
 			content: field_name,
