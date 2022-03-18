@@ -179,6 +179,7 @@ export class AMES_Transformation {
 
 		}
 
+		if (this.obj_box) this.obj_box.change_name();
 	}
 
 	set_tf_space_path_nsegments(input) {
@@ -1503,6 +1504,15 @@ export class AMES_Transformation {
 		}
 	}
 
+	remove_playback_point(playback_pt) {
+		let idx = -1;
+		for (let i = 0; i < this.transformation_functions_to_trigger.length; i++) {
+			let trigger = this.transformation_functions_to_trigger[i];
+			if (trigger == playback_pt) idx = i;
+		}
+		if (idx > -1) this.transformation_functions_to_trigger.splice(idx, 1);
+	}
+
 	use_playback_points_to_trigger_transformation(opt) {
 		let tf = opt.tf;				// transformation function
 		let condition = opt.condition;	// Trigger condition
@@ -1527,7 +1537,7 @@ export class AMES_Transformation {
 			let tf = this.transformation_functions_to_trigger[x];
 
 			if (tf.condition == "end") {
-				if (tf.tf == "remove") a.poly.remove();
+				if (tf.tf == "remove") a.remove();
 				else tf.tf.trigger_function_for_target_idx(a, a_idx);
 			}
 		}
@@ -1645,7 +1655,7 @@ export class AMES_Transformation {
 			}
 
 			if (trigger_tf) {
-				if (tf.tf == "remove") a.poly.remove();
+				if (tf.tf == "remove") a.remove();
 				else tf.tf.trigger_function_for_target_idx(a, a_idx);
 			}
 		}
@@ -2057,6 +2067,8 @@ export class AMES_Transformation {
 		if (this.input) this.input.remove_transformation(this);
 		this.input = null;
 		this.target = null;
+
+		ames.update_layers({"remove": true, "box": ames.obj_boxes_dict[this.name]});
 	}
 }
 

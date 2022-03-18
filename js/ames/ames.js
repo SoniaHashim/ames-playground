@@ -368,9 +368,9 @@ export class AMES {
 		this.sidebar.addChildren[save_label, save_btn, import_label, import_btn];
 
 		let layers = new Group();
-		let scrollbar_top = sidebar.position.y + save_btn.bounds.height/2 + 2*utils.ICON_OFFSET;
+		let scrollbar_top = sidebar.position.y + save_btn.bounds.height/2 + 3*utils.ICON_OFFSET;
 		let scrollbar_x = sidebar.position.x + sidebar.bounds.width/2 - 1.25*utils.ICON_OFFSET;
-		let scrollbar_bottom = sidebar.position.y + r.bounds.height/2 - utils.ICON_OFFSET;
+		let scrollbar_bottom = sidebar.position.y + r.bounds.height/2 - 3*utils.ICON_OFFSET;
 		layers.scroll = (e) => {
 			layers.sendToBack()
 			layers.position.y += -e.event.movementY;
@@ -403,6 +403,9 @@ export class AMES {
 		r_btm.position = new Point(sidebar.position.x, scrollbar_bottom + 10.25);
 		r_top.sendToBack();
 		r_btm.sendToBack();
+
+		r_top.visible = false;
+		r_btm.visible = false;
 		scrollbar.top = scrollbar_top;
 		scrollbar.bottom = scrollbar_bottom;
 		sidebar.addChild(scrollbar);
@@ -447,7 +450,7 @@ export class AMES {
 			"position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor",
 			"close", "link", "link-remove", "path", "play", "axes", "brush", "pause",
 			"rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen",
-			"card-list", "nsides", "asterisk", "plus"];
+			"card-list", "nsides", "asterisk", "plus", "arrow-right"];
 		for (let idx in icons) {
 			this.import_icon(icons[idx]);
 		}
@@ -1481,7 +1484,7 @@ export class AMES {
 		let box = new Path.Rectangle({
 			point: [500, 450],
 			size: [utils.SIDEBAR_WIDTH - 2*utils.SCROLLBAR_WIDTH, 20],
-			fillColor: "white",
+			// fillColor: "white",
 			strokeColor: utils.INACTIVE_S_COLOR,
 			radius: 3,
 			strokeWidth: .75,
@@ -1502,11 +1505,13 @@ export class AMES {
 			name = obj.name
 			if (obj instanceof AMES_Transformation) {
 				let obj_name_parts = obj.name.split(" ");
-				let num = obj_name_parts[1];
 				let mapping = obj.get_mapping();
+				let input = "input";
+				if (obj.input) input = obj.input.name;
 				if (mapping) {
 					mapping = mapping[0].toUpperCase() + mapping.substr(1);
-					name = "T" + num + " " + mapping;
+					input = input[0].toUpperCase() + input.substr(1);
+					name = "T" + " (" + input + ": " + mapping + ")";
 				}
 			}
 			box_label.content = name;
@@ -1522,8 +1527,6 @@ export class AMES {
 		trash.bringToFront();
 		trash.onClick = (e) => {
 			obj.remove();
-			this.update_layers({remove: true, box: obj_box});
-			obj_box.remove();
 		};
 
 		obj_box.addChildren([box, box_label, trash])
@@ -1586,6 +1589,9 @@ export class AMES {
 		}
 
 		this.update_layers({insert: true, box: obj_box});
+
+		if (!this.obj_boxes_dict) this.obj_boxes_dict = {};
+		this.obj_boxes_dict[obj.name] = obj_box;
 	}
 
 

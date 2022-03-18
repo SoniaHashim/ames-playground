@@ -156,9 +156,9 @@ export class AMES_Collection {
 	}
 
 	update_offset_mode() {
-		for (let i in this.list_constraints) {
-			this.list_constraints[i].offset_mode = this.offset_mode;
-		}
+		// for (let i in this.list_constraints) {
+		// 	this.list_constraints[i].offset_mode = this.offset_mode;
+		// }
 	}
 
 	add_transformation(transformation) {
@@ -250,54 +250,54 @@ export class AMES_Collection {
 
 
 	add_to_collection(s, use_constraints) {
-		if (use_constraints || (!this.is_para_style_list && this.shapes.length > 0)) {
-			let fs = this.shapes[0];
-			let ls = this.shapes[this.shapes.length - 1];
-			// Remove constraint connecting ls to fs
-			for (let i = 0; i < utils.VIS_PROPS.length; i++) {
-				let p = utils.VIS_PROPS[i];
-				if (p != 'path') {
-					if (this.shapes.length > 1) {
-						let oc;
-						for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
-							let sub = utils.SUB_PROPS[p][sub_idx];
-							// console.log(sub);
-							oc = ls.c_outbound[p][sub][fs.name];
-							this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-							oc.remove();
-						}
-						oc = ls.c_outbound[p]['all'][fs.name];
-						this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-						oc.remove();
-					}
-
-					let c_append = new AMES_Constraint(s, ls, p, 'all');
-					let c_loop = new AMES_Constraint(fs, s, p, 'all');
-
-					this.list_constraints.push(c_append);
-					this.list_constraints.push(c_loop);
-
-					for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
-						let sub = utils.SUB_PROPS[p][sub_idx];
-						this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
-						this.list_constraints.push(fs.c_inbound[p][sub][s.name]);
-					}
-				}
-			}
-		}
+		// if (use_constraints || (!this.is_para_style_list && this.shapes.length > 0)) {
+		// 	let fs = this.shapes[0];
+		// 	let ls = this.shapes[this.shapes.length - 1];
+		// 	// Remove constraint connecting ls to fs
+		// 	for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+		// 		let p = utils.VIS_PROPS[i];
+		// 		if (p != 'path') {
+		// 			if (this.shapes.length > 1) {
+		// 				let oc;
+		// 				for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+		// 					let sub = utils.SUB_PROPS[p][sub_idx];
+		// 					// console.log(sub);
+		// 					oc = ls.c_outbound[p][sub][fs.name];
+		// 					this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+		// 					oc.remove();
+		// 				}
+		// 				oc = ls.c_outbound[p]['all'][fs.name];
+		// 				this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+		// 				oc.remove();
+		// 			}
+		//
+		// 			let c_append = new AMES_Constraint(s, ls, p, 'all');
+		// 			let c_loop = new AMES_Constraint(fs, s, p, 'all');
+		//
+		// 			this.list_constraints.push(c_append);
+		// 			this.list_constraints.push(c_loop);
+		//
+		// 			for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+		// 				let sub = utils.SUB_PROPS[p][sub_idx];
+		// 				this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+		// 				this.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+		// 			}
+		// 		}
+		// 	}
+		// }
 		this.shapes.push(s);
 		// s.add_list(this);
 		s.add_collection(this);
 	}
 
 	update_constraints() {
-		AMES_Collection.update_constraints(this);
+		// AMES_Collection.update_constraints(this);
 	}
 
 	static update_constraints(list) {
 		let s = list.active_sub_p;
 		if (!s) s = "all";
-		AMES_Constraint.update_constraints(list.active_prop, s, list);
+		// AMES_Constraint.update_constraints(list.active_prop, s, list);
 	}
 
 	get_shape_names() {
@@ -452,7 +452,7 @@ export class AMES_Collection {
 			// Remove subproperty buttons
 			this.editor.show_subprops(this.active_prop, false);
 			this.editor.select_prop(this.active_prop, false);
-			this.editor.show_constraint(false);
+			// this.editor.show_constraint(false);
 			for (let i in this.shapes) {
 				if (this.shapes[i].active_prop == p)
 					this.shapes[i].manipulate(p);
@@ -480,7 +480,7 @@ export class AMES_Collection {
 			// Indicate active property and show subproperty buttons
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
-			this.editor.show_constraint(true, p, sub_p);
+			// this.editor.show_constraint(true, p, sub_p);
 			this.active_prop = p;
 			this.active_sub_p = sub_p;
 		} else {
@@ -494,13 +494,13 @@ export class AMES_Collection {
 
 	set_active_obj(obj) {
 		this.active_obj = obj;
-		this.editor.update_constraint(this.active_prop, this.active_sub_p);
+		// this.editor.update_constraint(this.active_prop, this.active_sub_p);
 	}
 
 	manipulate_helper(sub) {
 		this._clear_cb_helpers();
 		this.active_sub_p = sub;
-		this.editor.show_constraint(true, this.active_prop, sub);
+		// this.editor.show_constraint(true, this.active_prop, sub);
 		for (let i in this.shapes) {
 			this.shapes[i].manipulate_helper(sub);
 		}
@@ -575,6 +575,8 @@ export class AMES_Collection {
 			let a = this.shapes[i];
 			a.remove_collection(this);
 		}
+		this.show(false);
+		ames.update_layers({"remove": true, "box": ames.obj_boxes_dict[this.name]});
 	}
 
 	// make_list_group() {

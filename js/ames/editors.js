@@ -30,7 +30,7 @@ class AMES_Editor {
 		let rect = new Shape.Rectangle({
 			point: [0, 0],
 			size: [e_width, e_height],
-			fillColor: utils.INACTIVE_COLOR,
+			// fillColor: utils.INACTIVE_COLOR,
 			strokeWidth: 1,
 			radius: 5,
 			strokeColor: utils.INACTIVE_S_COLOR,
@@ -234,12 +234,22 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		let triggers = this.obj.transformation_functions_to_trigger;
 		if (!triggers) return;
 
-		x_off = this.playback_box.position.x - this.playback_box.bounds.width/2 + 2*utils.ICON_OFFSET;
-		y_off = this.playback_box.position.y - this.playback_box.bounds.height/2 + utils.LAYER_HEIGHT;
+		let x_off = this.playback_box.position.x - this.playback_box.bounds.width/2 + 2*utils.ICON_OFFSET;
+		let y_off = this.playback_box.position.y - this.playback_box.bounds.height/2 + 5.5*utils.LAYER_HEIGHT;
 
-		this.playback_pt_ux = [];
+		if (!this.playback_pt_ux) {
+			this.playback_pt_ux = [];
+		} else {
+			for (let i in this.playback_pt_ux) {
+				this.playback_pt_ux[i].remove();
+			}
+			this.playback_pt_ux = [];
+		}
+
+		console.log("load_playback_points", triggers);
 
 		for (let i = triggers.length-1; i >= 0; i--) {
+			console.log(i, triggers[i]);
 			let trigger = triggers[i];
 			let condition = trigger.condition;
 			let tf = trigger.tf;
@@ -248,16 +258,41 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 			let playback_pt = new Group();
 
 			// Delete button
+			let del_button = ames.icons["close"].clone();
+			del_button.scaling = 0.75;
+			let del_w = del_button.bounds.width;
+			del_button.position = new Point(x_off + del_w/2, y_off)
+			del_button.visible = true;
 
-			// Box for trigger condition
 			// Label for trigger condition
+			let trigger_name = tf.name ? tf.name : tf;
+			let str_playback_pt = condition[0].toUpperCase()+condition.substr(1) + ": " +  trigger_name[0].toUpperCase() + trigger_name.substr(1);
+			let label_text = new PointText({
+				point: [x_off + del_w/2 + 2*utils.ICON_OFFSET, y_off],
+				content: str_playback_pt,
+				fillColor: utils.INACTIVE_S_COLOR,
+				fontFamily: utils.FONT,
+				fontSize: utils.FONT_SIZE
+			});
+			label_text.position.y += label_text.bounds.height/4;
+
 
 			// Box for trigger transformation function
 			// Label for trigger transformation function
 
-			// (opt) box for Q
+			// Enable deleting playback points
+			del_button.onClick = (e) => {
+				console.log("remove playback point");
+				this.obj.remove_playback_point(trigger);
+				this.load_playback_points();
+			}
+
+			playback_pt.addChildren([del_button, label_text]);
+			this.playback_box.addChild(playback_pt);
+			this.playback_pt_ux.push(playback_pt);
 
 			// Increment y_off
+			y_off += 15;
 		}
 	}
 
@@ -320,7 +355,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 				});
 			}
 
-			// this.load_playback_points();
+			this.load_playback_points();
 		}
 
 
@@ -769,111 +804,111 @@ export class AMES_Shape_Editor extends AMES_Editor {
 			subprop_line.opacity = 0.5;
 			box.addChild(subprop_line);
 
-			// Make and hide link and unlink buttons
-			let link = ames.icons['link'].clone();
-			link.scaling = 1.25;
-			link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.75);
-			link.visible = true;
-			link.strokeWidth = .25;
-			let link_remove = ames.icons['link-remove'].clone();
-			link_remove.scaling = 1.25;
-			link_remove.position = link.position;
-			link_remove.visible = false;
-			link_remove.strokeWidth = .25;
-			// When the link button is clicked activate constraint tool
-			link.onMouseDown = (e) => {
-				ames.c_relative = this.obj;
-				ames.tools['Constraint'].activate();
-				// Little workaround... to start drawing line that defines constraint
-				link.strokeColor = utils.ACTIVE_S_COLOR;
-				ames.tools['Constraint'].onMouseDown(e);
-				ames.tools['Constraint'].onMouseDrag(e);
-			}
-			link_remove.onMouseDown = (e) => {
-				let p = this.obj.active_prop;
-				let s = this.obj.active_sub_p;
-				console.log("link remove constraint", p, s);
-				if (!s) s = "all";
-				let c_ins = this.obj.c_inbound[p][s];
-				let c = null;
-				for (let i in c_ins) {
-					if (c_ins[i].is_manual_constraint)
-						c = c_ins[i];
-				}
-				if (c) {
-					console.log(c);
-					c.remove();
-				}
-			}
-			this.constraint_info.link = link;
-			this.constraint_info.link_remove = link_remove;
-			// Name of relative that defines the constraint
-			let link_name = new PointText({
-				point: [link.position.x + 3*utils.ICON_OFFSET, link.position.y + link.bounds.height/4],
-				content: 'Constraint',
-				fillColor: utils.INACTIVE_S_COLOR,
-				fontFamily: utils.FONT,
-				fontSize: utils.FONT_SIZE,
-			});
-			this.constraint_info.link_name = link_name;
-			let offset_label = new PointText({
-				point: [subline_start.x + utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
-				content: 'relative offset',
-				fillColor: utils.INACTIVE_S_COLOR,
-				fontFamily: utils.FONT,
-				fontSize: utils.FONT_SIZE,
-			});
-			this.constraint_info.offset_label = offset_label;
-			let offset_val = new PointText({
-				point: [subline_start.x + offset_label.bounds.width + 2.5*utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
-				content: '10',
-				fillColor: utils.INACTIVE_S_COLOR,
-				fontFamily: utils.FONT,
-				fontSize: utils.FONT_SIZE,
-			});
-			this.constraint_info.offset_val = offset_val;
-			// Make offset val draggable
-			this.constraint_info.offset_val.onMouseDown = (e) => {
-				console.log("mouse down on offset val")
-				ames.canvas.style.cursor = 'move';
-			}
-			let offset_val_drag = 0;
-			this.constraint_info.offset_val.onMouseDrag = (e) => {
-				offset_val_drag += e.event.movementX;
-				if (offset_val_drag < 0) ames.canvas.style.cursor = 'w-resize';
-				if (offset_val_drag > 0) ames.canvas.style.cursor = 'e-resize';
-				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
-				if (offset_val_drag < -5) {
-					// Manipulate active constraint
-					for (let i in c_ins) {
-						if (c_ins[i].is_manual_constraint) {
-							c_ins[i].change_offset(-1);
-						}
-
-					}
-					offset_val_drag = 0;
-				}
-				if (offset_val_drag > 5) {
-					// Manipulate active constraint
-					for (let i in c_ins) {
-						if (c_ins[i].is_manual_constraint) {
-							c_ins[i].change_offset(1);
-						}
-					}
-					offset_val_drag = 0;
-				}
-			}
-			this.constraint_info.offset_val.onMouseUp = (e) => {
-				ames.canvas.style.cursor = null;
-			}
-			let ox = offset_val.position.x; let oy = offset_val.position.y + offset_val.bounds.height/2;
-			let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 6*utils.ICON_OFFSET, oy));
-			offset_line.strokeColor = utils.INACTIVE_S_COLOR;
-			offset_line.strokeWidth = 1;
-			offset_line.opacity = 0.5;
-			this.constraint_info.offset_line = offset_line;
-			box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
-			this.show_constraint(false);
+			// // Make and hide link and unlink buttons
+			// let link = ames.icons['link'].clone();
+			// link.scaling = 1.25;
+			// link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.75);
+			// link.visible = true;
+			// link.strokeWidth = .25;
+			// let link_remove = ames.icons['link-remove'].clone();
+			// link_remove.scaling = 1.25;
+			// link_remove.position = link.position;
+			// link_remove.visible = false;
+			// link_remove.strokeWidth = .25;
+			// // When the link button is clicked activate constraint tool
+			// link.onMouseDown = (e) => {
+			// 	ames.c_relative = this.obj;
+			// 	ames.tools['Constraint'].activate();
+			// 	// Little workaround... to start drawing line that defines constraint
+			// 	link.strokeColor = utils.ACTIVE_S_COLOR;
+			// 	ames.tools['Constraint'].onMouseDown(e);
+			// 	ames.tools['Constraint'].onMouseDrag(e);
+			// }
+			// link_remove.onMouseDown = (e) => {
+			// 	let p = this.obj.active_prop;
+			// 	let s = this.obj.active_sub_p;
+			// 	console.log("link remove constraint", p, s);
+			// 	if (!s) s = "all";
+			// 	let c_ins = this.obj.c_inbound[p][s];
+			// 	let c = null;
+			// 	for (let i in c_ins) {
+			// 		if (c_ins[i].is_manual_constraint)
+			// 			c = c_ins[i];
+			// 	}
+			// 	if (c) {
+			// 		console.log(c);
+			// 		c.remove();
+			// 	}
+			// }
+			// this.constraint_info.link = link;
+			// this.constraint_info.link_remove = link_remove;
+			// // Name of relative that defines the constraint
+			// let link_name = new PointText({
+			// 	point: [link.position.x + 3*utils.ICON_OFFSET, link.position.y + link.bounds.height/4],
+			// 	content: 'Constraint',
+			// 	fillColor: utils.INACTIVE_S_COLOR,
+			// 	fontFamily: utils.FONT,
+			// 	fontSize: utils.FONT_SIZE,
+			// });
+			// this.constraint_info.link_name = link_name;
+			// let offset_label = new PointText({
+			// 	point: [subline_start.x + utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
+			// 	content: 'relative offset',
+			// 	fillColor: utils.INACTIVE_S_COLOR,
+			// 	fontFamily: utils.FONT,
+			// 	fontSize: utils.FONT_SIZE,
+			// });
+			// this.constraint_info.offset_label = offset_label;
+			// let offset_val = new PointText({
+			// 	point: [subline_start.x + offset_label.bounds.width + 2.5*utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
+			// 	content: '10',
+			// 	fillColor: utils.INACTIVE_S_COLOR,
+			// 	fontFamily: utils.FONT,
+			// 	fontSize: utils.FONT_SIZE,
+			// });
+			// this.constraint_info.offset_val = offset_val;
+			// // Make offset val draggable
+			// this.constraint_info.offset_val.onMouseDown = (e) => {
+			// 	console.log("mouse down on offset val")
+			// 	ames.canvas.style.cursor = 'move';
+			// }
+			// let offset_val_drag = 0;
+			// this.constraint_info.offset_val.onMouseDrag = (e) => {
+			// 	offset_val_drag += e.event.movementX;
+			// 	if (offset_val_drag < 0) ames.canvas.style.cursor = 'w-resize';
+			// 	if (offset_val_drag > 0) ames.canvas.style.cursor = 'e-resize';
+			// 	let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+			// 	if (offset_val_drag < -5) {
+			// 		// Manipulate active constraint
+			// 		for (let i in c_ins) {
+			// 			if (c_ins[i].is_manual_constraint) {
+			// 				c_ins[i].change_offset(-1);
+			// 			}
+			//
+			// 		}
+			// 		offset_val_drag = 0;
+			// 	}
+			// 	if (offset_val_drag > 5) {
+			// 		// Manipulate active constraint
+			// 		for (let i in c_ins) {
+			// 			if (c_ins[i].is_manual_constraint) {
+			// 				c_ins[i].change_offset(1);
+			// 			}
+			// 		}
+			// 		offset_val_drag = 0;
+			// 	}
+			// }
+			// this.constraint_info.offset_val.onMouseUp = (e) => {
+			// 	ames.canvas.style.cursor = null;
+			// }
+			// let ox = offset_val.position.x; let oy = offset_val.position.y + offset_val.bounds.height/2;
+			// let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 6*utils.ICON_OFFSET, oy));
+			// offset_line.strokeColor = utils.INACTIVE_S_COLOR;
+			// offset_line.strokeWidth = 1;
+			// offset_line.opacity = 0.5;
+			// this.constraint_info.offset_line = offset_line;
+			// box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
+			// this.show_constraint(false);
 		}
 		// When the subproperty is clicked enable editing on it
 		subprop_box.onClick = (e) => {
@@ -891,78 +926,78 @@ export class AMES_Shape_Editor extends AMES_Editor {
 		this.subprops[s] = [subprop_text, subprop_box];
 	}
 
-	// _show_constraint
-	show_constraint(bool, p, sub_p) {
-		if (p == 'path') { bool = false;}
-		if (p == 'nsides') { bool = false; }
-
-		for (let k in this.constraint_info) {
-			this.constraint_info[k].visible = bool;
-		}
-		// Hide link remove button
-		this.constraint_info.link_remove.visible = false;
-		// Show link remove button if there is an active constraint
-		if (bool && this.obj) {
-			let s = sub_p;
-			if (!s) s = "all";
-			let c_ins = this.obj.c_inbound[p][s];
-			let c = null;
-			for (let i in c_ins) {
-				if (c_ins[i].is_manual_constraint)
-					c = c_ins[i];
-			}
-			if (c) {
-				this.constraint_info.link_remove.visible = true;
-				this.constraint_info.link.visible = false;
-			}
-		}
-
-		if (sub_p == 'all') {
-			this.constraint_info['offset_label'].visible = false;
-			this.constraint_info['offset_val'].visible = false;
-			this.constraint_info['offset_line'].visible = false;
-		}
-
-		// Update property value
-		if (bool) this.update_constraint(p, sub_p);
-	}
-
-	update_constraint(p, s) {
-		if (!p) p = this.obj.active_prop;
-		if (!s) s = this.obj.active_sub_p;
-		if (!s) s = "all"
-
-		let link_name = 'Unconstrained';
-		let offset_val = 0;
-
-		let c = null;
-		if (p) {
-			let c_ins = this.obj.c_inbound[p][s];
-			// console.log(c_ins);
-			for (let i in c_ins) {
-				if (c_ins[i].is_manual_constraint)
-					c = c_ins[i];
-			}
-			if (c) {
-				link_name = c.reference.name;
-
-				if (s != "all") {
-					let offset = c.get_offset();
-					offset_val = offset.toFixed(2);
-				}
-				// Show unlink button
-				this.constraint_info.link.visible = false;
-				this.constraint_info.link_remove.visible = true;
-			} else {
-				// Show link button
-				this.constraint_info.link.visible = true;
-				this.constraint_info.link_remove.visible = false;
-			}
-		}
-
-		this.constraint_info.link_name.content = link_name;
-		this.constraint_info.offset_val.content = offset_val;
-	}
+	// // _show_constraint
+	// show_constraint(bool, p, sub_p) {
+	// 	if (p == 'path') { bool = false;}
+	// 	if (p == 'nsides') { bool = false; }
+	//
+	// 	for (let k in this.constraint_info) {
+	// 		this.constraint_info[k].visible = bool;
+	// 	}
+	// 	// Hide link remove button
+	// 	this.constraint_info.link_remove.visible = false;
+	// 	// Show link remove button if there is an active constraint
+	// 	if (bool && this.obj) {
+	// 		let s = sub_p;
+	// 		if (!s) s = "all";
+	// 		let c_ins = this.obj.c_inbound[p][s];
+	// 		let c = null;
+	// 		for (let i in c_ins) {
+	// 			if (c_ins[i].is_manual_constraint)
+	// 				c = c_ins[i];
+	// 		}
+	// 		if (c) {
+	// 			this.constraint_info.link_remove.visible = true;
+	// 			this.constraint_info.link.visible = false;
+	// 		}
+	// 	}
+	//
+	// 	if (sub_p == 'all') {
+	// 		this.constraint_info['offset_label'].visible = false;
+	// 		this.constraint_info['offset_val'].visible = false;
+	// 		this.constraint_info['offset_line'].visible = false;
+	// 	}
+	//
+	// 	// Update property value
+	// 	if (bool) this.update_constraint(p, sub_p);
+	// }
+	//
+	// update_constraint(p, s) {
+	// 	if (!p) p = this.obj.active_prop;
+	// 	if (!s) s = this.obj.active_sub_p;
+	// 	if (!s) s = "all"
+	//
+	// 	let link_name = 'Unconstrained';
+	// 	let offset_val = 0;
+	//
+	// 	let c = null;
+	// 	if (p) {
+	// 		let c_ins = this.obj.c_inbound[p][s];
+	// 		// console.log(c_ins);
+	// 		for (let i in c_ins) {
+	// 			if (c_ins[i].is_manual_constraint)
+	// 				c = c_ins[i];
+	// 		}
+	// 		if (c) {
+	// 			link_name = c.reference.name;
+	//
+	// 			if (s != "all") {
+	// 				let offset = c.get_offset();
+	// 				offset_val = offset.toFixed(2);
+	// 			}
+	// 			// Show unlink button
+	// 			this.constraint_info.link.visible = false;
+	// 			this.constraint_info.link_remove.visible = true;
+	// 		} else {
+	// 			// Show link button
+	// 			this.constraint_info.link.visible = true;
+	// 			this.constraint_info.link_remove.visible = false;
+	// 		}
+	// 	}
+	//
+	// 	this.constraint_info.link_name.content = link_name;
+	// 	this.constraint_info.offset_val.content = offset_val;
+	// }
 
 	// _select_subprop: Activate subproperty including display if true; deselect otherwise
 	select_subprop(s, bool) {
@@ -1025,134 +1060,134 @@ export class AMES_Collection_Editor extends AMES_Shape_Editor {
 
 	constructor(obj) {
 		super(obj);
-		this.add_relative_index_to_constraint_info();
+		// this.add_relative_index_to_constraint_info();
 	}
 
-	add_relative_index_to_constraint_info() {
-		// Group relative coords
-		let bx = this.constraint_info.offset_label.position.x - this.constraint_info.offset_label.bounds.width/2;
-		let by = this.constraint_info.offset_label.position.y;
+	// add_relative_index_to_constraint_info() {
+	// 	// Group relative coords
+	// 	let bx = this.constraint_info.offset_label.position.x - this.constraint_info.offset_label.bounds.width/2;
+	// 	let by = this.constraint_info.offset_label.position.y;
+	//
+	// 	// Add obj name
+	// 	let uy = utils.LAYER_HEIGHT;
+	// 	let rel_idx_label = new PointText({
+	// 		point: [bx, by + 5*utils.ICON_OFFSET],
+	// 		content: 'relative index',
+	// 		fillColor: utils.INACTIVE_S_COLOR,
+	// 		fontFamily: utils.FONT,
+	// 		fontSize: utils.FONT_SIZE
+	// 	});
+	// 	let rel_idx_val = new PointText({
+	// 		point: [this.constraint_info.offset_val.position.x - this.constraint_info.offset_val.bounds.width/2, rel_idx_label.position.y + 3],
+	// 		content: '0',
+	// 		fillColor: utils.INACTIVE_S_COLOR,
+	// 		fontFamily: utils.FONT,
+	// 		fontSize: utils.FONT_SIZE
+	// 	});
+	// 	let ox = this.constraint_info.offset_line.position.x - this.constraint_info.offset_line.bounds.width/2;
+	// 	let oy = rel_idx_val.position.y + rel_idx_val.bounds.height/2;
+	// 	let rel_idx_line = new Path.Line(new Point(ox, oy), new Point(this.constraint_info.offset_val.position.x+ 6*utils.ICON_OFFSET, oy));
+	// 	rel_idx_line.strokeColor = utils.INACTIVE_S_COLOR;
+	// 	rel_idx_line.strokeWidth = 1;
+	// 	rel_idx_line.opacity = 0.5;
+	// 	rel_idx_line.visible = true;
+	//
+	// 	// switch y position
+	// 	let y1_label = rel_idx_label.position.y;
+	// 	let y1_val = rel_idx_val.position.y;
+	// 	let y1_line = rel_idx_line.position.y;
+	//
+	// 	let y2_label = this.constraint_info.offset_label.position.y;
+	// 	let y2_val = this.constraint_info.offset_val.position.y;
+	// 	let y2_line = this.constraint_info.offset_line.position.y;
+	//
+	// 	this.constraint_info.offset_label.position.y = y1_label;
+	// 	this.constraint_info.offset_val.position.y = y1_val;
+	// 	this.constraint_info.offset_line.position.y = y1_line;
+	//
+	// 	rel_idx_label.position.y = y2_label;
+	// 	rel_idx_val.position.y = y2_val;
+	// 	rel_idx_line.position.y = y2_line;
+	//
+	// 	rel_idx_label.visible = false;
+	// 	rel_idx_val.visible = false;
+	// 	rel_idx_line.visible = false;
+	//
+	// 	// Add to constraint info
+	// 	this.constraint_info.rel_idx_label = rel_idx_label;
+	// 	this.constraint_info.rel_idx_val = rel_idx_val;
+	// 	this.constraint_info.rel_idx_line = rel_idx_line;
+	//
+	// 	// Add to editor box
+	// 	this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]);
+	//
+	// 	// Draggable editability to change rel idx value
+	// 	this.constraint_info.rel_idx_val.onMouseDown = (e) => {
+	// 		ames.canvas.style.cursor = 'move';
+	// 	}
+	// 	let rel_idx_drag = 0;
+	// 	this.constraint_info.rel_idx_val.onMouseDrag = (e) => {
+	// 		rel_idx_drag += e.event.movementX;
+	// 		if (rel_idx_drag < 0) ames.canvas.style.cursor = 'w-resize';
+	// 		if (rel_idx_drag > 0) ames.canvas.style.cursor = 'e-resize';
+	// 		if (rel_idx_drag < -5) {
+	//
+	// 			let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+	// 			for (let i in c_ins) {
+	// 				if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(-1)
+	// 			}
+	// 			console.log("drag left", c_ins);
+	// 			rel_idx_drag = 0;
+	// 		}
+	// 		if (rel_idx_drag > 5) {
+	//
+	// 			let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+	// 			for (let i in c_ins) {
+	// 				if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(1);
+	// 			}
+	// 			console.log("drag right", c_ins);
+	// 			rel_idx_drag = 0;
+	// 		}
+	// 	}
+	// 	this.constraint_info.rel_idx_val.onMouseUp = (e) => {
+	// 		ames.canvas.style.cursor = null;
+	// 	}
+	// }
 
-		// Add obj name
-		let uy = utils.LAYER_HEIGHT;
-		let rel_idx_label = new PointText({
-			point: [bx, by + 5*utils.ICON_OFFSET],
-			content: 'relative index',
-			fillColor: utils.INACTIVE_S_COLOR,
-			fontFamily: utils.FONT,
-			fontSize: utils.FONT_SIZE
-		});
-		let rel_idx_val = new PointText({
-			point: [this.constraint_info.offset_val.position.x - this.constraint_info.offset_val.bounds.width/2, rel_idx_label.position.y + 3],
-			content: '0',
-			fillColor: utils.INACTIVE_S_COLOR,
-			fontFamily: utils.FONT,
-			fontSize: utils.FONT_SIZE
-		});
-		let ox = this.constraint_info.offset_line.position.x - this.constraint_info.offset_line.bounds.width/2;
-		let oy = rel_idx_val.position.y + rel_idx_val.bounds.height/2;
-		let rel_idx_line = new Path.Line(new Point(ox, oy), new Point(this.constraint_info.offset_val.position.x+ 6*utils.ICON_OFFSET, oy));
-		rel_idx_line.strokeColor = utils.INACTIVE_S_COLOR;
-		rel_idx_line.strokeWidth = 1;
-		rel_idx_line.opacity = 0.5;
-		rel_idx_line.visible = true;
+	// update_constraint(p, s) {
+	// 	if (!p) p = this.obj.active_prop;
+	// 	if (!s) s = this.obj.active_sub_p;
+	// 	if (!s) s = "all";
+	// 	super.update_constraint(p, s);
+	//
+	// 	let c = null; let rel_idx;
+	// 	let c_ins = this.obj.c_inbound[p][s];
+	// 	// console.log(c_ins);
+	// 	for (let i in c_ins) {
+	// 		if (c_ins[i].is_manual_constraint)
+	// 			c = c_ins[i];
+	// 	}
+	// 	if (c) {
+	// 		rel_idx = c.get_rel_idx();
+	// 		rel_idx = rel_idx.toFixed(0);
+	// 	}
+	//
+	// 	this.constraint_info.rel_idx_val.content = rel_idx;
+	// }
 
-		// switch y position
-		let y1_label = rel_idx_label.position.y;
-		let y1_val = rel_idx_val.position.y;
-		let y1_line = rel_idx_line.position.y;
-
-		let y2_label = this.constraint_info.offset_label.position.y;
-		let y2_val = this.constraint_info.offset_val.position.y;
-		let y2_line = this.constraint_info.offset_line.position.y;
-
-		this.constraint_info.offset_label.position.y = y1_label;
-		this.constraint_info.offset_val.position.y = y1_val;
-		this.constraint_info.offset_line.position.y = y1_line;
-
-		rel_idx_label.position.y = y2_label;
-		rel_idx_val.position.y = y2_val;
-		rel_idx_line.position.y = y2_line;
-
-		rel_idx_label.visible = false;
-		rel_idx_val.visible = false;
-		rel_idx_line.visible = false;
-
-		// Add to constraint info
-		this.constraint_info.rel_idx_label = rel_idx_label;
-		this.constraint_info.rel_idx_val = rel_idx_val;
-		this.constraint_info.rel_idx_line = rel_idx_line;
-
-		// Add to editor box
-		this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]);
-
-		// Draggable editability to change rel idx value
-		this.constraint_info.rel_idx_val.onMouseDown = (e) => {
-			ames.canvas.style.cursor = 'move';
-		}
-		let rel_idx_drag = 0;
-		this.constraint_info.rel_idx_val.onMouseDrag = (e) => {
-			rel_idx_drag += e.event.movementX;
-			if (rel_idx_drag < 0) ames.canvas.style.cursor = 'w-resize';
-			if (rel_idx_drag > 0) ames.canvas.style.cursor = 'e-resize';
-			if (rel_idx_drag < -5) {
-
-				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
-				for (let i in c_ins) {
-					if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(-1)
-				}
-				console.log("drag left", c_ins);
-				rel_idx_drag = 0;
-			}
-			if (rel_idx_drag > 5) {
-
-				let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
-				for (let i in c_ins) {
-					if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(1);
-				}
-				console.log("drag right", c_ins);
-				rel_idx_drag = 0;
-			}
-		}
-		this.constraint_info.rel_idx_val.onMouseUp = (e) => {
-			ames.canvas.style.cursor = null;
-		}
-	}
-
-	update_constraint(p, s) {
-		if (!p) p = this.obj.active_prop;
-		if (!s) s = this.obj.active_sub_p;
-		if (!s) s = "all";
-		super.update_constraint(p, s);
-
-		let c = null; let rel_idx;
-		let c_ins = this.obj.c_inbound[p][s];
-		// console.log(c_ins);
-		for (let i in c_ins) {
-			if (c_ins[i].is_manual_constraint)
-				c = c_ins[i];
-		}
-		if (c) {
-			rel_idx = c.get_rel_idx();
-			rel_idx = rel_idx.toFixed(0);
-		}
-
-		this.constraint_info.rel_idx_val.content = rel_idx;
-	}
-
-	// show_constraint: also include relative index information
-	show_constraint(bool, p, sub_p) {
-		super.show_constraint(bool, p, sub_p);
-
-		// if (sub_p == 'all') {
-		// 	this.constraint_info['rel_idx_label'].visible = false;
-		// 	this.constraint_info['rel_idx_val'].visible = false;
-		// 	this.constraint_info['rel_idx_line'].visible = false;
-		// }
-
-		// Update property value
-		if (bool) this.update_constraint(p, sub_p);
-	}
+	// // show_constraint: also include relative index information
+	// show_constraint(bool, p, sub_p) {
+	// 	super.show_constraint(bool, p, sub_p);
+	//
+	// 	// if (sub_p == 'all') {
+	// 	// 	this.constraint_info['rel_idx_label'].visible = false;
+	// 	// 	this.constraint_info['rel_idx_val'].visible = false;
+	// 	// 	this.constraint_info['rel_idx_line'].visible = false;
+	// 	// }
+	//
+	// 	// Update property value
+	// 	if (bool) this.update_constraint(p, sub_p);
+	// }
 
 	show(bool) {
 		// Show / hide list highlight box

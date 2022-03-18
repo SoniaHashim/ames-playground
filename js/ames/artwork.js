@@ -273,7 +273,7 @@ export class AMES_Artwork {
 			// Remove subproperty buttons
 			this.editor.show_subprops(this.active_prop, false);
 			this.editor.select_prop(this.active_prop, false);
-			this.editor.show_constraint(false);
+			// this.editor.show_constraint(false);
 		}
 		// If the new propety is not the property just turned off, turn it on
 		if (this.active_prop != p) {
@@ -295,7 +295,7 @@ export class AMES_Artwork {
 			this.editor.show_subprops(p, true);
 			this.editor.select_prop(p, true);
 
-			this.editor.show_constraint(true, p, sub_p);
+			// this.editor.show_constraint(true, p, sub_p);
 
 			// Activate new propety callback
 			this.cbs[p](this, this.cb_helpers);
@@ -326,7 +326,7 @@ export class AMES_Artwork {
 		this._clear_cb_helpers();
 		this.active_sub_p = sub;
 		this.editor.select_subprop(sub, true);
-		this.editor.show_constraint(true, this.active_prop, sub);
+		// this.editor.show_constraint(true, this.active_prop, sub);
 		this.cbs[this.active_prop](this, this.cb_helpers, sub);
 	}
 
@@ -338,7 +338,7 @@ export class AMES_Artwork {
 	// spaces where it is an input
 	update_helpers(artwork, is_geometric) {
 		console.log(artwork);
-		artwork.update_constraints();
+		// artwork.update_constraints();
 		if (is_geometric) {
 			artwork.update_bbox();
 			artwork.update_collections();
@@ -350,9 +350,9 @@ export class AMES_Artwork {
 		let p = this.active_prop;
 		let s = this.active_sub_p;
 		if (!s) s = 'all';
-		constraints.update_constraints(p, s, this);
+		// constraints.update_constraints(p, s, this);
 		for (let i in this.lists) {
-			this.lists[i].update_constraints();
+			// this.lists[i].update_constraints();
 		}
 		for (let i in ames.lists) {
 			ames.lists[i].update_show_box_bounds();
@@ -981,11 +981,15 @@ export class AMES_Artwork {
 
 				let n_h1 = s.handleIn.add(s.point);
 				if (s.handleIn.x == 0 && s.handleIn.y == 0) {
-					n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+					let previous = s.previous;
+					if (!previous) previous = s;
+					n_h1 = n_h1.add(previous.point.subtract(s.point).normalize().multiply(8));
 				}
 				let n_h2 = s.handleOut.add(s.point);
 				if (s.handleOut.x == 0 && s.handleOut.y == 0) {
-					n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+					let next = s.next;
+					if (!next) next = s;
+					n_h2 = n_h2.add(next.point.subtract(s.point).normalize().multiply(8));
 				}
 				d_h1.position = n_h1;
 				d_h2.position = n_h2;
@@ -1118,7 +1122,9 @@ export class AMES_Artwork {
 		if (ames.transformation_active_field != "input") {
 			for (let i in this.transformations) {
 				let t = this.transformations[i];
-				let str = t.name + " input( " + this.name + ")";
+				let mapping = t.get_mapping();
+				mapping = mapping[0].toUpperCase() + mapping.substr(1);
+				let str = " T ( " + t.input.name + ": " + mapping + ")";
 				opt_names.push(str);
 				opts[str] = t;
 			}
@@ -1153,7 +1159,7 @@ export class AMES_Artwork {
 			let opt = new Group();
 			let opt_box = new Path.Rectangle({
 				point: new Point(bx-7.5, by - 0.25),
-				size: new Size(100, utils.LAYER_HEIGHT*.75),
+				size: new Size(200, utils.LAYER_HEIGHT*.75),
 				fillColor: utils.INACTIVE_DARK_COLOR,
 				strokeColor: utils.INACTIVE_S_COLOR,
 				strokeWidth: 0,
@@ -1281,6 +1287,7 @@ export class AMES_Artwork {
 		// Remove from all collections
 		// Remove from all transformations
 		this.poly.remove();
+		ames.update_layers({"remove": true, "box": ames.obj_boxes_dict[this.name]});
 	}
 
 	// make_interactive: if true, enable interacitivty & open editor; otherwise disable and close

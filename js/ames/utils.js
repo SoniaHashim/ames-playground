@@ -35,7 +35,7 @@ export class AMES_Utils {
 
 
 	static SIDEBAR_WIDTH = 300;
-	static SIDEBAR_HEIGHT = 500;
+	static SIDEBAR_HEIGHT = 550;
 	static OFFSET = 4;
 	static UX_SHOW_IDX = 4;
 	static UX_HIDE_IDX = 3;
