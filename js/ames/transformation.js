@@ -2014,9 +2014,19 @@ export class AMES_Transformation {
 				for (let in_idx = 0; in_idx < this.n_input; in_idx++) {
 					let in_artwork = this.input.shapes[in_idx].poly;
 					if (axis_mapping) {
-						p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, axis_idx, axis_mapping);
+						let target_idx = axis_idx;
+						if (this.mapping_behavior == "random") {
+							target_idx = Math.random()*(n_target-1);
+						}
+						p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, target_idx, axis_mapping);
 					} else {
-						if (offset == null) offset = (a_idx+0.5)*in_artwork.length/this.n_target;
+						if (offset == null) {
+							let target_idx = a_idx;
+							if (this.mapping_behavior == "random") {
+								target_idx = Math.random()*(n_target-1);
+							}
+							offset = (target_idx+0.5)*in_artwork.length/this.n_target;
+						}
 						if (offset == "end") offset = in_artwork.length;
 						p[in_idx] = this.get_artwork_value_at_offset(in_artwork, offset);
 					}

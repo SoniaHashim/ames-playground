@@ -1133,7 +1133,9 @@ export class AMES_Artwork {
 				let c = this.collections[i];
 				for (let j in c.transformations) {
 					let t = c.transformations[j];
-					let str = t.name + " input(" +c.name+")";
+					let mapping = t.get_mapping();
+					mapping = mapping[0].toUpperCase() + mapping.substr(1);
+					let str = " T ( " + t.input.name + ": " + mapping + ")";
 					opt_names.push(str);
 					opts[str] = t;
 				}

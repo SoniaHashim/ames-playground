@@ -304,7 +304,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		let box = new Shape.Rectangle({
 			point: [0, 0],
 			size: [this.box_width, e_height],
-			fillColor: utils.INACTIVE_COLOR,
+			// fillColor: utils.INACTIVE_COLOR,
 			strokeWidth: 1,
 			radius: 5,
 			strokeColor: utils.INACTIVE_S_COLOR,
