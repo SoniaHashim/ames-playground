@@ -438,7 +438,11 @@ export class AMES {
 	}
 
 	show_ux(bool) {
-
+		for (let i in this.objs) {
+			if (this.objs[i].is_transformation) {
+				this.objs[i].toggle_show_tf({'deactivate': true});
+			}
+		}
 		for (let idx in this.ux) {
 			this.ux[idx].visible = bool;
 		}

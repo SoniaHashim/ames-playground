@@ -1289,7 +1289,7 @@ export class AMES_Artwork {
 		// Remove from all collections
 		// Remove from all transformations
 		this.poly.remove();
-		ames.update_layers({"remove": true, "box": ames.obj_boxes_dict[this.name]});
+		ames.update_layers({"remove": true, "box": this.obj_box});
 	}
 
 	// make_interactive: if true, enable interacitivty & open editor; otherwise disable and close

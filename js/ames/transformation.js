@@ -54,7 +54,7 @@ export class AMES_Transformation {
 	// supported transformations
 	mapping = 0;
 	mapping_behavior = "interpolate";
-	mappings = ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position"];
+	mappings = ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue"];
 	typed_mappings = [
 		{ "mapping_type": "Polygon",
 		  "mapping": "number of sides" },
@@ -71,6 +71,7 @@ export class AMES_Transformation {
 	DUPLICATE_EACH = 3;
 	HUE = 4;
 	POSITION = 5;
+	FILL_HUE = 6;
 	NUMBER_OF_SIDES = -1;
 	RELATIVE_POSITION = -2;
 	RELATIVE_ANIMATION = -3;
@@ -305,6 +306,7 @@ export class AMES_Transformation {
 		if (this.mapping == this.STATIC_SCALE) this.is_playable = false;
 		if (this.mapping == this.SCALE) this.is_playable = true;
 		if (this.mapping == this.HUE) this.is_playable = false
+		if (this.mapping == this.FILL_HUE) this.is_playable = false
 		if (this.mapping == this.POSITION) this.is_playable = false;
 		if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
 		if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
@@ -398,7 +400,7 @@ export class AMES_Transformation {
 			let my2 = this.linear_map(0, TR.x - TL.x, 0, n_target-1, BL.y - TL.y);
 			this.set_tf_space({
 				"mx": "index", "mx1": 0, "mx2": n_target-1,
-				"my": "scaling", "my1": 1, "my2": 1 + my2,
+				"my": "scaling", "my1": .5, "my2": 1 + my2,
 				"mp": null, "show": true, "yflip": true,
 				"sx1": TL.x, "sx2": TR.x, "sy1": TL.y, "sy2": BL.y
 			}); return;
@@ -415,7 +417,7 @@ export class AMES_Transformation {
 		}
 
 		if (this.mapping == this.DUPLICATE_EACH) {
-			let my2 = this.linear_map(0, 25, 0, 1, BL.y - TL.y);
+			let my2 = Math.abs(this.linear_map(0, 25, 0, 1, BL.y - TL.y));
 			this.set_tf_space({
 				"mx": null, "mx1": 0, "mx2": null,
 				"my": "duplicates", "my1": 1, "my2": Math.ceil(1 + my2),
@@ -424,7 +426,7 @@ export class AMES_Transformation {
 			}); return;
 		}
 
-		if (this.mapping == this.HUE) {
+		if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
 			let my2 = this.linear_map(0, TR.x - TL.x, 0, 360, BL.y - TL.y);
 			this.set_tf_space({
 				"mx": "index", "mx1": 0, "mx2": n_target - 1,
@@ -541,15 +543,15 @@ export class AMES_Transformation {
 			if (total_drag < -2.5) { // Decrement
 				let min_check = false;
 				if (mode == "vertical" && this.tf_s_yflip) {
-					min_check = (this[value] + 1 < this[check_value]);
+					min_check = (this[value] + .5 < this[check_value]);
 				} else {
-					min_check = (this[check_value] < this[value] - 1);
+					min_check = (this[check_value] < this[value] - .5);
 				}
 				if (check_mode == "max" || (check_mode == "min" && min_check)) {
 					if (mode == "vertical" && this.tf_s_yflip) {
-						this[value] += 1;
+						this[value] += .5;
 					} else {
-						this[value] -=1;
+						this[value] -=.5;
 					}
 				}
 				console.log("decrement", this[value], this[check_value], this[value]);
@@ -559,19 +561,19 @@ export class AMES_Transformation {
 			if (total_drag > 2.5) { // Increment
 				let max_check = false;
 				if (mode == "vertical" && this.tf_s_yflip) {
-					max_check = (this[check_value] < this.value + 1);
+					max_check = (this[check_value] < this.value + .5);
 				} else {
-					max_check = (this[check_value] > this[value] + 1);
+					max_check = (this[check_value] > this[value] + .5);
 				}
 				if (check_mode == "min" || (check_mode == "max" && max_check)) {
 					if (mode == "vertical" && this.tf_s_yflip) {
-						this[value] -= 1;
+						this[value] -= .5;
 					} else {
-						this[value] += 1;
+						this[value] += .5;
 					}
 				}
 				console.log("increment", this[value]);
-				this.tf_s[label].content = Math.round(this[value]);
+				this.tf_s[label].content = this[value].toFixed(1);
 				total_drag = 0;
 			}
 		}
@@ -635,10 +637,10 @@ export class AMES_Transformation {
 			this.tf_s.y_axis.strokeColor = "orange";
 			// Update label content and positions
 			let loff = 10; // label offset
-			this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(0) : 0;
-			this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(0) : 0;
-			this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(0) : 0;
-			this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(0) : 0;
+			this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(1) : 0;
+			this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(1) : 0;
+			this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(1) : 0;
+			this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(1) : 0;
 			this.tf_s.mp_label.content = this.tf_mp ? this.tf_mp : "";
 			if (!this.tf_mx) {
 				this.tf_s.mx1_label.content = "";
@@ -1792,18 +1794,18 @@ export class AMES_Transformation {
 			a.set_scaling(sv.y);
 		if (this.mapping == this.SCALE)
 			a.poly.scale(sv.y, sv.y);
-		if (this.mapping == this.HUE) {
+		if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
 			let saturation; let brightness;
-			if (a.poly.fillColor) {
-				// saturation = a.poly.fillColor.saturation;
-				// if (saturation == 0) saturation = 1;
-				// brightness = a.poly.fillColor.brightness;
-				// a.poly.fillColor.hue = Math.round(sv.y);
-				// a.poly.fillColor.saturation = saturation;
-				// a.poly.fillColor.brightness = brightness;
+			if (this.mapping == this.FILL_HUE && a.poly.fillColor) {
+				saturation = a.poly.fillColor.saturation;
+				if (saturation == 0) saturation = 1;
+				brightness = a.poly.fillColor.brightness;
+				a.poly.fillColor.hue = Math.round(sv.y);
+				a.poly.fillColor.saturation = saturation;
+				a.poly.fillColor.brightness = brightness;
 
 			}
-			if (a.poly.strokeColor) {
+			if (this.mapping == this.HUE && a.poly.strokeColor) {
 				saturation = a.poly.strokeColor.saturation;
 				if (saturation == 0) saturation = 1;
 				brightness = a.poly.strokeColor.brightness;
