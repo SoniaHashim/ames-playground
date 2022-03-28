@@ -27,7 +27,6 @@ var AMES_Transformation = /*#__PURE__*/function () {
   // transformation function (e.g. translation or scale vs index)
   // many:many mapping behavior
   // coord space used to interpret the input artwork
-  // TBD the location of the artwork
   // supported transformations
   // TF space
   // The number of frames used to interpret the path
@@ -38,7 +37,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
   // pointers to the cues that trigger this transformation
   // projection of transformation space onto the target artwork
   // points that are cues that trigger other transformations
-  function AMES_Transformation(opt) {
+  function AMES_Transformation(_opt) {
     _classCallCheck(this, AMES_Transformation);
 
     _defineProperty(this, "target", void 0);
@@ -51,13 +50,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
     _defineProperty(this, "transformation_space", void 0);
 
-    _defineProperty(this, "page", void 0);
+    _defineProperty(this, "obj_box", null);
+
+    _defineProperty(this, "is_transformation", true);
 
     _defineProperty(this, "mapping", 0);
 
     _defineProperty(this, "mapping_behavior", "interpolate");
 
-    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position"]);
+    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue"]);
 
     _defineProperty(this, "typed_mappings", [{
       "mapping_type": "Polygon",
@@ -68,6 +69,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
     }, {
       "mapping_type": "Vertex",
       "mapping": "relative animation"
+    }, {
+      "mapping_type": "Transformation",
+      "mapping": "playback"
     }]);
 
     _defineProperty(this, "MOTION_PATH", 0);
@@ -82,11 +86,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
     _defineProperty(this, "POSITION", 5);
 
+    _defineProperty(this, "FILL_HUE", 6);
+
     _defineProperty(this, "NUMBER_OF_SIDES", -1);
 
     _defineProperty(this, "RELATIVE_POSITION", -2);
 
     _defineProperty(this, "RELATIVE_ANIMATION", -3);
+
+    _defineProperty(this, "PLAYBACK", -4);
 
     _defineProperty(this, "tf_space_absolute", true);
 
@@ -145,132 +153,99 @@ var AMES_Transformation = /*#__PURE__*/function () {
     _defineProperty(this, "start_state_idx", 0);
 
     _defineProperty(this, "play_helper", /*#__PURE__*/function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(state_idx, a, a_idx, a_smooth, v_idx) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(opt) {
         var _this = this;
 
-        var DELTA, DURATION;
+        var state_idx, a, a_idx, a_smooth, v_idx, stop_state_idx, timing_factor, reverse, n_target, nxt_state_idx, sv, _sv, DELTA, DURATION;
+
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                if (!(state_idx == this.tf_space_path_nsegments)) {
-                  _context.next = 20;
+                opt = opt || {};
+                if (opt.state_idx != null) state_idx = Number(opt.state_idx);
+                if (opt.a != null) a = opt.a;
+                if (opt.a_idx != null) a_idx = Number(opt.a_idx);
+                if (opt.a_smooth != null) a_smooth = opt.a_smooth;
+                if (opt.v_idx != null) v_idx = Number(opt.v_idx);
+                if (opt.stop_state_idx != null) stop_state_idx = Number(opt.stop_state_idx);else stop_state_idx = this.tf_space_path_nsegments;
+                if (opt.timing_factor != null) timing_factor = Number(opt.timing_factor);else timing_factor = 1;
+                if (opt.reverse != null) reverse = opt.reverse;else reverse = false;
+                if (opt.n_target) n_target = opt.n_target;else n_target = this.n_target;
+                nxt_state_idx = state_idx + 1;
+                if (reverse) nxt_state_idx = state_idx - 1; // Base case with support for looping
+
+                if (!(!reverse && state_idx >= stop_state_idx || reverse && state_idx <= stop_state_idx)) {
+                  _context.next = 29;
                   break;
                 }
 
-                if (!false) {
-                  _context.next = 12;
+                if (!(stop_state_idx == this.tf_space_path_nsegments)) {
+                  _context.next = 28;
                   break;
                 }
 
-                if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx][v_idx] < this.loop_max_count))) {
-                  _context.next = 7;
-                  break;
+                if (this.mapping == this.PLAYBACK) {
+                  console.log("end state for playback transformation of artwork: ", a_idx);
+                  console.log(this.curr_remainder[a_idx], this.curr_state[a_idx], state_idx, stop_state_idx);
                 }
 
-                state_idx = 0;
+                this.trigger_end(a, a_idx); // console.log(this.name, a.name, "play from state a to b", state_idx, nxt_state_idx, "reverse?", reverse);
 
-                if (this.loop_max_count != this.LOOP_INFINITY) {
-                  this.loop_count[a_idx][v_idx] += 1;
-                }
-
-                _context.next = 10;
-                break;
-
-              case 7:
-                this.is_playing[a_idx][v_idx] = 0;
-                this.trigger_end(a, a_idx, v_idx);
-                return _context.abrupt("return");
-
-              case 10:
-                _context.next = 20;
-                break;
-
-              case 12:
                 if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx] < this.loop_max_count))) {
-                  _context.next = 17;
+                  _context.next = 24;
                   break;
                 }
 
+                // console.log("reset?");
                 state_idx = 0;
+                nxt_state_idx = 1;
 
                 if (this.loop_max_count != this.LOOP_INFINITY) {
                   this.loop_count[a_idx] += 1;
                 }
 
-                _context.next = 20;
+                if (this.target.is_transformation) this.target.setup_playback_trackers();
+
+                if (this.tf_space_absolute) {
+                  if (this.mapping == this.PLAYBACK) {
+                    if (this.target.tf_space_absolute) {
+                      sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                      this.target.set_artwork_value_to(a, sv);
+                    }
+                  } else {
+                    _sv = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                    this.set_artwork_value_to(a, _sv);
+                  }
+                }
+
+                _context.next = 26;
                 break;
 
-              case 17:
+              case 24:
                 this.is_playing[a_idx] = 0;
-                this.trigger_end(a, a_idx);
                 return _context.abrupt("return");
 
-              case 20:
+              case 26:
+                _context.next = 29;
+                break;
+
+              case 28:
+                return _context.abrupt("return");
+
+              case 29:
                 DELTA = 0;
                 DURATION = 1; // For a vertex animation
 
                 if (this.vertex_mapping) {
                   (function () {
-                    // Get the update across all vertices for this object
-                    // let a_smooth = a.poly.clone(); a_smooth.smooth();
-                    // a_smooth.visible = false;
-                    // if (state_idx == 0) a.poly.clone();
-                    // return;
-                    var n_segments = a.poly.segments.length; //
-                    // let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx);
-                    // let d = vertex_update[DELTA];
-                    // let time = vertex_update[DURATION];
-                    // let t_frame = 1000/ames.fps;
-                    // let nframes = Math.ceil(time / t_frame);
-                    //
-                    // let p = a_smooth.getNearestPoint(a.poly.segments[v_idx].point);
-                    // let o = a_smooth.getOffsetOf(p);
-                    // let n = a_smooth.getNormalAt(o);
-                    // let center = a.poly.position;
-                    // if (n.dot(center.subtract(p)) < 0) n = n.multiply(-1);
-                    // let t = a_smooth.getTangentAt(o);
-                    //
-                    // let npath = new Path({
-                    // 	segments: [p, p.add(n.multiply(5))],
-                    // 	strokeColor: "red",
-                    // 	strokeWidth: 1
-                    // });
-                    // npath.visible = false;
-                    //
-                    // let tpath = new Path({
-                    // 	segments: [p, p.add(t.multiply(5))],
-                    // 	strokeColor: "green",
-                    // 	strokeWidth: 1
-                    // });
-                    // tpath.visible = false;
-                    //
-                    //
-                    // let nx = d.y*n.x + d.x*t.x;
-                    // let ny = d.y*n.y + d.x*t.y;
-                    // let vu = new Point(nx, ny);
-                    //
-                    // let perturb_path = new Path({
-                    // 	segments: [p, p.add(vu.multiply(20))],
-                    // 	strokeColor: "black",
-                    // 	strokeWidth: 1
-                    // });
-                    // perturb_path.visible = false;
-                    //
-                    // this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-                    //
-                    // for (let n = 1;  n < nframes; n++) {
-                    // 	setTimeout(() => {
-                    // 		this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-                    // 	}, n*t_frame);
-                    // }
-
+                    var n_segments = a.poly.segments.length;
                     var time = [];
                     var vertex_delta = [];
                     var max_time = 0;
 
                     for (var _v_idx = 0; _v_idx < n_segments; _v_idx++) {
-                      var vertex_update = _this.get_transform_artwork_at_state(state_idx, _v_idx);
+                      var vertex_update = _this.get_transform_artwork_at_state(state_idx, _v_idx, nxt_state_idx);
 
                       var d = vertex_update[DELTA];
                       time[_v_idx] = vertex_update[DURATION];
@@ -320,12 +295,21 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
 
                     setTimeout(function () {
-                      _this.play_helper(state_idx + 1, a, a_idx, a_smooth, v_idx);
-                    }, max_time);
+                      _this.play_helper({
+                        "state_idx": nxt_state_idx,
+                        "a": a,
+                        "a_idx": a_idx,
+                        "a_smooth": a_smooth,
+                        "v_idx": v_idx,
+                        "stop_state_idx": stop_state_idx,
+                        "reverse": reverse,
+                        "n_target": n_target
+                      });
+                    }, max_time * timing_factor);
                   })();
                 } else {
                   (function () {
-                    var update = _this.get_transform_artwork_at_state(state_idx, a_idx);
+                    var update = _this.get_transform_artwork_at_state(state_idx, a_idx, nxt_state_idx, n_target);
 
                     var d = update[DELTA];
                     var t = update[DURATION];
@@ -348,12 +332,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
                     }
 
                     setTimeout(function () {
-                      _this.play_helper(state_idx + 1, a, a_idx);
-                    }, t);
+                      _this.play_helper({
+                        "state_idx": nxt_state_idx,
+                        "a": a,
+                        "a_idx": a_idx,
+                        "stop_state_idx": stop_state_idx,
+                        "reverse": reverse,
+                        "n_target": n_target
+                      });
+                    }, t * timing_factor);
                   })();
                 }
 
-              case 23:
+              case 32:
               case "end":
                 return _context.stop();
             }
@@ -361,27 +352,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
         }, _callee, this);
       }));
 
-      return function (_x, _x2, _x3, _x4, _x5) {
+      return function (_x) {
         return _ref.apply(this, arguments);
       };
     }());
 
     this.name = "Transformation" + " (" + AMES_Transformation.count + ")";
     AMES_Transformation.count += 1;
-    opt = opt || {};
+    _opt = _opt || {};
     this.tf_space_setup_visuals();
-    if (opt.input) this.set_input(opt.input);
-    if (opt.target) this.set_target(opt.target);
-    if (opt.mapping) this.set_mapping(opt.mapping);
+    if (_opt.input) this.set_input(_opt.input);else this.input = null;
+    if (_opt.target) this.set_target(_opt.target);else this.target = null;
+    if (_opt.mapping) this.set_mapping(_opt.mapping);else this.set_mapping("motion path");
     this.create_in_ames();
   }
 
   _createClass(AMES_Transformation, [{
     key: "create_in_ames",
     value: function create_in_ames() {
-      console.log("create tf in ames");
       this.create_editor();
       ames.add_obj(this);
+      if (this.target) ames.update_layers({
+        parent: true,
+        parent_box: this.target.obj_box,
+        box: this.obj_box
+      });
     }
   }, {
     key: "create_editor",
@@ -402,14 +397,49 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "set_input",
     value: function set_input(input) {
+      console.log("set input", input);
+      if (this.input && this.input.remove_transformation) this.input.remove_transformation(this);
       this.input = input;
-      if (input.is_collection) this.update_count(input);else this.n_input = 1;
-      this.tf_space_speed = this.SPEED_CONSTANT; // # of segments in the path,
-      // i.e. if speed is 1, # of frames at frame rate to traverse transform
 
-      this.tf_space_path_nsegments = 1000;
-      var path_length;
-      if (input.is_artwork) path_length = this.input.poly.length;
+      if (input) {
+        if (input.is_collection) this.update_count(input);else this.n_input = 1;
+
+        if (input.is_artwork || input.is_collection) {
+          input.add_transformation(this);
+        }
+
+        this.tf_space_speed = this.SPEED_CONSTANT; // # of segments in the path,
+        // i.e. if speed is 1, # of frames at frame rate to traverse transform
+        // this.tf_space_path_nsegments = 1000;
+        // let avg_path_length;
+        // if (input.is_artwork) avg_path_length = this.input.poly.length;
+        // if (input.is_collection) {
+        // 	let total_length = 0;
+        // 	for (let idx = 0; idx < this.n_input; idx++) {
+        // 		total_length += this.input.shapes[idx].poly.length;
+        // 	}
+        // 	avg_path_length = total_length/this.n_input;
+        // }
+        // this.avg_path_length = avg_path_length;
+        // this.tf_space_path_nsegments = Math.round(avg_path_length);
+
+        this.set_tf_space_path_nsegments(input); // if (this.target && this.input) this.transform();
+
+        if (this.input && this.mapping) this.set_tf_space_to_defaults();
+      } else {
+        for (var x in this.tf_s) {
+          this.tf_s[x].remove();
+        }
+      }
+
+      if (this.obj_box) this.obj_box.change_name();
+    }
+  }, {
+    key: "set_tf_space_path_nsegments",
+    value: function set_tf_space_path_nsegments(input) {
+      if (!input) input = this.input;
+      var avg_path_length;
+      if (input.is_artwork) avg_path_length = this.input.poly.length;
 
       if (input.is_collection) {
         var total_length = 0;
@@ -418,10 +448,11 @@ var AMES_Transformation = /*#__PURE__*/function () {
           total_length += this.input.shapes[idx].poly.length;
         }
 
-        path_length = total_length / this.n_input;
+        avg_path_length = total_length / this.n_input;
       }
 
-      this.tf_space_path_length_relative_scale = this.tf_space_path_nsegments / path_length; // if (this.target && this.input) this.transform();
+      this.avg_path_length = avg_path_length;
+      this.tf_space_path_nsegments = Math.round(avg_path_length);
     } // set_target_artwork
     // ------------------------------------------------------------------------
     // Modifies the target artwork that the transformation affects
@@ -437,8 +468,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (target) {
         // If the mapping is typed, check the target is of the correct type
         if (this.mapping < 0) {
-          var mapping = this.typed_mappings[-1 * this.mapping].mapping_type;
-          valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
+          var mapping_type = this.typed_mappings[-1 * this.mapping].mapping_type;
+          var valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
           if (!valid_type) change_target = false;
         }
       } else {
@@ -447,9 +478,17 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       if (change_target) {
         this.target = target;
-        if (target.is_collection) this.update_count(target);else this.n_target = 1;
-        if (this.mapping) this.set_tf_space_to_defaults();
-        this.setup_playback_trackers();
+        console.log("set target to", target);
+
+        if (target) {
+          if (target.is_collection) this.update_count(target);else this.n_target = 1;
+          this.setup_playback_trackers();
+          ames.update_layers({
+            parent: true,
+            parent_box: this.target.obj_box,
+            box: this.obj_box
+          });
+        }
       }
     } // update_count
     // ------------------------------------------------------------------------
@@ -463,6 +502,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
     value: function update_count(collection) {
       if (this.input == collection) this.n_input = collection.count;
       if (this.target == collection) this.n_target = collection.count;
+    } // Returns text describing the mapping type
+
+  }, {
+    key: "get_mapping",
+    value: function get_mapping() {
+      var m = Number(this.mapping);
+
+      if (m >= 0) {
+        return this.mappings[m];
+      } else {
+        var typed_mapping = this.typed_mappings[-1 * m - 1];
+        if (typed_mapping) return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
+      }
     } // set_property_mapping
     // ------------------------------------------------------------------------
     //
@@ -473,7 +525,6 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "set_mapping",
     value: function set_mapping(mapping) {
-      console.log("set_mapping", mapping);
       var changed_mapping = false;
 
       if (!mapping) {
@@ -492,13 +543,13 @@ var AMES_Transformation = /*#__PURE__*/function () {
       this.vertex_mapping = false; // Check for mappings applicable to specific types (polygon, etc)
 
       if (mapping && mapping.type) {
-        for (var _x6 in this.typed_mappings) {
-          if (this.typed_mappings[_x6].mapping == mapping.mapping) {
+        for (var _x2 in this.typed_mappings) {
+          if (this.typed_mappings[_x2].mapping == mapping.mapping) {
             // If all the objects match, set the mapping accordingly
-            var _mapping_type = this.typed_mappings[_x6].mapping_type;
+            var mapping_type = this.typed_mappings[_x2].mapping_type;
 
-            if (this.check_valid_target_for_typed_mapping(this.target, _mapping_type)) {
-              this.mapping = -(Number(_x6) + 1);
+            if (this.check_valid_target_for_typed_mapping(this.target, mapping_type)) {
+              this.mapping = -(Number(_x2) + 1);
               changed_mapping = true;
             }
           }
@@ -509,33 +560,28 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (!changed_mapping) {
         console.log("Transformation: Invalid mapping");
         return false;
-      } else this.set_tf_space_to_defaults(); // Indicate if transformation property is a playbale mapping
+      } else {
+        if (this.input) this.set_tf_space_to_defaults();
+      }
 
+      if (this.obj_box) this.obj_box.change_name(); // Indicate if transformation property is a playbale mapping
 
       if (this.mapping == this.MOTION_PATH) this.is_playable = true;
       if (this.mapping == this.NUMBER_OF_SIDES) this.is_playable = false;
       if (this.mapping == this.STATIC_SCALE) this.is_playable = false;
       if (this.mapping == this.SCALE) this.is_playable = true;
       if (this.mapping == this.HUE) this.is_playable = false;
+      if (this.mapping == this.FILL_HUE) this.is_playable = false;
       if (this.mapping == this.POSITION) this.is_playable = false;
       if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
       if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
 
       if (this.mapping == this.DUPLICATE_EACH) {
         this.is_playable = true;
-        this.tf_space_path_nsegments = 1;
       }
 
+      if (this.mapping == this.PLAYBACK) this.is_playable = true;
       return true;
-    }
-  }, {
-    key: "set_mapping_behavior",
-    value: function set_mapping_behavior(behavior) {
-      var is_valid_behavior = false;
-      if (behavior == "alternate") is_valid_behavior = true;
-      if (behavior == "interpoalte") is_valid_behavior = true;
-      if (behavior == "random") is_valid_behavior = true;
-      if (is_valid_behavior) this.mapping_behavior = behavior;
     } // check_valid_target_for_mapping
     // ------------------------------------------------------------------------
     // Returns bool indicating if target matches type necessary for a typed
@@ -552,6 +598,12 @@ var AMES_Transformation = /*#__PURE__*/function () {
         return valid_type;
       } // Check all of the items in the target match the mapping
 
+
+      if (mapping_type == "Transformation") {
+        if (!this.target || this.target.is_transformation) valid_type = true;
+      }
+
+      if (!target) return true;
 
       if (target.is_artwork) {
         if (target.artwork_type == mapping_type) {
@@ -669,7 +721,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
           "mx1": 0,
           "mx2": n_target - 1,
           "my": "scaling",
-          "my1": 1,
+          "my1": .5,
           "my2": 1 + _my,
           "mp": null,
           "show": true,
@@ -704,16 +756,16 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.mapping == this.DUPLICATE_EACH) {
-        var _my3 = this.linear_map(0, TR.x - TL.x, 0, 1, BL.y - TL.y);
+        var _my3 = Math.abs(this.linear_map(0, 25, 0, 1, BL.y - TL.y));
 
         this.set_tf_space({
-          "mx": "time",
+          "mx": null,
           "mx1": 0,
-          "mx2": 1,
+          "mx2": null,
           "my": "duplicates",
           "my1": 1,
-          "my2": 1 + _my3,
-          "mp": null,
+          "my2": Math.ceil(1 + _my3),
+          "mp": "time",
           "show": true,
           "yflip": true,
           "sx1": TL.x,
@@ -724,7 +776,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         return;
       }
 
-      if (this.mapping == this.HUE) {
+      if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
         var _my4 = this.linear_map(0, TR.x - TL.x, 0, 360, BL.y - TL.y);
 
         this.set_tf_space({
@@ -744,6 +796,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
         });
         return;
       }
+
+      if (this.mapping == this.PLAYBACK) {
+        this.set_tf_space({
+          "mx": null,
+          "mx1": null,
+          "mx2": null,
+          "my": "iterations",
+          "my1": 0,
+          "my2": 1,
+          "mp": "time",
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+    }
+  }, {
+    key: "update_tf_space",
+    value: function update_tf_space() {
+      // For now see how this feels
+      if (this.mapping) this.set_tf_space_to_defaults();
     }
   }, {
     key: "set_tf_space",
@@ -767,6 +844,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "tf_space_setup_visuals",
     value: function tf_space_setup_visuals() {
+      var _this2 = this;
+
       var tf_s = {};
       var w = 200;
       var h = 100;
@@ -818,11 +897,126 @@ var AMES_Transformation = /*#__PURE__*/function () {
         tf_s[x].visible = false;
       }
 
-      this.tf_s = tf_s;
+      this.tf_s = tf_s; // Add interactivity to axis labels
+
+      var total_drag;
+
+      var move_cursor_cb = function move_cursor_cb(e) {
+        ames.canvas.style.cursor = 'move';
+        total_drag = 0;
+      };
+
+      var drag_cursor_cb = function drag_cursor_cb(e, label, value, mode, check_mode, check_value) {
+        console.log(total_drag);
+        if (mode == "horizontal") total_drag += e.event.movementX;
+        if (mode == "vertical") total_drag += e.event.movementY;
+
+        if (total_drag < 0) {
+          if (total_drag > 0) total_drag = 0;
+          if (mode == "horizontal") ames.canvas.style.cursor = 'w-resize';
+          if (mode == "vertical") ames.canvas.style.cursor = 'n-resize';
+        }
+
+        if (total_drag > 0) {
+          if (total_drag < 0) total_drag = 0;
+          if (mode == "horizontal") ames.canvas.style.cursor = 'e-resize';
+          if (mode == "vertical") ames.canvas.style.cursor = 's-resize';
+        }
+
+        if (total_drag < -2.5) {
+          // Decrement
+          var min_check = false;
+
+          if (mode == "vertical" && _this2.tf_s_yflip) {
+            min_check = _this2[value] + .5 < _this2[check_value];
+          } else {
+            min_check = _this2[check_value] < _this2[value] - .5;
+          }
+
+          if (check_mode == "max" || check_mode == "min" && min_check) {
+            if (mode == "vertical" && _this2.tf_s_yflip) {
+              _this2[value] += .5;
+            } else {
+              _this2[value] -= .5;
+            }
+          }
+
+          console.log("decrement", _this2[value], _this2[check_value], _this2[value]);
+          _this2.tf_s[label].content = Math.round(_this2[value]);
+          total_drag = 0;
+        }
+
+        if (total_drag > 2.5) {
+          // Increment
+          var max_check = false;
+
+          if (mode == "vertical" && _this2.tf_s_yflip) {
+            max_check = _this2[check_value] < _this2.value + .5;
+          } else {
+            max_check = _this2[check_value] > _this2[value] + .5;
+          }
+
+          if (check_mode == "min" || check_mode == "max" && max_check) {
+            if (mode == "vertical" && _this2.tf_s_yflip) {
+              _this2[value] -= .5;
+            } else {
+              _this2[value] += .5;
+            }
+          }
+
+          console.log("increment", _this2[value]);
+          _this2.tf_s[label].content = _this2[value].toFixed(1);
+          total_drag = 0;
+        }
+      };
+
+      var up_cursor_cb = function up_cursor_cb(e) {
+        ames.canvas.style.cursor = null;
+        total_drag = 0;
+      };
+
+      var labels = ["mx1_label", "mx2_label", "my1_label", "my2_label"];
+      var values = ["tf_mx1", "tf_mx2", "tf_my1", "tf_my2"];
+      var check_modes = ["max", "min", "max", "min"];
+      var check_values = ["tf_sx2", "tf_sx1", "tf_sy2", "tf_sy1"];
+
+      var _loop = function _loop(i) {
+        var label = labels[i];
+        var value = values[i];
+        _this2.tf_s[label].onMouseDown = move_cursor_cb;
+        var mode = void 0;
+
+        if (i < 2) {
+          mode = "horizontal";
+        } else {
+          mode = "vertical";
+        }
+
+        _this2.tf_s[label].onMouseDrag = function (e) {
+          drag_cursor_cb(e, label, value, mode, check_modes[i], check_values[i]);
+        };
+
+        _this2.tf_s[label].onMouseUp = up_cursor_cb;
+      };
+
+      for (var i in labels) {
+        _loop(i);
+      }
+
+      this.tf_s.mx1_label.onMouseDown = move_cursor_cb;
+      this.tf_s.mx2_label.onMouseDown = move_cursor_cb;
+      this.tf_s.my1_label.onMouseDown = move_cursor_cb;
+      this.tf_s.my2_label.onMouseDown = move_cursor_cb;
+    }
+  }, {
+    key: "show",
+    value: function show(bool) {
+      this.editor.show(bool);
     }
   }, {
     key: "show_tf_space",
     value: function show_tf_space(bool) {
+      if (!this.input) return;
       if (bool == null) bool = true;
 
       if (bool) {
@@ -848,10 +1042,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
         var loff = 10; // label offset
 
-        this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(0) : 0;
-        this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(0) : 0;
-        this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(0) : 0;
-        this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(0) : 0;
+        this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(1) : 0;
+        this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(1) : 0;
+        this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(1) : 0;
+        this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(1) : 0;
         this.tf_s.mp_label.content = this.tf_mp ? this.tf_mp : "";
 
         if (!this.tf_mx) {
@@ -893,11 +1087,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
         for (var x in this.tf_s) {
           this.tf_s[x].visible = true;
         }
+
+        this.tf_space_visible = true;
       } else {
         // Hide all items
-        for (var _x7 in this.tf_s) {
-          this.tf_s[_x7].visible = false;
+        for (var _x3 in this.tf_s) {
+          this.tf_s[_x3].visible = false;
         }
+
+        this.tf_space_visible = false;
       }
     }
   }, {
@@ -952,25 +1150,134 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
   }, {
     key: "transform",
-    value: function transform() {
-      if (!this.mapping) this.set_mapping();
+    value: function transform(args) {
+      console.log("transform: ", this.name);
+      if (this.mapping == null) this.set_mapping();
       if (!this.input || !this.target) return;
 
       if (this.is_playable) {
         this.play();
+
+        if (args && args.btn) {
+          setTimeout(function () {
+            args.btn.deactivate();
+          }, 1000);
+        }
       } else {
-        console.log("applying transformation?");
         this.apply();
+
+        if (args && args.btn) {
+          setTimeout(function () {
+            args.btn.deactivate();
+          }, 1000);
+        }
       }
     }
   }, {
     key: "_clear_cb_helpers",
-    value: function _clear_cb_helpers() {
-      this.show_tf_space(false);
+    value: function _clear_cb_helpers() {}
+  }, {
+    key: "get_dropdown_opts",
+    value: function get_dropdown_opts(field) {
+      if (field == "behavior") {
+        // "interpolate", "alternate", "random"
+        return ["interpolate", "alternate", "random"];
+      }
+
+      if (field == "mode") {
+        // "absolute", "relative"
+        return ["absolute", "relative"];
+      }
+
+      if (field == "mapping") {
+        var mappings = [];
+        var idx = 0;
+
+        for (var i in this.mappings) {
+          mappings[idx++] = this.mappings[i];
+          idx++;
+        }
+
+        for (var _i in this.typed_mappings) {
+          mappings[idx++] = this.typed_mappings[_i].mapping_type + ": " + this.typed_mappings[_i].mapping;
+        }
+
+        return mappings;
+      }
+
+      if (field == "condition") {
+        // if (tf.Q) {
+        // 	if (tf.condition == "f(x,y) == Q" && (v_prev < tf.Q && tf.Q < v_next)) trigger_tf = true;
+        // 	if (tf.condition == "f(x) == Q" && (x_prev < tf.Q && tf.Q < x_next)) trigger_tf = true;
+        // 	if (tf.condition == "f(y) == Q" && (y_prev < tf.Q && tf.Q < y_next)) trigger_tf = true;
+        // } else {
+        // 	if (tf.condition == "x direction change" && x_direction_change) trigger_tf = true;
+        // 	if (tf.condition == "y direction change" && y_direction_change) trigger_tf = true;
+        // 	if (tf.condition == "x or y direction change" && (x_direction_change || y_direction_change)) trigger_tf = true;
+        // 	if (tf.condition == "x and y direction change" && (x_direction_change && y_direction_change)) trigger_tf = true;
+        // 	if (tf.condition == "slope change" && slope_change) trigger_tf = true;
+        // }
+        return ["start", "end", "slope change", "x direction change", "y direction change", "f(x, y) == Q", "f(y) == Q", "new instance"];
+      }
     }
   }, {
-    key: "loop",
-    value: function loop(args) {
+    key: "get_mapping_opt",
+    value: function get_mapping_opt(field) {
+      if (field == "behavior") {
+        if (!this.mapping_behavior) return "interpolate";else return this.mapping_behavior;
+      }
+
+      if (field == "mode") {
+        if (this.tf_space_absolute) return "absolute";else return "relative";
+      }
+
+      if (field == "mapping") {
+        return this.get_mapping();
+      }
+
+      if (field == "condition") {
+        if (!this.default_playback_condition) this.default_playback_condition = "slope change";
+        this.new_playback_condition = this.default_playback_condition;
+        return this.default_playback_condition;
+      }
+    }
+  }, {
+    key: "set_new_playback_condition",
+    value: function set_new_playback_condition(condition) {
+      this.new_playback_condition = condition;
+    }
+  }, {
+    key: "set_new_playback_transformation",
+    value: function set_new_playback_transformation(transformation) {
+      this.new_playback_transformation = transformation;
+    }
+  }, {
+    key: "set_mapping_behavior",
+    value: function set_mapping_behavior(behavior) {
+      var is_valid_behavior = false;
+      if (behavior == "alternate") is_valid_behavior = true;
+      if (behavior == "interpoalte") is_valid_behavior = true;
+      if (behavior == "random") is_valid_behavior = true;
+      if (is_valid_behavior) this.mapping_behavior = behavior;
+    }
+  }, {
+    key: "set_mapping_mode",
+    value: function set_mapping_mode(opt) {
+      if (opt == "absolute") {
+        this.tf_space_absolute = true;
+      }
+
+      if (opt == "relative") {
+        this.tf_space_absolute = false;
+      }
+
+      console.log("Set mapping mode... absolute?", this.tf_space_absolute);
+    }
+  }, {
+    key: "toggle_loop",
+    value: function toggle_loop(args) {
+      args = args || {};
+
       if (args.deactivate) {
         this.loop = false;
       } else {
@@ -980,10 +1287,12 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "toggle_show_tf",
     value: function toggle_show_tf(args) {
+      args = args || {};
+
       if (args.deactivate) {
         this.show_tf_space(false);
       } else {
-        this.set_mapping("position");
+        if (!this.mapping) this.set_mapping("position");
         this.show_tf_space(true);
       }
     }
@@ -996,12 +1305,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       if (field == "target") {
         this.set_target(obj);
-      } // this.show_tf_space(false);
+      }
 
+      if (field == "playback transformation") {
+        this.set_new_playback_transformation(obj);
+      }
+    }
+  }, {
+    key: "change_mapping",
+    value: function change_mapping(property) {
+      property = property.split(": ");
+
+      if (property.length == 1) {
+        this.set_mapping(property[0]);
+      } else {
+        this.set_mapping({
+          "type": property[0],
+          "mapping": property[1]
+        });
+      }
     }
   }, {
     key: "change_transformation_property",
     value: function change_transformation_property(args) {
+      args = args || {};
+
       if (args.deactivate) {} else {
         var isValid = false;
         var str = "";
@@ -1011,9 +1339,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
           str += ", ";
         }
 
-        for (var _i in this.typed_mappings) {
-          str += this.typed_mappings[_i].mapping_type + ": " + this.typed_mappings[_i].mapping;
-          if (_i < this.typed_mappings.length - 1) str += ", ";
+        for (var _i2 in this.typed_mappings) {
+          str += this.typed_mappings[_i2].mapping_type + ": " + this.typed_mappings[_i2].mapping;
+          if (_i2 < this.typed_mappings.length - 1) str += ", ";
         }
 
         var property;
@@ -1022,6 +1350,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
           property = prompt("Enter the property that the transformation represents: " + str); // No input, deactivate
 
           if (!property) {
+            args.btn.deactivate();
             return;
           }
 
@@ -1029,15 +1358,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
           if (property.length == 1) {
             isValid = this.set_mapping(property[0]);
+            args.btn.deactivate();
           } else {
             isValid = this.set_mapping({
               "type": property[0],
               "mapping": property[1]
             });
+            args.btn.deactivate();
           }
         }
-
-        console.log("Changing transformation space", property);
       }
     } // apply
     //
@@ -1051,6 +1380,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "apply",
     value: function apply() {
+      if (!this.target) return;
+      if (this.target.is_collection) this.n_target = this.target.shapes.length;
+      this.init_random_target_indices();
+
       for (var idx = 0; idx < this.n_target; idx++) {
         var a = void 0;
         if (this.target.is_artwork) a = this.target;
@@ -1066,8 +1399,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
           var vertex_update = [];
 
           for (var v_idx = 0; v_idx < n_segments; v_idx++) {
-            var v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0);
-            var v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end");
+            var v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0, this.n_target);
+            var v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end", this.n_target);
             var v = {
               "x": v1.x - v0.x,
               "y": v1.y - v0.y,
@@ -1076,6 +1409,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
             vertex_update[v_idx] = this.get_vertex_value_update_at(a, v_idx, v, a_smooth);
           }
 
+          console.log(vertex_update);
+
           for (var _v_idx2 = 0; _v_idx2 < n_segments; _v_idx2++) {
             this.update_vertex_value_to(a, _v_idx2, vertex_update[_v_idx2]);
           }
@@ -1083,8 +1418,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
           // Transform the artwork
           if (this.tf_space_absolute) {
             var sv = void 0;
-            if (this.mapping == this.POSITION) sv = this.get_value_at_target_index_for_path_offset(idx, 0);else {
-              sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+            if (this.mapping == this.POSITION) sv = this.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);else {
+              sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index", this.n_target);
             }
             this.set_artwork_value_to(a, sv);
           }
@@ -1092,9 +1427,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
           var _v = void 0;
 
           if (this.mapping == this.POSITION) {
-            _v = this.get_value_at_target_index_for_path_offset(idx, null);
+            _v = this.get_value_at_target_index_for_path_offset(idx, null, this.n_target);
           } else {
-            _v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+            _v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index", this.n_target);
           }
 
           this.set_artwork_value_to(a, _v);
@@ -1102,20 +1437,47 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "init_random_target_indices",
+    value: function init_random_target_indices() {
+      this.random_indices = [];
+      if (this.target.is_artwork) this.random_indices = [0];
+
+      if (this.target.is_collection) {
+        var n = this.target.shapes.length;
+
+        for (var i = 0; i < n; i++) {
+          this.random_indices[i] = Math.random() * (n - 1);
+        }
+      }
+
+      console.log("random_indices: ", this.random_indices);
+    }
+  }, {
     key: "setup_playback_trackers",
     value: function setup_playback_trackers() {
       var n = 1;
+      console.log(this.target);
       if (this.target.is_artwork) n = 1;
       if (this.target.is_collection) n = this.n_target;
+
+      if (this.mapping == this.PLAYBACK) {
+        n = this.target.n_target;
+      }
+
       this.dx_total = [];
       this.dy_total = [];
       this.v_total = [];
       this.dx_direction = [];
       this.dy_direction = [];
       this.slope = [];
+      this.prev_slope_change = [];
       this.loop_count = [];
       this.is_playing = [];
       this.tween_helper_scale = [];
+      this.n_clones = [];
+      this.curr_state = [];
+      this.curr_remainder = [];
+      this.init_random_target_indices();
 
       for (var i = 0; i < n; i++) {
         this.loop_count[i] = 1;
@@ -1125,7 +1487,92 @@ var AMES_Transformation = /*#__PURE__*/function () {
         this.dx_direction[i] = 0;
         this.dy_direction[i] = 0;
         this.slope[i] = 1;
+        this.prev_slope_change[i] = Date.now();
         this.tween_helper_scale[i] = 1;
+        this.n_clones[i] = 0;
+        this.curr_state[i] = 0;
+        this.curr_remainder[i] = 0;
+      }
+
+      if (this.vertex_mapping) {
+        this.vertex_normals = [];
+        this.vertex_tangents = [];
+
+        for (var idx = 0; idx < this.n_target; idx++) {
+          var a = void 0;
+          if (this.target.is_collection) a = this.target.shapes[idx];
+          if (this.target.is_artwork) a = this.target;
+          var n_segments = a.poly.segments.length;
+          this.vertex_normals[idx] = [];
+          this.vertex_tangents[idx] = [];
+          var eps = 0.01;
+
+          for (var _i3 = 0; _i3 < n_segments; _i3++) {
+            var p = a.poly.segments[_i3].point;
+            var o = a.poly.getOffsetOf(p);
+
+            var _n2 = void 0;
+
+            var t = void 0;
+            var n1 = void 0;
+            var n2 = void 0;
+            var p1 = void 0;
+            var p2 = void 0;
+            var c = new PointText({
+              point: p,
+              content: _i3
+            });
+            c.visible = false;
+            var o1 = o - eps;
+            var o2 = o + eps;
+
+            if (_i3 == 0) {
+              o1 = a.poly.length - eps;
+            }
+
+            p1 = a.poly.getPointAt(o1);
+            p2 = a.poly.getPointAt(o2);
+
+            if (a.poly.segments[_i3].isSmooth()) {
+              _n2 = a.poly.getNormalAt(o);
+              t = a.poly.getTangentAt(o);
+            } else {
+              n1 = a.poly.getNormalAt(o1);
+              n2 = a.poly.getNormalAt(o2);
+              _n2 = n1.add(n2).normalize();
+              var t1 = a.poly.getTangentAt(o1);
+              var t2 = a.poly.getTangentAt(o2);
+              t = t1.add(t2).normalize();
+            }
+
+            this.vertex_normals[idx][_i3] = _n2;
+            this.vertex_tangents[idx][_i3] = t;
+            var nPath = new Path.Line({
+              segments: [p, p.add(_n2.multiply(20))],
+              strokeColor: "pink",
+              strokeWidth: 1
+            });
+            nPath.visible = false;
+            var n1Path = new Path.Line({
+              segments: [p1, p1.add(n1.multiply(20))],
+              strokeColor: "red",
+              strokeWidth: 1
+            });
+            n1Path.visible = false;
+            var n2Path = new Path.Line({
+              segments: [p2, p2.add(n2.multiply(20))],
+              strokeColor: "lightblue",
+              strokeWidth: 1
+            });
+            n2Path.visible = false;
+            var tPath = new Path.Line({
+              segments: [p, p.add(t.multiply(20))],
+              strokeColor: "green",
+              strokeWidth: 1
+            });
+            tPath.visible = false;
+          }
+        }
       }
     } // play
     // ------------------------------------------------------------------------
@@ -1138,90 +1585,41 @@ var AMES_Transformation = /*#__PURE__*/function () {
     key: "play",
     value: function play() {
       var state_idx = 0;
-      this.vertex_normals = [];
-      this.vertex_tangents = [];
+      this.setup_playback_trackers();
+      if (!this.target) return;
+      if (this.target.is_collection) this.n_target = this.target.shapes.length;
+      var n_target = this.n_target;
 
-      for (var idx = 0; idx < this.n_target; idx++) {
+      if (this.mapping == this.PLAYBACK) {
+        this.target.setup_playback_trackers();
+        n_target = this.target.n_target; // this.tf_space_path_nsegments = 2*this.target.tf_space_path_nsegments;
+
+        this.target.tf_space_path_nsegments = .75 * this.tf_space_path_nsegments;
+        console.log("Playing playback transform to drive ", this.target.name);
+        console.log("The parent transform has n segments:", this.tf_space_path_nsegments);
+        console.log("The child transform has n segements: ", this.target.tf_space_path_nsegments);
+      } else {
+        this.set_tf_space_path_nsegments();
+      }
+
+      for (var idx = 0; idx < n_target; idx++) {
         var a = void 0;
-        if (this.target.is_artwork) a = this.target;
         if (this.target.is_collection) a = this.target.shapes[idx];
-        var n_segments = a.poly.segments.length;
-        this.vertex_normals[idx] = [];
-        this.vertex_tangents[idx] = [];
-        var eps = 0.01;
+        if (this.target.is_artwork) a = this.target;
 
-        for (var i = 0; i < n_segments; i++) {
-          var p = a.poly.segments[i].point;
-          var o = a.poly.getOffsetOf(p);
-          var n = void 0;
-          var t = void 0;
-          var n1 = void 0;
-          var n2 = void 0;
-          var p1 = void 0;
-          var p2 = void 0;
-          var c = new PointText({
-            point: p,
-            content: i
-          });
-          c.visible = false;
-          var o1 = o - eps;
-          var o2 = o + eps;
-
-          if (i == 0) {
-            o1 = a.poly.length - eps;
-          }
-
-          p1 = a.poly.getPointAt(o1);
-          p2 = a.poly.getPointAt(o2);
-
-          if (a.poly.segments[i].isSmooth()) {
-            n = a.poly.getNormalAt(o);
-            t = a.poly.getTangentAt(o);
-          } else {
-            n1 = a.poly.getNormalAt(o1);
-            n2 = a.poly.getNormalAt(o2);
-            n = n1.add(n2).normalize();
-            var t1 = a.poly.getTangentAt(o1);
-            var t2 = a.poly.getTangentAt(o2);
-            t = t1.add(t2).normalize();
-          }
-
-          this.vertex_normals[idx][i] = n;
-          this.vertex_tangents[idx][i] = t;
-          var nPath = new Path.Line({
-            segments: [p, p.add(n.multiply(20))],
-            strokeColor: "pink",
-            strokeWidth: 1
-          });
-          nPath.visible = false;
-          var n1Path = new Path.Line({
-            segments: [p1, p1.add(n1.multiply(20))],
-            strokeColor: "red",
-            strokeWidth: 1
-          });
-          n1Path.visible = false;
-          var n2Path = new Path.Line({
-            segments: [p2, p2.add(n2.multiply(20))],
-            strokeColor: "lightblue",
-            strokeWidth: 1
-          });
-          n2Path.visible = false;
-          var tPath = new Path.Line({
-            segments: [p, p.add(t.multiply(20))],
-            strokeColor: "green",
-            strokeWidth: 1
-          });
-          tPath.visible = false;
+        if (this.target.is_transformation) {
+          if (this.target.target.is_artwork) a = this.target.target;
+          if (this.target.target.is_collection) a = this.target.target.shapes[idx];
         }
 
         if (false) {
           this.loop_count[idx] = [];
           this.is_playing[idx] = [];
-          var _n_segments = a.poly.segments.length;
+          var n_segments = a.poly.segments.length;
 
-          for (var v_idx = 0; v_idx < _n_segments; v_idx++) {
+          for (var v_idx = 0; v_idx < n_segments; v_idx++) {
             if (this.tf_space_absolute) {
-              var sv = this.get_value_at_target_index_for_path_offset(v_idx, 0); // set_vertex_value_to
+              var sv = this.get_value_at_target_index_for_path_offset(v_idx, 0, this.n_target); // set_vertex_value_to
             }
 
             this.loop_count[idx][v_idx] = 1;
@@ -1235,48 +1633,86 @@ var AMES_Transformation = /*#__PURE__*/function () {
           this.is_playing[idx] = 1; // Jump target to match transformation input start values
 
           if (this.tf_space_absolute) {
-            var _sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+            if (this.mapping == this.PLAYBACK) {
+              if (this.target.tf_space_absolute) {
+                var _sv2 = this.target.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
 
-            this.set_artwork_value_to(a, _sv);
+                this.target.set_artwork_value_to(a, _sv2);
+              }
+            } else {
+              var _sv3 = this.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
+
+              this.set_artwork_value_to(a, _sv3);
+            }
           }
 
-          this.play_helper(state_idx, a, idx);
+          this.play_helper({
+            "state_idx": state_idx,
+            "a": a,
+            "a_idx": idx
+          });
         }
       }
     } // TO DO update for vertex transformations
 
   }, {
     key: "trigger_function_for_target_idx",
-    value: function trigger_function_for_target_idx(a, a_idx) {
+    value: function trigger_function_for_target_idx(a, a_idx, n_target) {
+      console.log("trigger ", this.name, "for ", a.name, "at ", a_idx);
       var idx = a_idx; // Play or apply transformation
 
       if (this.is_playable) {
         // Cannot trigger an animation that is already playing
         // if (this.is_playing[idx] == 1) return;
         // Reset playback trackers
-        this.dx_total[idx] = 0;
-        this.dy_total[idx] = 0;
-        this.v_total[idx] = 0;
-        this.loop_count[idx] = 1;
-        this.is_playing[idx] = 1;
+        this.dx_total[a_idx] = 0;
+        this.dy_total[a_idx] = 0;
+        this.v_total[a_idx] = 0;
+        this.loop_count[a_idx] = 1;
+        this.is_playing[a_idx] = 1;
         this.slope[a_idx] = 1;
-        this.tween_helper_scale[a_idx] = 1; // Jump target to match transformation input start values
+        this.prev_slope_change[a_idx] = Date.now();
+        this.tween_helper_scale[a_idx] = 1;
+        this.n_clones[a_idx] = 0;
+        this.random_indices[a_idx] = Math.random() * (n_target - 1); // Jump target to match transformation input start values
 
         if (this.tf_space_absolute) {
-          var sv = this.get_value_at_target_index_for_path_offset(idx, 0);
-          this.set_artwork_value_to(a, sv);
+          if (this.mapping == this.PLAYBACK) {
+            if (this.target.tf_space_absolute) {
+              var sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+              this.target.set_artwork_value_to(a, sv);
+            }
+          } else {
+            var _sv4 = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+
+            this.set_artwork_value_to(a, _sv4);
+          }
         }
 
-        this.play_helper(0, a, idx);
+        console.log('setup triggered transformation', this.name, 'for artwork', a, 'at ', a_idx);
+        this.play_helper({
+          "state_idx": 0,
+          "a": a,
+          "a_idx": a_idx,
+          "n_target": n_target
+        });
       } else {
         if (this.tf_space_absolute) {
           if (this.tf_space_absolute) {
-            var _sv2 = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+            if (this.mapping == this.PLAYBACK) {
+              if (this.target.tf_space_absolute) {
+                var _sv5 = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
 
-            this.set_artwork_value_to(a, _sv2);
+                this.target.set_artwork_value_to(a, _sv5);
+              }
+            } else {
+              var _sv6 = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+
+              this.set_artwork_value_to(a, _sv6);
+            }
           }
 
-          var v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+          var v = this.get_value_at_target_index_for_axis_mapping(a_idx, a_idx, "index", n_target);
           this.set_artwork_value_to(a, v);
         }
       }
@@ -1299,13 +1735,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.mapping == this.DUPLICATE_EACH) {
-        var eps = .001;
-        var inc = this.dy_total[a_idx] - 1;
+        var next_clone_num = this.n_clones[a_idx] + 1;
+        var eps = .015;
+        var inc = this.dy_total[a_idx] - next_clone_num; // if ((-eps <= inc && inc <= 0) || (0 <= inc && inc <= eps))
 
-        if (-eps < inc && inc < 0 || 0 < inc < eps) {
-          var new_a = Object.create(a);
-          new_a.poly = a.poly.clone();
-          this.dy_total[a_idx] = 0; // if (a_idx == 1) console.log("making new instance", a_idx);
+        var y_prev = this.dy_total[a_idx] - d.y / f; // console.log(next_clone_num, y_prev.toFixed(5), this.dy_total[a_idx].toFixed(5));
+
+        if (y_prev <= next_clone_num && next_clone_num <= this.dy_total[a_idx]) {
+          // let new_a = Object.create(a);
+          // new_a.poly = a.poly.clone();
+          this.n_clones[a_idx] += 1;
+          var new_a = a.clone();
+          new_a.poly.insertBelow(a.poly); // this.dy_total[a_idx] = 0;
+          // if (a_idx == 1) console.log("making new instance", a_idx);
 
           this.trigger_new_instance(new_a, a_idx);
         }
@@ -1325,6 +1767,55 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
         a.poly.clearHandles();
       }
+
+      if (this.mapping == this.PLAYBACK) {
+        var reverse = false;
+
+        if (d.y < 0) {
+          reverse = true;
+          d.y = -d.y;
+        }
+
+        var qt = d.y / f - Math.floor(d.y / f);
+        var frame_progression = this.target.tf_space_path_nsegments * qt;
+        var target_frames = Math.floor(frame_progression);
+        this.curr_remainder[a_idx] += frame_progression - target_frames;
+
+        if (Math.round(this.curr_remainder[a_idx]) == 1) {
+          this.curr_remainder[a_idx] -= 1;
+          target_frames += 1;
+        }
+
+        var stop_state_idx = this.curr_state[a_idx] + target_frames;
+        if (reverse) stop_state_idx = this.curr_state[a_idx] - target_frames; // TO DO... timing factor?
+
+        if (stop_state_idx >= 0 && this.curr_state[a_idx] != stop_state_idx) {
+          if (a_idx == 0) {// console.log("playback transform", a.name, d.y.toFixed(4), this.curr_state[a_idx], stop_state_idx, "reverse?", reverse);
+          }
+
+          this.target.play_helper({
+            "state_idx": this.curr_state[a_idx],
+            "stop_state_idx": stop_state_idx,
+            "a": a,
+            "a_idx": a_idx,
+            "v_idx": v_idx,
+            "reverse": reverse
+          });
+          this.curr_state[a_idx] = stop_state_idx;
+        }
+      }
+    }
+  }, {
+    key: "remove_playback_point",
+    value: function remove_playback_point(playback_pt) {
+      var idx = -1;
+
+      for (var i = 0; i < this.transformation_functions_to_trigger.length; i++) {
+        var trigger = this.transformation_functions_to_trigger[i];
+        if (trigger == playback_pt) idx = i;
+      }
+
+      if (idx > -1) this.transformation_functions_to_trigger.splice(idx, 1);
     }
   }, {
     key: "use_playback_points_to_trigger_transformation",
@@ -1346,6 +1837,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       this.transformation_functions_to_trigger.push(trigger);
+      console.log(this.transformation_functions_to_trigger);
       this.check_playback_points = true;
     }
   }, {
@@ -1354,9 +1846,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
       for (var x in this.transformation_functions_to_trigger) {
         var tf = this.transformation_functions_to_trigger[x];
 
-        if (tf.condition == "remove at end") {
-          // if (a_idx == 1) console.log("remove at", a_idx);
-          a.poly.remove();
+        if (tf.condition == "end") {
+          if (tf.tf != "remove") tf.tf.trigger_function_for_target_idx(a, a_idx);else a.remove();
         }
       }
     }
@@ -1365,7 +1856,11 @@ var AMES_Transformation = /*#__PURE__*/function () {
     value: function trigger_new_instance(a, a_idx) {
       for (var x in this.transformation_functions_to_trigger) {
         var tf = this.transformation_functions_to_trigger[x];
-        if (tf.condition == "new instance") tf.tf.trigger_function_for_target_idx(a, a_idx);
+        if (tf.condition == "new instance") console.log("trigger function for new instance", a_idx);
+        var n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
+
+        console.log("using n_target", n_target);
+        tf.tf.trigger_function_for_target_idx(a, this.n_clones[a_idx] - 1, n_target);
       }
     }
   }, {
@@ -1465,8 +1960,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
         var m_eps = .001;
 
         if (m_diff > m_eps || m_diff < -m_eps) {
-          slope_change = true;
-          this.slope[a_idx] = m;
+          this.slope[a_idx] = m; // console.log(m_diff, this.prev_slope_change[a_idx]);
+
+          if (Date.now() - this.prev_slope_change[a_idx] > 50) slope_change = true;
+          this.prev_slope_change[a_idx] = Date.now();
         }
       }
 
@@ -1487,8 +1984,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         }
 
         if (trigger_tf) {
-          // console.log(a_idx, "trigger");
-          tf.tf.trigger_function_for_target_idx(a, a_idx);
+          if (tf.tf == "remove") a.remove();else tf.tf.trigger_function_for_target_idx(a, a_idx);
         }
       }
     }
@@ -1610,20 +2106,22 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (this.mapping == this.STATIC_SCALE) a.set_scaling(sv.y);
       if (this.mapping == this.SCALE) a.poly.scale(sv.y, sv.y);
 
-      if (this.mapping == this.HUE) {
+      if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
         var saturation;
         var brightness;
 
-        if (a.poly.fillColor) {
+        if (this.mapping == this.FILL_HUE && a.poly.fillColor) {
           saturation = a.poly.fillColor.saturation;
+          if (saturation == 0) saturation = 1;
           brightness = a.poly.fillColor.brightness;
           a.poly.fillColor.hue = Math.round(sv.y);
           a.poly.fillColor.saturation = saturation;
           a.poly.fillColor.brightness = brightness;
         }
 
-        if (a.poly.strokeColor) {
+        if (this.mapping == this.HUE && a.poly.strokeColor) {
           saturation = a.poly.strokeColor.saturation;
+          if (saturation == 0) saturation = 1;
           brightness = a.poly.strokeColor.brightness;
           a.poly.strokeColor.hue = Math.round(sv.y);
           a.poly.strokeColor.saturation = saturation;
@@ -1634,9 +2132,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
   }, {
     key: "get_transform_artwork_at_state",
-    value: function get_transform_artwork_at_state(state_idx, a_idx) {
+    value: function get_transform_artwork_at_state(state_idx, a_idx, nxt_i, n_target) {
       var i = state_idx;
-      var nxt_i = state_idx + 1;
+      if (nxt_i == null) nxt_i = state_idx + 1;
       var d;
       var dx;
       var dy;
@@ -1652,7 +2150,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.input.is_collection) {
-        if (this.mapping_behavior == "interpolate") {
+        if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
           d = [];
           var x = [];
           var y = [];
@@ -1672,10 +2170,25 @@ var AMES_Transformation = /*#__PURE__*/function () {
           d = d.map(function (m) {
             return Math.sqrt(m.x * m.x + m.y * m.y);
           });
-          dx = _utils.AMES_Utils.interpolate_fast(x, a_idx);
-          dy = _utils.AMES_Utils.interpolate_fast(y, a_idx);
-          d = _utils.AMES_Utils.interpolate_fast(d, a_idx);
-          seg_change_value = _utils.AMES_Utils.interpolate_fast(seg_change_value, a_idx);
+          var target_idx = a_idx;
+          var divisor = this.input.shapes.length - 1;
+          if (n_target > 1) divisor = n_target - 1;
+
+          if (this.mapping_behavior == "random") {
+            target_idx = this.random_indices[a_idx];
+
+            if (this.mapping == this.PLAYBACK) {
+              target_idx = this.target.random_indices[a_idx];
+              divisor = this.target.n_target - 1;
+            }
+          }
+
+          target_idx *= (this.n_input - 1) / divisor; // if (a_idx == 0) console.log(target_idx);
+
+          dx = _utils.AMES_Utils.interpolate_fast(x, target_idx);
+          dy = _utils.AMES_Utils.interpolate_fast(y, target_idx);
+          d = _utils.AMES_Utils.interpolate_fast(d, target_idx);
+          seg_change_value = _utils.AMES_Utils.interpolate_fast(seg_change_value, target_idx);
         }
 
         if (this.mapping_behavior == "alternate") {
@@ -1696,7 +2209,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         "v": d,
         "change_segment": change_segment
       };
-      var duration = 1000 / ames.fps * (1 / this.tf_space_speed_factor);
+      var duration = 1000 / ames.fps;
 
       if (this.tf_space_speed == this.SPEED_CONSTANT) {
         duration = duration;
@@ -1723,9 +2236,14 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (this.tf_space_speed == this.SPEED_MAP) {} // TBD
 
 
-      if (duration == 0) duration = .001;
-      var rate = delta.v / duration; // This is actually the time per segment
-      // if (a_idx == 4) console.log(delta.v.toFixed(4), rate.toFixed(4));
+      if (duration == 0) duration = .001; // if (a_idx == 0) {
+      // 	if (!this.debug_sum) this.debug_sum = 0;
+      // 	this.debug_sum += delta.y;
+      // 	if (!this.tracker_dot) this.tracker_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+      // 	if (!this.og_dot) this.og_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+      // 	// if (state_idx == 0) this.tracker_dot.position = new Point(150, 150);
+      // 	this.tracker_dot.position.add(new Point(delta.x, delta.y));
+      // }
 
       return [delta, duration];
     }
@@ -1793,15 +2311,14 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       var line = new Path.Line(p1, p2);
       var intersects = artwork.getIntersections(line);
-      line.strokeWidth = 1;
-      line.strokeColor = "lightblue";
-      line.dashArray = [3, 5];
-      var p3 = new Point(this.tf_sx1, intersects[0].point.y);
-      var p4 = new Point(this.tf_sx2, intersects[0].point.y);
-      var line_v = new Path.Line(p3, p4);
-      line_v.strokeWidth = 1;
-      line_v.strokeColor = "lightblue";
-      line_v.dashArray = [3, 5];
+      line.visible = false; // line.strokeWidth = 1; line.strokeColor = "lightblue"; line.dashArray = [3, 5];
+      // let p3 = new Point(this.tf_sx1, intersects[0].point.y);
+      // let p4 = new Point(this.tf_sx2, intersects[0].point.y);
+      // let line_v = new Path.Line(p3, p4);
+      // line_v.visible = false;
+      // line_v.strokeWidth = 1; line_v.strokeColor = "lightblue"; line_v.dashArray = [3, 5];
+
+      console.log(intersects[0], p1, p2);
       var t = this.tf_space_map_x_y(intersects[0].point.x, intersects[0].point.y); // let t_label = new PointText({
       // 	point: [p3.x - 5*utils.ICON_OFFSET, p3.y],
       // 	content: t.y.toFixed(2),
@@ -1814,27 +2331,43 @@ var AMES_Transformation = /*#__PURE__*/function () {
     }
   }, {
     key: "get_value_at_target_index_for_axis_mapping",
-    value: function get_value_at_target_index_for_axis_mapping(artwork_idx, axis_idx, axis_mapping) {
-      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, null, axis_idx, axis_mapping);
+    value: function get_value_at_target_index_for_axis_mapping(artwork_idx, axis_idx, axis_mapping, n_target) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, null, axis_idx, axis_mapping, n_target);
     }
   }, {
     key: "get_value_at_target_index_for_path_offset",
-    value: function get_value_at_target_index_for_path_offset(artwork_idx, offset) {
-      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, offset, null, null);
+    value: function get_value_at_target_index_for_path_offset(artwork_idx, offset, n_target) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, offset, null, null, n_target);
     }
   }, {
     key: "get_value_at_target_index_for_path_offset_or_axis_mapping",
-    value: function get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping) {
+    value: function get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping, n_target) {
       var p;
       var x;
       var y;
 
       if (this.input.is_shape) {
         if (axis_mapping) {
-          p = this.get_artwork_value_at_intersection(this.input.poly, axis_idx, axis_mapping);
+          var target_idx = a_idx;
+
+          if (this.mapping_behavior == "random") {
+            target_idx = Math.random() * (n_target - 1);
+          }
+
+          p = this.get_artwork_value_at_intersection(this.input.poly, target_idx, axis_mapping);
         } else {
-          if (offset == null) offset = (a_idx + 0.5) * this.input.poly.length / this.n_target;
           if (offset == "end") offset = this.input.poly.length;
+
+          if (offset == null) {
+            var _target_idx = a_idx;
+
+            if (this.mapping_behavior == "random") {
+              _target_idx = Math.random() * (n_target - 1);
+            }
+
+            offset = (_target_idx + 0.5) * this.input.poly.length / this.n_target;
+          }
+
           p = this.get_artwork_value_at_offset(this.input.poly, offset);
         }
 
@@ -1844,16 +2377,32 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.input.is_collection) {
-        if (this.mapping_behavior == "interpolate") {
+        if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
           p = [];
 
           for (var in_idx = 0; in_idx < this.n_input; in_idx++) {
             var in_artwork = this.input.shapes[in_idx].poly;
 
             if (axis_mapping) {
-              p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, axis_idx, axis_mapping);
+              var _target_idx3 = a_idx;
+
+              if (this.mapping_behavior == "random") {
+                _target_idx3 = Math.random() * (n_target - 1);
+              }
+
+              console.log(_target_idx3);
+              p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, _target_idx3, axis_mapping);
             } else {
-              if (offset == null) offset = (a_idx + 0.5) * in_artwork.length / this.n_target;
+              if (offset == null) {
+                var _target_idx4 = a_idx;
+
+                if (this.mapping_behavior == "random") {
+                  _target_idx4 = Math.random() * (n_target - 1);
+                }
+
+                offset = (_target_idx4 + 0.5) * in_artwork.length / this.n_target;
+              }
+
               if (offset == "end") offset = in_artwork.length;
               p[in_idx] = this.get_artwork_value_at_offset(in_artwork, offset);
             }
@@ -1868,9 +2417,23 @@ var AMES_Transformation = /*#__PURE__*/function () {
           p = p.map(function (p) {
             return Math.sqrt(p.x * p.x + p.y * p.y);
           });
-          x = _utils.AMES_Utils.interpolate_fast(x, a_idx);
-          y = _utils.AMES_Utils.interpolate_fast(y, a_idx);
-          p = _utils.AMES_Utils.interpolate_fast(p, a_idx);
+          var _target_idx2 = a_idx;
+          var divisor = this.input.shapes.length - 1;
+          if (this.target.is_collection) divisor = n_target - 1;
+
+          if (this.mapping_behavior == "random") {
+            _target_idx2 = this.random_indices[a_idx];
+
+            if (this.mapping == this.PLAYBACK) {
+              _target_idx2 = this.target.random_indices[a_idx];
+              divisor = this.target.n_target - 1;
+            }
+          }
+
+          _target_idx2 *= (this.input.shapes.length - 1) / divisor;
+          x = _utils.AMES_Utils.interpolate_fast(x, _target_idx2);
+          y = _utils.AMES_Utils.interpolate_fast(y, _target_idx2);
+          p = _utils.AMES_Utils.interpolate_fast(p, _target_idx2);
         }
 
         if (this.mapping_behavior == "alternate") {
@@ -1896,6 +2459,21 @@ var AMES_Transformation = /*#__PURE__*/function () {
         "y": y,
         "v": p
       };
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      for (var x in this.tf_s) {
+        this.tf_s[x].remove();
+      }
+
+      if (this.input) this.input.remove_transformation(this);
+      this.input = null;
+      this.target = null;
+      ames.update_layers({
+        "remove": true,
+        "box": ames.obj_boxes_dict[this.name]
+      });
     }
   }]);
 

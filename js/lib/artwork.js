@@ -46,6 +46,10 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 // ----------------------------------------------------------------------------
 // Description: Basic artwork representation with visual & temporal properties
 var AMES_Artwork = /*#__PURE__*/function () {
+  // Display properties including name, visibility, layer
+  // Visual Properties: position, scale, rotate, stroke w, stroke c, fill
+  // Shape geoemtry
+  // State
   function AMES_Artwork() {
     _classCallCheck(this, AMES_Artwork);
 
@@ -60,6 +64,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "obj_type", "shape");
 
     _defineProperty(this, "visible", false);
+
+    _defineProperty(this, "number", 0);
 
     _defineProperty(this, "pos", {
       x: ames.canvas_cy,
@@ -81,6 +87,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "poly", void 0);
 
     _defineProperty(this, "is_selected", false);
+
+    _defineProperty(this, "selection_opts", []);
 
     _defineProperty(this, "path_control_shapes", []);
 
@@ -108,6 +116,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "cb_helpers", {
       'shapes': []
     });
+
+    _defineProperty(this, "collections", []);
+
+    _defineProperty(this, "transformations", []);
 
     _defineProperty(this, "lists", {});
 
@@ -182,14 +194,68 @@ var AMES_Artwork = /*#__PURE__*/function () {
       },
       "path": {}
     });
-  }
+
+    this.number = AMES_Artwork.count;
+    AMES_Artwork.count += 1;
+  } // add_list: adds list to track which lists the shape is in so updates to the shape
+  // can update the list helper shapes
+
 
   _createClass(AMES_Artwork, [{
     key: "add_list",
-    value: // add_list: adds list to track which lists the shape is in so updates to the shape
-    // can update the list helper shapes
-    function add_list(list) {
+    value: function add_list(list) {
       this.lists[list.name] = list;
+    }
+  }, {
+    key: "add_collection",
+    value: function add_collection(collection) {
+      var missing = true;
+
+      for (var i in this.collections) {
+        if (this.collections[i] == collection) missing = false;
+      }
+
+      if (missing) this.collections.push(collection);
+      if (missing) console.log("add collection", this.collections, collection);
+    }
+  }, {
+    key: "add_transformation",
+    value: function add_transformation(transformation) {
+      var missing = true;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) missing = false;
+      }
+
+      if (missing) this.transformations.push(transformation);
+    }
+  }, {
+    key: "remove_collection",
+    value: function remove_collection(collection) {
+      var idx = -1;
+
+      for (var i in this.collections) {
+        if (this.collections[i] == collection) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.collections.splice(idx, 1);
+    }
+  }, {
+    key: "remove_transformation",
+    value: function remove_transformation(transformation) {
+      var idx = -1;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.transformations.splice(idx, 1);
     } // set_pos(pt, is_delta)
     // Description: Updates the position of the shape to the pt specified or by
     // the vector specified if is_delta is true
@@ -286,9 +352,30 @@ var AMES_Artwork = /*#__PURE__*/function () {
       return;
     }
   }, {
+    key: "get_large_bbox",
+    value: function get_large_bbox() {
+      var r = this.get_bbox();
+      this.update_selection_opts();
+      var h_min = this.selection_opt_names.length * _utils.AMES_Utils.LAYER_HEIGHT * .75;
+      var w_min = 20;
+      var h = r.height;
+      if (r.height < h_min) h = h_min;
+      if (h < 30) h = 30;
+      var w = r.width;
+      if (w < w_min) w = w_min;
+      var bbox = new Rectangle(r.point, new Size(w, h));
+      bbox.center = r.center;
+      return bbox;
+    }
+  }, {
+    key: "update_bbox",
+    value: function update_bbox() {
+      this.bbox = this.get_bbox();
+    } // get_pos: returns the position of this shape
+
+  }, {
     key: "get_pos",
-    value: // get_pos: returns the position of this shape
-    function get_pos() {
+    value: function get_pos() {
       return this.poly.position;
     } // is_inside(p)
     // Description: Checks if the point p is within the bounding box of shape
@@ -297,12 +384,19 @@ var AMES_Artwork = /*#__PURE__*/function () {
     key: "contains",
     value: function contains(p) {
       if (this.poly) {
-        var bounds = this.poly.strokeBounds;
-        if (!bounds) bounds = this.poly.bounds;
+        var bounds = this.get_large_bbox();
         return p.isInside(bounds);
       }
 
       return;
+    }
+  }, {
+    key: "get_distance_from_bbox_center_to_point",
+    value: function get_distance_from_bbox_center_to_point(p) {
+      var c = this.get_large_bbox().center;
+      var x = c.x - p.x;
+      var y = c.y - p.y;
+      return Math.sqrt(x * x + y * y);
     } // manipulate: enable interaction on a given property with opt sub properties
 
   }, {
@@ -331,14 +425,13 @@ var AMES_Artwork = /*#__PURE__*/function () {
       if (this.active_prop) {
         // Remove subproperty buttons
         this.editor.show_subprops(this.active_prop, false);
-        this.editor.select_prop(this.active_prop, false);
-        this.editor.show_constraint(false);
+        this.editor.select_prop(this.active_prop, false); // this.editor.show_constraint(false);
       } // If the new propety is not the property just turned off, turn it on
 
 
       if (this.active_prop != p) {
         // Turn off selection toggle and hide path control shapes
-        this.attach_interactivity(false);
+        // this.attach_interactivity(false);
         this.show_path_control_shapes(false);
         this.active_prop = p;
         var sub_p = 'all';
@@ -351,8 +444,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
 
 
         this.editor.show_subprops(p, true);
-        this.editor.select_prop(p, true);
-        this.editor.show_constraint(true, p, sub_p); // Activate new propety callback
+        this.editor.select_prop(p, true); // this.editor.show_constraint(true, p, sub_p);
+        // Activate new propety callback
 
         this.cbs[p](this, this.cb_helpers);
       } else {
@@ -382,25 +475,57 @@ var AMES_Artwork = /*#__PURE__*/function () {
       this._clear_cb_helpers();
 
       this.active_sub_p = sub;
-      this.editor.select_subprop(sub, true);
-      this.editor.show_constraint(true, this.active_prop, sub);
+      this.editor.select_subprop(sub, true); // this.editor.show_constraint(true, this.active_prop, sub);
+
       this.cbs[this.active_prop](this, this.cb_helpers, sub);
+    } // Update helpers after a transformation that changes the artwork
+    // If the transformation is geometric (changes the scale, position, rotation,
+    // stroke width of the shape)... ie anything that can change its bbox the
+    // bbox for the artwork is updated as well as the bbox for any collections
+    // that it belongs to and the transformation space bounds of any transformation
+    // spaces where it is an input
+
+  }, {
+    key: "update_helpers",
+    value: function update_helpers(artwork, is_geometric) {
+      console.log(artwork); // artwork.update_constraints();
+
+      if (is_geometric) {
+        artwork.update_bbox();
+        artwork.update_collections();
+        artwork.update_transformations();
+      }
     }
   }, {
     key: "update_constraints",
     value: function update_constraints() {
       var p = this.active_prop;
       var s = this.active_sub_p;
-      if (!s) s = 'all';
+      if (!s) s = 'all'; // constraints.update_constraints(p, s, this);
 
-      _constraints.AMES_Constraint.update_constraints(p, s, this);
-
-      for (var i in this.lists) {
-        this.lists[i].update_constraints();
+      for (var i in this.lists) {// this.lists[i].update_constraints();
       }
 
       for (var _i in ames.lists) {
         ames.lists[_i].update_show_box_bounds();
+      }
+    }
+  }, {
+    key: "update_collections",
+    value: function update_collections() {
+      for (var i in this.collections) {
+        this.collections[i].update_show_box();
+
+        for (var j in this.collections[i].tranformations) {
+          this.collections[i].transformations[j].update_tf_space();
+        }
+      }
+    }
+  }, {
+    key: "update_transformations",
+    value: function update_transformations() {
+      for (var i in this.transformations) {
+        this.transformations[i].update_tf_space();
       }
     }
   }, {
@@ -431,30 +556,54 @@ var AMES_Artwork = /*#__PURE__*/function () {
       if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
       this.cb_helpers = {};
       this.cb_helpers['shapes'] = [];
+      this.attach_interactivity(true);
+    }
+  }, {
+    key: "_apply_cb_to_collections",
+    value: function _apply_cb_to_collections(cb, e) {
+      for (var i in this.collections) {
+        var c = this.collections[i];
+
+        if (c.active_prop == this.active_prop) {
+          if (c.active_sub_p == this.active_sub_p) {
+            for (var j in c.shapes) {
+              var s = c.shapes[j];
+
+              if (s != this) {
+                console.log(s.name);
+                s.poly[cb](e, true);
+              }
+            }
+          }
+        }
+      }
     }
   }, {
     key: "_position_cb",
     value: function _position_cb(shape, cb_helpers, sub) {
       if (shape.poly) {
-        shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+        shape.poly.onMouseDown = function (e, in_chain) {
+          // ames.hide_editors(shape);
+          // shape.show_all_editors();
+          console.log(shape.name, 'onMouseDown', e, in_chain);
           shape.notify_lists_shape_is_active();
           var pos = shape.poly.position;
           var offset = pos.subtract(e.point);
           if (sub && sub == 'x') cb_helpers['y'] = pos.y;
           if (sub && sub == 'y') cb_helpers['x'] = pos.x;
           cb_helpers['offset'] = offset;
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
         };
 
-        shape.poly.onMouseDrag = function (e) {
+        shape.poly.onMouseDrag = function (e, in_chain) {
           var offset = cb_helpers['offset'];
           var point = e.point.add(offset);
           if (sub && sub == 'x') point.y = cb_helpers['y'];
           if (sub && sub == 'y') point.x = cb_helpers['x'];
-          if (offset) shape.set_pos(point); // Update constraints
+          if (offset) shape.set_pos(point); // Update helpers
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
         };
       }
     }
@@ -469,9 +618,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
           var scale_box = shape.scale_control_shapes.scale_box;
           var scale_dots = shape.scale_control_shapes.scale_dots;
 
-          shape.poly.onMouseDown = function (e) {
-            ames.hide_editors(shape);
-            shape.show_all_editors();
+          shape.poly.onMouseDown = function (e) {// ames.hide_editors(shape);
+            // shape.show_all_editors();
           };
 
           var bbox = shape.get_bbox();
@@ -491,7 +639,7 @@ var AMES_Artwork = /*#__PURE__*/function () {
             var scale_start_x = 1;
             var scale_start_y = 1;
 
-            d.onMouseDown = function (e) {
+            d.onMouseDown = function (e, in_chain) {
               shape.notify_lists_shape_is_active();
               pf = 1;
               scale_start_x = shape.scale.x;
@@ -501,9 +649,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
               bf = b.length;
               if (sub == 'x') bf = b.x;
               if (sub == 'y') bf = b.y;
+              if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
             };
 
-            d.onMouseDrag = function (e) {
+            d.onMouseDrag = function (e, in_chain) {
               var p = shape.poly.position.subtract(e.point);
               var f = p.length / bf;
               var fx = scale_start_x * p.x / bf;
@@ -533,10 +682,11 @@ var AMES_Artwork = /*#__PURE__*/function () {
 
               for (var n = 0; n < 4; n++) {
                 scale_dots[n].position = scale_box.segments[n].point;
-              } // Update constraints
+              } // Update helpers
 
 
-              shape.update_constraints();
+              shape.update_helpers(shape, true);
+              if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
             };
           };
 
@@ -559,10 +709,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
         shape.show_rotation_control_shapes(true);
         cb_helpers['rotation'] = true;
         var line = shape.rotation_control_shapes.line;
-        var da = shape.rotation_control_shapes.da;
+        shape.da = shape.rotation_control_shapes.da;
         var dt = shape.rotation_control_shapes.dt;
-        var anchor = da.position;
-        var x_base = dt.position.subtract(da.position);
+        var anchor = shape.da.position;
+        var x_base = dt.position.subtract(shape.da.position);
         var prev_ro = 0;
 
         var get_rotation_a = function get_rotation_a(p, anchor) {
@@ -573,38 +723,38 @@ var AMES_Artwork = /*#__PURE__*/function () {
           return a;
         };
 
-        shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+        shape.poly.onMouseDown = function (e) {// ames.hide_editors(shape);
+          // shape.show_all_editors();
         }; // Update anchor point for rotation
 
 
-        da.onMouseDrag = function (e) {
-          da.position = e.point; // Update line
+        shape.da.onMouseDrag = function (e, in_chain) {
+          shape.da.position = e.point; // Update line
 
           line.firstSegment.point = e.point; // Update x_base and total rotation using new reference
 
-          anchor = da.position;
+          anchor = shape.da.position;
           x_base = dt.position.subtract(anchor);
           prev_ro = 0;
           shape.rotation_control_shapes.a_offset = e.point.subtract(shape.poly.position);
           console.log(shape.rotation_control_shapes.a_offset);
-          console.log(da.position);
+          console.log(shape.da.position);
         }; // Rotate based on angle between subsequent rays created by dragging
 
 
         var ro;
         var asum = 0;
 
-        dt.onMouseDown = function (e) {
+        dt.onMouseDown = function (e, in_chain) {
           shape.notify_lists_shape_is_active();
           ro = dt.position;
           prev_ro = shape.poly.rotation;
-          x_base = dt.position.subtract(da.position);
+          x_base = dt.position.subtract(shape.da.position);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
         }; // Update rotation
 
 
-        dt.onMouseDrag = function (e) {
+        dt.onMouseDrag = function (e, in_chain) {
           anchor = shape.rotation_control_shapes.da.position;
           var a = get_rotation_a(e.point, anchor);
           shape.set_rotation(a, anchor); // shape.poly.rotate(a, anchor);
@@ -615,9 +765,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
           // Update line segment to match dt
 
           dt.position = e.point;
-          line.lastSegment.point = dt.position; // Update constraints
+          line.lastSegment.point = dt.position; // Update helpers
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
         };
       }
     }
@@ -657,15 +808,16 @@ var AMES_Artwork = /*#__PURE__*/function () {
         }
 
         var shape_color_target = function shape_color_target(c) {
-          color_function(c);
-          shape.update_constraints();
+          color_function(c); // Update helpers
+
+          shape.update_helpers(shape);
         };
 
         ames.colorpicker.color_target = shape_color_target;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           ames.colorpicker.color_target = shape_color_target;
         };
@@ -681,8 +833,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
         var w;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           yo = e.point.y;
           w = shape.poly.strokeWidth;
@@ -696,10 +848,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
             shape.poly.strokeWidth = 0;
           } else {
             shape.poly.strokeWidth = nw;
-          } // Update constraints
+          } // Update helpers
 
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
         };
       }
     }
@@ -739,15 +891,16 @@ var AMES_Artwork = /*#__PURE__*/function () {
         }
 
         var shape_color_target = function shape_color_target(c) {
-          color_function(c);
-          shape.update_constraints();
+          color_function(c); // Update helpers
+
+          shape.update_helpers(shape);
         };
 
         ames.colorpicker.color_target = shape_color_target;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           ames.colorpicker.color_target = shape_color_target;
         };
@@ -764,8 +917,7 @@ var AMES_Artwork = /*#__PURE__*/function () {
         cb_helpers['path'] = true;
 
         shape.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
         };
       }
     } // create_control_shapes: create all control shapes
@@ -1040,13 +1192,17 @@ var AMES_Artwork = /*#__PURE__*/function () {
           var n_h1 = s.handleIn.add(s.point);
 
           if (s.handleIn.x == 0 && s.handleIn.y == 0) {
-            n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+            var previous = s.previous;
+            if (!previous) previous = s;
+            n_h1 = n_h1.add(previous.point.subtract(s.point).normalize().multiply(8));
           }
 
           var n_h2 = s.handleOut.add(s.point);
 
           if (s.handleOut.x == 0 && s.handleOut.y == 0) {
-            n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+            var next = s.next;
+            if (!next) next = s;
+            n_h2 = n_h2.add(next.point.subtract(s.point).normalize().multiply(8));
           }
 
           d_h1.position = n_h1;
@@ -1161,12 +1317,153 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "highlight",
     value: function highlight(color) {
+      this.show_selection_opts();
+
       if (this.poly) {
-        var bbox = this.get_bbox();
+        var bbox = this.get_large_bbox();
         return _utils.AMES_Utils.make_rect(bbox, color);
       }
 
       return null;
+    }
+  }, {
+    key: "update_selection_opts",
+    value: function update_selection_opts() {
+      var opts = {};
+      var opt_names = [];
+      this.selection_opt_names = null;
+      this.selection_opt_references = null;
+
+      if (ames.transformation_active_field != 'playback_transformation') {
+        opt_names.push(this.name);
+        opts[this.name] = this;
+
+        for (var i in this.collections) {
+          var c = this.collections[i];
+          opt_names.push(c.name);
+          opts[c.name] = c;
+        }
+      }
+
+      if (ames.transformation_active_field != "input") {
+        for (var _i3 in this.transformations) {
+          var t = this.transformations[_i3];
+          var mapping = t.get_mapping();
+          mapping = mapping[0].toUpperCase() + mapping.substr(1);
+          var str = t.name + " : (" + t.input.name + ": " + mapping + ")";
+          opt_names.push(str);
+          opts[str] = t;
+        }
+
+        for (var _i4 in this.collections) {
+          var _c = this.collections[_i4];
+
+          for (var j in _c.transformations) {
+            var _t = _c.transformations[j];
+
+            var _mapping = _t.get_mapping();
+
+            _mapping = _mapping[0].toUpperCase() + _mapping.substr(1);
+
+            var _str = _t.name + " : (" + _t.input.name + ": " + _mapping + ")";
+
+            opt_names.push(_str);
+            opts[_str] = _t;
+          }
+        }
+      }
+
+      this.selection_opt_names = opt_names;
+      this.selection_opt_references = opts;
+    }
+  }, {
+    key: "show_selection_opts",
+    value: function show_selection_opts() {
+      var _this3 = this;
+
+      this.update_selection_opts();
+      var opt_names = this.selection_opt_names;
+      var opts = this.selection_opt_references;
+      console.log(opt_names, opts);
+      var box = this.get_large_bbox();
+      var bx = box.topRight.x;
+      var by = box.topRight.y;
+      var selected_opt_box;
+      var a_opt_box;
+
+      var _loop4 = function _loop4(i) {
+        var opt = new Group();
+        var opt_box = new Path.Rectangle({
+          point: new Point(bx - 7.5, by - 0.25),
+          size: new Size(225, _utils.AMES_Utils.LAYER_HEIGHT * .75),
+          fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+          strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+          strokeWidth: 0,
+          radius: 1.25
+        });
+        var opt_label = new PointText({
+          point: [bx + 15, by + 12.5],
+          content: opt_names[i],
+          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+          fontFamily: _utils.AMES_Utils.FONT,
+          fontSize: _utils.AMES_Utils.FONT_SIZE
+        });
+        opt_box.bringToFront();
+        opt_label.bringToFront();
+
+        if (opt_names[i] == _this3.name) {
+          opt_box.strokeWidth = 1;
+          ames.selected_obj = _this3;
+          a_opt_box = opt_box;
+          selected_opt_box = opt_box;
+          ames.selected_obj = _this3;
+        }
+
+        by += opt_box.bounds.height;
+        opt.addChildren([opt_box, opt_label]);
+        opt.bringToFront();
+
+        opt.onMouseEnter = function (e) {
+          selected_opt_box = opt_box;
+          if (opt_box != a_opt_box) a_opt_box.strokeWidth = 0;
+          selected_opt_box.strokeWidth = 1;
+          ames.selected_obj = opts[opt_names[i]];
+        };
+
+        opt.onMouseLeave = function (e) {
+          selected_opt_box.strokeWidth = 0;
+          selected_opt_box = null;
+          setTimeout(function () {
+            if (!selected_opt_box) {
+              a_opt_box.strokeWidth = 1;
+              selected_opt_box = a_opt_box;
+              ames.selected_obj = _this3;
+            }
+          }, 250);
+        };
+
+        opt.onMouseUp = function (e) {
+          ames.selected_obj = opts[opt_names[i]];
+          console.log("mouse up on", opt_names[i]);
+
+          _this3.hide_selection_opts();
+        };
+
+        _this3.selection_opts.push(opt);
+      };
+
+      for (var i in opt_names) {
+        _loop4(i);
+      }
+
+      console.log(opts);
+    }
+  }, {
+    key: "hide_selection_opts",
+    value: function hide_selection_opts() {
+      for (var i in this.selection_opts) {
+        this.selection_opts[i].remove();
+      }
     }
   }, {
     key: "get_closest_bbox_corner",
@@ -1229,7 +1526,15 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "remove",
     value: function remove() {
-      console.log("To do -- Shape.remove()");
+      // this.editor.remove();
+      var idx = -1; // Remove from all collections
+      // Remove from all transformations
+
+      this.poly.remove();
+      ames.update_layers({
+        "remove": true,
+        "box": this.obj_box
+      });
     } // make_interactive: if true, enable interacitivty & open editor; otherwise disable and close
 
   }, {
@@ -1242,22 +1547,22 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "attach_interactivity",
     value: function attach_interactivity(bool) {
-      var _this3 = this;
+      var _this4 = this;
 
       if (this.poly) {
         if (bool) {
           this.poly.onMouseDown = function (e) {
             // Show only editors for this object
-            ames.hide_editors(_this3);
+            ames.hide_editors(_this4);
 
-            _this3.show_all_editors();
+            _this4.editor.show(true);
           }; // select and de-select on click
 
 
           this.poly.onClick = function (e) {
-            var toggle = !_this3.is_selected;
+            var toggle = !_this4.is_selected;
 
-            _this3.select(toggle); // this.open_editor(toggle);
+            _this4.select(toggle); // this.open_editor(toggle);
 
           };
         } else {
@@ -1302,7 +1607,9 @@ var AMES_Artwork = /*#__PURE__*/function () {
     key: "clone",
     value: function clone(obj) {
       obj = Object.assign(obj, this);
-      obj.poly = this.poly.clone();
+      obj.poly = this.poly.clone({
+        insert: false
+      });
       obj.create_in_ames();
       return obj;
     }
@@ -1341,44 +1648,44 @@ var AMES_Polygon = /*#__PURE__*/function (_AMES_Artwork) {
   var _super = _createSuper(AMES_Polygon);
 
   function AMES_Polygon(opt) {
-    var _this4;
+    var _this5;
 
     _classCallCheck(this, AMES_Polygon);
 
-    _this4 = _super.call(this);
+    _this5 = _super.call(this);
 
-    _defineProperty(_assertThisInitialized(_this4), "name", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "name", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "shape_type", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "shape_type", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "artwork_type", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "artwork_type", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "sides", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "sides", void 0);
 
-    _defineProperty(_assertThisInitialized(_this4), "radius", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "radius", void 0);
 
-    _defineProperty(_assertThisInitialized(_this4), "centroid", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "centroid", void 0);
 
     opt = opt || {};
     if (!opt.centroid) opt.centroid = ames.canvas_view.center;
     if (!opt.nsides) opt.nsides = 3;
     if (!opt.radius) opt.radius = 25;
-    _this4.sides = opt.nsides;
-    _this4.radius = opt.radius;
-    _this4.centroid = opt.centroid;
+    _this5.sides = opt.nsides;
+    _this5.radius = opt.radius;
+    _this5.centroid = opt.centroid;
 
     if (!opt.clone) {
-      _this4.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, _this4.radius);
-      _this4.poly.strokeWidth = 1;
-      _this4.poly.strokeColor = 'darkgray';
+      _this5.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, _this5.radius);
+      _this5.poly.strokeWidth = 1;
+      _this5.poly.strokeColor = 'darkgray';
 
-      _this4.to_path();
+      _this5.to_path();
 
-      _this4.create_in_ames();
+      _this5.create_in_ames();
     }
 
-    _this4.cbs['nsides'] = _this4._nsides_cb;
-    return _this4;
+    _this5.cbs['nsides'] = _this5._nsides_cb;
+    return _this5;
   }
 
   _createClass(AMES_Polygon, [{
@@ -1413,26 +1720,43 @@ var AMES_Polygon = /*#__PURE__*/function (_AMES_Artwork) {
       AMES_Polygon.type_count += 1;
     }
   }, {
-    key: "set_scaling",
-    value: function set_scaling(x) {
-      _get(_getPrototypeOf(AMES_Polygon.prototype), "set_scaling", this).call(this, x);
-
-      this.radius *= x;
-    }
-  }, {
     key: "set_number_of_sides",
     value: function set_number_of_sides(nsides) {
       var style = this.poly.style;
       var position = this.poly.position;
-      this.poly.remove();
-      this.poly = new Path.RegularPolygon(position, nsides, this.radius);
+      var radius; // Find the radius (the distance between the centroid and the farthest)
+
+      var n = this.poly.segments.length;
+      var x_sum = 0;
+      var y_sum = 0;
+
+      for (var i = 0; i < n; i++) {
+        x_sum += this.poly.segments[i].point.x;
+        y_sum += this.poly.segments[i].point.y;
+      }
+
+      var centroid = new Point(x_sum / n, y_sum / n);
+      var max_dist = 0;
+
+      for (var _i5 = 0; _i5 < n; _i5++) {
+        var p = this.poly.segments[_i5].point;
+        var x = p.x - centroid.x;
+        var y = p.y - centroid.y;
+        var dist = Math.sqrt(x * x + y * y);
+        if (dist > max_dist) radius = dist;
+      }
+
+      var new_poly = new Path.RegularPolygon(position, nsides, radius);
+      new_poly.remove();
+      this.poly = this.poly.replaceWith(new_poly); // console.log("replaced?", replaced);
+
       this.poly.style = style;
 
-      if (nsides == 6) {
+      if (nsides == 6 || nsides == 9) {
         this.poly.rotate(-90);
-      } // this.poly.position = position;
+      }
 
-
+      this.poly.position = position;
       this.sides = nsides;
     }
   }, {
@@ -1458,19 +1782,19 @@ var AMES_Ellipse = /*#__PURE__*/function (_AMES_Artwork2) {
   var _super2 = _createSuper(AMES_Ellipse);
 
   function AMES_Ellipse(opt) {
-    var _this5;
+    var _this6;
 
     _classCallCheck(this, AMES_Ellipse);
 
-    _this5 = _super2.call(this);
+    _this6 = _super2.call(this);
 
-    _defineProperty(_assertThisInitialized(_this5), "name", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "name", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "shape_type", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "shape_type", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "artwork_type", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "artwork_type", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "is_ames_ellipse", true);
+    _defineProperty(_assertThisInitialized(_this6), "is_ames_ellipse", true);
 
     opt = opt || {};
     if (!opt.centroid) opt.centroid = ames.canvas_view.center;
@@ -1479,23 +1803,23 @@ var AMES_Ellipse = /*#__PURE__*/function (_AMES_Artwork2) {
     if (!opt.ry) opt.ry = opt.rx;
 
     if (!opt.clone) {
-      _this5.poly = new Shape.Ellipse({
+      _this6.poly = new Shape.Ellipse({
         center: [opt.centroid.x, opt.centroid.y],
         radius: [opt.rx, opt.ry],
         visible: true,
         strokeWidth: 1,
         strokeColor: 'darkgray'
       });
-      _this5.poly.visible = true;
+      _this6.poly.visible = true;
 
-      _this5.to_path();
+      _this6.to_path();
 
-      _this5.poly.rotate(-90);
+      _this6.poly.rotate(-90);
 
-      _this5.create_in_ames();
+      _this6.create_in_ames();
     }
 
-    return _this5;
+    return _this6;
   }
 
   _createClass(AMES_Ellipse, [{
@@ -1535,26 +1859,26 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
   var _super3 = _createSuper(AMES_Artwork_Path);
 
   function AMES_Artwork_Path(opt) {
-    var _this6;
+    var _this7;
 
     _classCallCheck(this, AMES_Artwork_Path);
 
-    _this6 = _super3.call(this);
+    _this7 = _super3.call(this);
 
-    _defineProperty(_assertThisInitialized(_this6), "name", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "name", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "shape_type", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "shape_type", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "artwork_type", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "artwork_type", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "bbox", void 0);
+    _defineProperty(_assertThisInitialized(_this7), "bbox", void 0);
 
-    _defineProperty(_assertThisInitialized(_this6), "is_ames_path", true);
+    _defineProperty(_assertThisInitialized(_this7), "is_ames_path", true);
 
     opt = opt || {};
 
     if (!opt.clone) {
-      _this6.poly = new Path({
+      _this7.poly = new Path({
         strokeColor: 'darkgray',
         strokeWidth: 1,
         visible: true,
@@ -1562,7 +1886,7 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
       });
     }
 
-    return _this6;
+    return _this7;
   }
 
   _createClass(AMES_Artwork_Path, [{
@@ -1577,6 +1901,7 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
   }, {
     key: "finish_creating_path",
     value: function finish_creating_path() {
+      console.log("finished path", this.name, this.poly);
       this.create_in_ames();
     }
   }, {
@@ -1595,16 +1920,14 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
       for (var i in points) {
         this.poly.add(points[i]);
       }
-    }
-  }, {
-    key: "update_bbox",
-    value: function update_bbox() {
-      this.bbox = new Path.Rectangle(this.poly.strokeBounds);
-      this.bbox.visible = true;
-      this.bbox.sendToBack();
-      this.bbox.fillColor = "lavender";
-      this.bbox.opacity = 0;
-    }
+    } // update_bbox() {
+    // 	this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+    // 	this.bbox.visible = true;
+    // 	this.bbox.sendToBack();
+    // 	this.bbox.fillColor = "lavender";
+    // 	this.bbox.opacity = 0;
+    // }
+
   }, {
     key: "make_path_helper",
     value: function make_path_helper() {

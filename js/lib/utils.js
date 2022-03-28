@@ -120,6 +120,7 @@ var AMES_Utils = /*#__PURE__*/function () {
       var p = new Path.Rectangle(r);
       p.strokeColor = color;
       p.strokeWidth = 0.5;
+      p.sendToBack();
       return p;
     } // interpolate: Lagrange interpolation over polynomial given by y = f(x),
     // where data = [[x,y], [x,y], ...] and idx is the relative idx of the
@@ -246,6 +247,8 @@ _defineProperty(AMES_Utils, "FONT", 'Times');
 
 _defineProperty(AMES_Utils, "FONT_SIZE", 10);
 
+_defineProperty(AMES_Utils, "SCROLLBAR_WIDTH", 5);
+
 _defineProperty(AMES_Utils, "L_CONTROLS", ["Shapes", "Lists", "Animations"]);
 
 _defineProperty(AMES_Utils, "L_IDX_BOX", 0);
@@ -266,7 +269,7 @@ _defineProperty(AMES_Utils, "L_CONTRACT_IDX", 3);
 
 _defineProperty(AMES_Utils, "SIDEBAR_WIDTH", 300);
 
-_defineProperty(AMES_Utils, "SIDEBAR_HEIGHT", 500);
+_defineProperty(AMES_Utils, "SIDEBAR_HEIGHT", 550);
 
 _defineProperty(AMES_Utils, "OFFSET", 4);
 

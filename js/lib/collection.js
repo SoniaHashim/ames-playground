@@ -43,6 +43,8 @@ var AMES_Collection = /*#__PURE__*/function () {
 
     _defineProperty(this, "original", []);
 
+    _defineProperty(this, "transformations", []);
+
     _defineProperty(this, "count", 1);
 
     _defineProperty(this, "box", void 0);
@@ -155,7 +157,7 @@ var AMES_Collection = /*#__PURE__*/function () {
       this.is_duplicator = false; // Sort shapes by x_position
 
       artwork.sort(function (a, b) {
-        return a.pos.x - b.pos.x;
+        return a.number - b.number;
       });
 
       for (var idx in artwork) {
@@ -220,7 +222,7 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "create_editor",
     value: function create_editor() {
-      this.editor = new _editors.AMES_List_Editor(this);
+      this.editor = new _editors.AMES_Collection_Editor(this);
       var bounds = this.editor.box.bounds;
       var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
       var x = ames.toolbar.get_position().x + w;
@@ -229,10 +231,34 @@ var AMES_Collection = /*#__PURE__*/function () {
     }
   }, {
     key: "update_offset_mode",
-    value: function update_offset_mode() {
-      for (var i in this.list_constraints) {
-        this.list_constraints[i].offset_mode = this.offset_mode;
+    value: function update_offset_mode() {// for (let i in this.list_constraints) {
+      // 	this.list_constraints[i].offset_mode = this.offset_mode;
+      // }
+    }
+  }, {
+    key: "add_transformation",
+    value: function add_transformation(transformation) {
+      var missing = true;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) missing = false;
       }
+
+      if (missing) this.transformations.push(transformation);
+    }
+  }, {
+    key: "remove_transformation",
+    value: function remove_transformation(transformation) {
+      var idx = -1;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.transformations.splice(idx, 1);
     } // show_editor: if true open editor; otherwise close;
 
   }, {
@@ -260,15 +286,16 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "duplicate",
     value: function duplicate() {
-      console.log("duplicator: ", this.is_duplicator, this.shapes);
-      var original_shape = this.original[0]; // if (!this.bottom) this.bottom = original_shape;
+      var original_shape = this.shapes[0];
 
       if (this.is_duplicator) {
-        // TO DO: insertion order bug. Having trouble changing relative ordering of shapes. 
+        // TO DO: insertion order bug. Having trouble changing relative ordering of shapes.
         var shape = original_shape.clone();
+        var prev = this.shapes[this.shapes.length - 1];
+        shape.poly.insertBelow(prev.poly);
         this.shapes.push(shape);
+        shape.add_collection(this);
         ames.hide_editors(this);
-        this.editor.show(true);
         this.show(true);
       }
     }
@@ -282,13 +309,13 @@ var AMES_Collection = /*#__PURE__*/function () {
         var og = this.shapes[0]; // this.shapes = [];
 
         for (var i = 1; i < n; i++) {
-          var a = Object.create(og);
-          a.poly = null;
-          a.poly = og.poly.clone();
-          a.poly.style = og.poly.style;
+          var a = og.clone();
           var c = i * 10;
           a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
           this.shapes.push(a);
+          a.add_collection(this); // this.add_to_collection(a, true);
+
+          ames.hide_editors(this);
           this.show(true);
         }
 
@@ -307,52 +334,49 @@ var AMES_Collection = /*#__PURE__*/function () {
     }
   }, {
     key: "add_to_collection",
-    value: function add_to_collection(s) {
-      if (!this.is_para_style_list && this.shapes.length > 0) {
-        var fs = this.shapes[0];
-        var ls = this.shapes[this.shapes.length - 1]; // Remove constraint connecting ls to fs
+    value: function add_to_collection(s, use_constraints) {
+      // if (use_constraints || (!this.is_para_style_list && this.shapes.length > 0)) {
+      // 	let fs = this.shapes[0];
+      // 	let ls = this.shapes[this.shapes.length - 1];
+      // 	// Remove constraint connecting ls to fs
+      // 	for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+      // 		let p = utils.VIS_PROPS[i];
+      // 		if (p != 'path') {
+      // 			if (this.shapes.length > 1) {
+      // 				let oc;
+      // 				for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+      // 					let sub = utils.SUB_PROPS[p][sub_idx];
+      // 					// console.log(sub);
+      // 					oc = ls.c_outbound[p][sub][fs.name];
+      // 					this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+      // 					oc.remove();
+      // 				}
+      // 				oc = ls.c_outbound[p]['all'][fs.name];
+      // 				this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+      // 				oc.remove();
+      // 			}
+      //
+      // 			let c_append = new AMES_Constraint(s, ls, p, 'all');
+      // 			let c_loop = new AMES_Constraint(fs, s, p, 'all');
+      //
+      // 			this.list_constraints.push(c_append);
+      // 			this.list_constraints.push(c_loop);
+      //
+      // 			for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+      // 				let sub = utils.SUB_PROPS[p][sub_idx];
+      // 				this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+      // 				this.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+      // 			}
+      // 		}
+      // 	}
+      // }
+      this.shapes.push(s); // s.add_list(this);
 
-        for (var i = 0; i < _utils.AMES_Utils.VIS_PROPS.length; i++) {
-          var p = _utils.AMES_Utils.VIS_PROPS[i];
-
-          if (p != 'path') {
-            if (this.shapes.length > 1) {
-              var oc = void 0;
-
-              for (var sub_idx = 0; sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; sub_idx++) {
-                var sub = _utils.AMES_Utils.SUB_PROPS[p][sub_idx]; // console.log(sub);
-
-                oc = ls.c_outbound[p][sub][fs.name];
-                this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-                oc.remove();
-              }
-
-              oc = ls.c_outbound[p]['all'][fs.name];
-              this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-              oc.remove();
-            }
-
-            var c_append = new _constraints.AMES_Constraint(s, ls, p, 'all');
-            var c_loop = new _constraints.AMES_Constraint(fs, s, p, 'all');
-            this.list_constraints.push(c_append);
-            this.list_constraints.push(c_loop);
-
-            for (var _sub_idx = 0; _sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; _sub_idx++) {
-              var _sub = _utils.AMES_Utils.SUB_PROPS[p][_sub_idx];
-              this.list_constraints.push(s.c_inbound[p][_sub][ls.name]);
-              this.list_constraints.push(fs.c_inbound[p][_sub][s.name]);
-            }
-          }
-        }
-      }
-
-      this.shapes.push(s);
-      s.add_list(this);
+      s.add_collection(this);
     }
   }, {
     key: "update_constraints",
-    value: function update_constraints() {
-      AMES_List.update_constraints(this);
+    value: function update_constraints() {// AMES_Collection.update_constraints(this);
     }
   }, {
     key: "get_shape_names",
@@ -370,10 +394,11 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "show",
     value: function show(bool) {
-      // this.show_editor(bool);
+      this.show_editor(bool);
       this.update_show_box();
 
       if (bool) {
+        // let prev = null; let res;
         this._update_list();
       }
     } // _update_list: updates the artwork that the list contains
@@ -393,6 +418,9 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "remove_item",
     value: function remove_item() {
       if (this.count == 1) return;
+      var shape = this.shapes[this.shapes.length - 1];
+      shape.remove();
+      this.shapes.pop();
       this.count = this.count - 1;
       this.update_show_box();
     }
@@ -439,7 +467,7 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "update_show_box_count",
     value: function update_show_box_count() {
       this.count = this.shapes.length;
-      this.text_count.content = this.count;
+      if (this.text_count) this.text_count.content = this.count;
     }
   }, {
     key: "_make_show_box",
@@ -482,13 +510,13 @@ var AMES_Collection = /*#__PURE__*/function () {
           if (total_drag < 0) ames.canvas.style.cursor = 'w-resize';
           if (total_drag > 0) ames.canvas.style.cursor = 'e-resize';
 
-          if (total_drag < -10) {
+          if (total_drag < -5) {
             _this2.remove_item();
 
             total_drag = 0;
           }
 
-          if (total_drag > 10) {
+          if (total_drag > 5) {
             _this2.add_item();
 
             total_drag = 0;
@@ -519,16 +547,19 @@ var AMES_Collection = /*#__PURE__*/function () {
     value: function manipulate(p, sub) {
       this._clear_cb_helpers();
 
+      for (var i in this.shapes) {
+        this.shapes[i]._clear_cb_helpers();
+      }
+
       console.log("Manipulate list", p, sub); // Turn off the active property
 
       if (this.active_prop) {
         // Remove subproperty buttons
         this.editor.show_subprops(this.active_prop, false);
-        this.editor.select_prop(this.active_prop, false);
-        this.editor.show_constraint(false);
+        this.editor.select_prop(this.active_prop, false); // this.editor.show_constraint(false);
 
-        for (var i in this.shapes) {
-          if (this.shapes[i].active_prop == p) this.shapes[i].manipulate(p);
+        for (var _i2 in this.shapes) {
+          if (this.shapes[_i2].active_prop == p) this.shapes[_i2].manipulate(p);
         }
       } // If the new propety is not the property just turned off, turn it on
 
@@ -542,21 +573,21 @@ var AMES_Collection = /*#__PURE__*/function () {
         var sub_p = 'all';
         this.active_sub_p = sub_p;
 
-        for (var _i2 in this.shapes) {
-          console.log('...iterating over', this.shapes[_i2].name);
+        for (var _i3 in this.shapes) {
+          console.log('...iterating over', this.shapes[_i3].name);
 
-          if (this.shapes[_i2].active_prop == p) {
-            this.shapes[_i2].manipulate_helper('all');
+          if (this.shapes[_i3].active_prop == p) {
+            this.shapes[_i3].manipulate_helper('all');
           } else {
-            this.shapes[_i2].manipulate(p, sub);
+            this.shapes[_i3].manipulate(p, sub);
           }
         } // this.cbs[p](this, this.cb_helpers);
         // Indicate active property and show subproperty buttons
 
 
         this.editor.show_subprops(p, true);
-        this.editor.select_prop(p, true);
-        this.editor.show_constraint(true, p, sub_p);
+        this.editor.select_prop(p, true); // this.editor.show_constraint(true, p, sub_p);
+
         this.active_prop = p;
         this.active_sub_p = sub_p;
       } else {
@@ -570,16 +601,14 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "set_active_obj",
     value: function set_active_obj(obj) {
-      this.active_obj = obj;
-      this.editor.update_constraint(this.active_prop, this.active_sub_p);
+      this.active_obj = obj; // this.editor.update_constraint(this.active_prop, this.active_sub_p);
     }
   }, {
     key: "manipulate_helper",
     value: function manipulate_helper(sub) {
       this._clear_cb_helpers();
 
-      this.active_sub_p = sub;
-      this.editor.show_constraint(true, this.active_prop, sub);
+      this.active_sub_p = sub; // this.editor.show_constraint(true, this.active_prop, sub);
 
       for (var i in this.shapes) {
         this.shapes[i].manipulate_helper(sub);
@@ -665,33 +694,56 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "remove",
     value: function remove() {
       console.log("To do -- List.remove()");
-    }
-  }, {
-    key: "make_list_group",
-    value: function make_list_group() {
-      var box = new Group();
 
       for (var i in this.shapes) {
-        box.addChild(this.shapes[i].poly);
+        var a = this.shapes[i];
+        a.remove_collection(this);
       }
 
-      return box;
-    }
-  }, {
-    key: "empty_list_group",
-    value: function empty_list_group(box) {
-      for (var i in box.children) {
-        box.children[i].addTo(ames.canvas_view._project);
-      }
-    } // get_bbox: returns the bounding box of the group containing the list items
+      this.show(false);
+      ames.update_layers({
+        "remove": true,
+        "box": ames.obj_boxes_dict[this.name]
+      });
+    } // make_list_group() {
+    // 	let box = new Group();
+    // 	for (let i in this.shapes) {
+    // 		box.addChild(this.shapes[i].poly);
+    // 	}
+    // 	return box;
+    // }
+    //
+    // empty_list_group(box) {
+    // 	for (let i in box.children) {
+    // 		box.children[i].addTo(ames.canvas_view._project);
+    // 	}
+    // }
+    // get_bbox: returns the bounding box of the group containing the list items
 
   }, {
     key: "get_bbox",
     value: function get_bbox() {
-      var bbox;
-      var box = this.make_list_group();
-      if (box.strokeBounds) bbox = box.strokeBounds;else bbox = box.bounds;
-      this.empty_list_group(box);
+      // let bbox;
+      // let box = this.make_list_group();
+      // if (box.strokeBounds) bbox = box.strokeBounds;
+      // else bbox = box.bounds;
+      // this.empty_list_group(box);
+      var xmin = Number.MAX_VALUE;
+      var ymin = Number.MAX_VALUE;
+      var xmax = Number.MIN_VALUE;
+      var ymax = Number.MIN_VALUE;
+
+      for (var i in this.shapes) {
+        var box = this.shapes[i].get_bbox();
+        var TL = box.topLeft;
+        var BR = box.bottomRight;
+        if (TL.x < xmin) xmin = TL.x;
+        if (TL.y < ymin) ymin = TL.y;
+        if (BR.x > xmax) xmax = BR.x;
+        if (BR.y > ymax) ymax = BR.y;
+      }
+
+      var bbox = new Rectangle(new Point(xmin, ymin), new Point(xmax, ymax));
       return bbox;
       ;
     }
@@ -725,9 +777,7 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "update_constraints",
     value: function update_constraints(list) {
       var s = list.active_sub_p;
-      if (!s) s = "all";
-
-      _constraints.AMES_Constraint.update_constraints(list.active_prop, s, list);
+      if (!s) s = "all"; // AMES_Constraint.update_constraints(list.active_prop, s, list);
     }
   }]);
 

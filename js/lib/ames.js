@@ -126,8 +126,6 @@ var AMES = /*#__PURE__*/function () {
     _defineProperty(this, "offset_mode", false);
 
     _defineProperty(this, "ux", []);
-
-    _defineProperty(this, "layers", {});
   }
 
   _createClass(AMES, [{
@@ -143,6 +141,7 @@ var AMES = /*#__PURE__*/function () {
     // State
     // Testing
     // UX
+    // layers = {};
     // Iniitalize AMES app properties after window loads
     function init() {
       // Get references to canvas objects
@@ -184,28 +183,49 @@ var AMES = /*#__PURE__*/function () {
     }
   }, {
     key: "test",
-    value: function test() {
-      // let a = new AMES_Ellipse();
+    value: function test() {// let line1 = new AMES_Artwork_Path();
+      // let line2 = new AMES_Artwork_Path();
+      // line1.add_points([new Point(75, 100), new Point(75, 90)]);
+      // line1.finish_creating_path();
+      // line2.add_points([new Point(100, 100), new Point(100, 110)]);
+      // line2.finish_creating_path();
+      //
+      // let line3 = new AMES_Artwork_Path();
+      // line3.add_points([new Point(500, 525), new Point(500, 500)]);
+      // line3.finish_creating_path();
+      //
+      // let lines = new AMES_Collection([line1, line2]);
+      // console.log(line1.poly);
+      // let e = new AMES_Ellipse({
+      // 	"centroid": new Point(150, 150),
+      // });
+      // let p = new AMES_Polygon({
+      // 	"centroid": new Point(300, 300),
+      // 	 "nsides": 12,
+      // 	 "radius": 50
+      //  });
+      // let t = new AMES_Transformation({
+      // 	"input": lines,
+      // 	"target": p,
+      // });
+      // t.set_mapping({"type": "Vertex", "mapping": "relative position"});
+      // t.set_mapping_behavior("alternate");
+      // t.tf_space_absolute = false;
+      // t.show(true);
       // a.poly.strokeColor = "pink";
       // let b = new AMES_Ellipse();
       // b.poly.sendToBack();
-      var a_triangle = new _artwork.AMES_Polygon();
-      var a_square = new _artwork.AMES_Polygon({
-        centroid: new Point(200, 200),
-        nsides: 4,
-        radius: 50
-      });
-      var a_dot = new _artwork.AMES_Ellipse({
-        centroid: new Point(500, 500),
-        rx: 5,
-        ry: 5
-      });
-      var a_ellipse = new _artwork.AMES_Ellipse({
-        centroid: new Point(750, 500),
-        rx: 50,
-        ry: 150
-      });
-      var t = new _transformation.AMES_Transformation();
+      // let a_triangle = new AMES_Polygon();
+      // let a_square = new AMES_Polygon({centroid: new Point(200, 200), nsides: 4, radius: 50});
+      // let a_dot = new AMES_Ellipse({centroid: new Point(500, 500), rx: 5, ry: 5});
+      // let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150});
+      // let c = new AMES_Collection([a_dot]);
+      // for (let i = 0; i < 9; i++) {
+      // 	c.duplicate();
+      // }
+      // let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
+      // t.set_target(c);
+      // ames.starfield(6)
     }
   }, {
     key: "create_toolbar",
@@ -313,15 +333,17 @@ var AMES = /*#__PURE__*/function () {
         radius: 0
       });
       ames_box.position = ames_text.position;
+      console.log("ames_box", ames_box.bounds.height, _utils.AMES_Utils.SIDEBAR_WIDTH);
       ames_box.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
       ames_box.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR; // Add ux show / hide carets
 
       sidebar.add_caret = function (i_name) {
         var button = ames.icons[i_name].clone();
-        var caret_position = new Point(ames_text.position.x - ames_text.bounds.width / 2 - 4 * _utils.AMES_Utils.ICON_OFFSET, ames_text.position.y);
+        var caret_position = new Point(ames_text.position.x - ames_text.bounds.width / 2 - 3 * _utils.AMES_Utils.ICON_OFFSET, ames_text.position.y);
         button.position = caret_position;
-        button.scaling = 0.75;
-        button.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR; // Show
+        button.scaling = 1.125;
+        button.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
+        button.fillColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR; // Show
 
         if (i_name == "caret-right") {
           button.visible = false;
@@ -352,8 +374,6 @@ var AMES = /*#__PURE__*/function () {
       };
 
       sidebar.addChildren([r, ames_box, ames_text]);
-      var layers_panel = new Group();
-      sidebar.addChild(layers_panel);
 
       var get_position = function get_position() {
         var cw = ames.canvas_view.size.width / 2 - .5 * _utils.AMES_Utils.ICON_OFFSET;
@@ -365,10 +385,155 @@ var AMES = /*#__PURE__*/function () {
       sidebar.position = get_position();
       sidebar.visible = true;
       this.sidebar = sidebar;
+      var label_x = ames.canvas_view.size.width / 2;
+      var label_y = -ames.canvas_view.size.height / 2;
+      var save_label = new PointText({
+        point: [sidebar.position.x - sidebar.bounds.width / 2 + 5 * _utils.AMES_Utils.ICON_OFFSET, sidebar.position.y],
+        content: "Save",
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true
+      });
+      var save_btn = new Path.Rectangle({
+        position: [save_label.position.x, save_label.position.y],
+        size: [save_label.bounds.width + 5 * _utils.AMES_Utils.ICON_OFFSET, save_label.bounds.height + 2.5 * _utils.AMES_Utils.ICON_OFFSET],
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 5
+      });
+      var import_label = new PointText({
+        point: [sidebar.position.x - sidebar.bounds.width / 2 + save_label.bounds.width + 12 * _utils.AMES_Utils.ICON_OFFSET, sidebar.position.y],
+        content: "Import",
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true
+      });
+      var import_btn = new Path.Rectangle({
+        position: [import_label.position.x, import_label.position.y],
+        size: [import_label.bounds.width + 5 * _utils.AMES_Utils.ICON_OFFSET, import_label.bounds.height + 2.5 * _utils.AMES_Utils.ICON_OFFSET],
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 5
+      });
+
+      var sidebar_btn_click = function sidebar_btn_click(btn) {
+        if (btn == "import") {
+          document.getElementById('file_input').click();
+          import_btn.fillColor = "lightgray";
+          setTimeout(function () {
+            import_btn.fillColor = null;
+          }, 250);
+        }
+
+        if (btn == "save") {
+          save_btn.fillColor = "lightgray";
+          setTimeout(function () {
+            save_btn.fillColor = null;
+          }, 250); // TO DO: Save an ames file
+        }
+      };
+
+      import_btn.onMouseDown = function (e) {
+        sidebar_btn_click("import");
+      };
+
+      import_label.onMouseDown = function (e) {
+        sidebar_btn_click("import");
+      };
+
+      save_btn.onMouseDown = function (e) {
+        sidebar_btn_click("save");
+      };
+
+      save_btn.onMouseDown = function (e) {
+        sidebar_btn_click("save");
+      };
+
+      this.ux.push(import_btn, import_label, save_btn, save_label);
+      this.sidebar.addChildren[(save_label, save_btn, import_label, import_btn)];
+      var layers = new Group();
+      var scrollbar_top = sidebar.position.y + save_btn.bounds.height / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET;
+      var scrollbar_x = sidebar.position.x + sidebar.bounds.width / 2 - 1.25 * _utils.AMES_Utils.ICON_OFFSET;
+      var scrollbar_bottom = sidebar.position.y + r.bounds.height / 2 - 3 * _utils.AMES_Utils.ICON_OFFSET;
+
+      layers.scroll = function (e) {
+        layers.sendToBack();
+        layers.position.y += -e.event.movementY;
+
+        for (var i in _this2.layers.children) {
+          var lbox = _this2.layers.children[i];
+          lbox.sendToBack();
+          lbox.visible = true;
+          if (lbox.position.y < scrollbar_top) lbox.visible = false;
+          if (lbox.position.y > scrollbar_bottom) lbox.visible = false;
+        }
+      };
+
+      var scrollbar = new Path.Line({
+        from: [scrollbar_x, scrollbar_top],
+        to: [scrollbar_x, scrollbar_bottom],
+        strokeColor: "lightgray",
+        strokeWidth: 4,
+        strokeCap: 'round'
+      });
+
+      scrollbar.onMouseDrag = function (e) {
+        layers.scroll(e);
+      };
+
+      var r_top = new Path.Rectangle({
+        point: [100, 100],
+        size: [sidebar.bounds.width + 2, 22],
+        fillColor: "white"
+      });
+      r_top.position = new Point(sidebar.position.x, scrollbar_top - 10.25);
+      var r_btm = r_top.clone();
+      r_btm.position = new Point(sidebar.position.x, scrollbar_bottom + 10.25);
+      r_top.sendToBack();
+      r_btm.sendToBack();
+      r_top.visible = false;
+      r_btm.visible = false;
+      scrollbar.top = scrollbar_top;
+      scrollbar.bottom = scrollbar_bottom;
+      sidebar.addChild(scrollbar);
+      layers.scrollbar = scrollbar;
+      this.layers = layers;
+      this.ux.push(scrollbar);
+      this.ux.push(layers);
+    }
+  }, {
+    key: "import_file",
+    value: function import_file(filename) {
+      var file_name_parts = filename.split(".");
+      var name = file_name_parts[0];
+      var ext = file_name_parts[1];
+
+      if (ext == "ames") {// TO DO: load an ames file
+      }
+
+      if (ext == "svg") {
+        project.importSVG(filename, {
+          onError: function onError() {
+            console.log("Error: unable to import svg file.");
+          },
+          onLoad: function onLoad(i, s) {
+            console.log(i, s);
+            i.visible = true; // create new artwork type to support
+          }
+        });
+      }
     }
   }, {
     key: "show_ux",
     value: function show_ux(bool) {
+      for (var i in this.objs) {
+        if (this.objs[i].is_transformation) {
+          this.objs[i].toggle_show_tf({
+            'deactivate': true
+          });
+        }
+      }
+
       for (var idx in this.ux) {
         this.ux[idx].visible = bool;
       }
@@ -377,7 +542,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "import_icons",
     value: function import_icons() {
-      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen", "card-list", "nsides", "asterisk"];
+      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen", "card-list", "nsides", "asterisk", "plus", "arrow-right"];
 
       for (var idx in icons) {
         this.import_icon(icons[idx]);
@@ -419,7 +584,6 @@ var AMES = /*#__PURE__*/function () {
         var caret = _this3.icons[i_name].clone();
 
         var caret_w = caret.bounds.width;
-        caret.scaling = 0.65;
         var box_y = box.position.y;
         var caret_p = new Point(caret_w / 2 + _utils.AMES_Utils.ICON_OFFSET, box_y + 1);
         caret.position = caret_p;
@@ -854,7 +1018,7 @@ var AMES = /*#__PURE__*/function () {
         };
 
         colorpicker.load_color = function (c) {
-          if (!c) c = _utils.AMES_Utils.INACTIVE_COLOR; // update swatch
+          if (!c) c = new Color(_utils.AMES_Utils.INACTIVE_COLOR); // update swatch
 
           r.fillColor = c; // update color label
 
@@ -958,21 +1122,48 @@ var AMES = /*#__PURE__*/function () {
     value: function starfield(step) {
       if (step == null) step = 5;
       console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
-      if (step != 5) dproject.activeLayer.removeChildren();
+
+      if (step == -1) {
+        var line1 = new _artwork.AMES_Artwork_Path();
+        var line2 = new _artwork.AMES_Artwork_Path();
+        line1.add_points([new Point(75, 100), new Point(75, 90)]);
+        line2.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        var _lines_perturb = new _collection.AMES_Collection([line1, line2]);
+      }
+
+      var lines_collection;
+
+      if (step == 0) {
+        var _line = new _artwork.AMES_Artwork_Path();
+
+        var _line2 = new _artwork.AMES_Artwork_Path();
+
+        _line.add_points([new Point(75, 100), new Point(75, 90)]);
+
+        _line2.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        lines_collection = new _collection.AMES_Collection([_line, _line2]);
+      } // if (step != 5) project.activeLayer.removeChildren();
+
+
       var oct;
 
       if (step >= 0) {
         oct = new _artwork.AMES_Polygon({
-          "nsides": 20
+          "nsides": 12
         });
-        oct.poly.strokeColor = "pink";
+        oct.poly.strokeColor = "silver";
+        oct.poly.fillColor = "black";
+        oct.poly.scaling = 0.8;
+        oct.poly.strokeWidth = 2;
       }
 
       var poly_collection;
 
       if (step >= 1) {
-        poly_collection = new _collection.AMES_Collection(oct);
-        poly_collection.set_count(10);
+        poly_collection = new _collection.AMES_Collection([oct]);
+        poly_collection.set_count(12);
       }
 
       var tf_position;
@@ -994,11 +1185,15 @@ var AMES = /*#__PURE__*/function () {
       var lines_perturb;
 
       if (step >= 3) {
-        var line1 = new _artwork.AMES_Artwork_Path();
-        var line2 = new _artwork.AMES_Artwork_Path();
-        line1.add_points([new Point(75, 100), new Point(75, 90)]);
-        line2.add_points([new Point(100, 100), new Point(100, 105)]);
-        lines_perturb = new _collection.AMES_Collection([line1, line2]);
+        var _line3 = new _artwork.AMES_Artwork_Path();
+
+        var _line4 = new _artwork.AMES_Artwork_Path();
+
+        _line3.add_points([new Point(75, 100), new Point(75, 90)]);
+
+        _line4.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        lines_perturb = new _collection.AMES_Collection([_line3, _line4]);
         tf_point_perturb = new _transformation.AMES_Transformation({
           "input": lines_perturb,
           "target": poly_collection
@@ -1017,52 +1212,64 @@ var AMES = /*#__PURE__*/function () {
       var tf_nsides;
 
       if (step >= 4) {
-        var line_nsides = new _artwork.AMES_Artwork_Path();
-        line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
-        tf_nsides = new _transformation.AMES_Transformation();
-        tf_nsides.set_target(poly_collection);
-        tf_nsides.set_input(line_nsides);
-        tf_nsides.set_mapping({
-          "type": "Polygon",
-          "mapping": "number of sides"
-        });
-        tf_nsides.set_tf_space({
-          "my1": 10,
-          "my2": 28
-        });
-        tf_nsides.show_tf_space(true);
-        tf_nsides.transform();
+        // let line_nsides = new AMES_Artwork_Path();
+        // line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
+        // tf_nsides = new AMES_Transformation();
+        // tf_nsides.set_target(poly_collection);
+        // tf_nsides.set_input(line_nsides);
+        // tf_nsides.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+        // tf_nsides.set_tf_space({"my1": 10, "my2": 28});
+        // tf_nsides.show_tf_space(true);
+        // tf_nsides.transform();
         tf_point_perturb.transform();
       }
 
-      var tf_point_perturb_animation;
-      var lines_perturb_animated;
+      var tf_point_perturb_animation; // let lines_perturb_animated;
 
       if (step >= 5) {
-        var _line = new _artwork.AMES_Artwork_Path();
-
-        var _line2 = new _artwork.AMES_Artwork_Path();
-
-        _line.add_points([new Point(275, 100), new Point(275, 95)]);
-
-        _line2.add_points([new Point(300, 100), new Point(300, 105)]);
-
-        lines_perturb_animated = new _collection.AMES_Collection([_line, _line2]);
+        // let line1 = new AMES_Artwork_Path();
+        // let line2 = new AMES_Artwork_Path();
+        // line1.add_points([new Point(275, 100), new Point(275, 95)]);
+        // line2.add_points([new Point(300, 100), new Point(300, 105)]);
+        // lines_perturb_animated = new AMES_Collection([line1, line2]);
         tf_point_perturb_animation = new _transformation.AMES_Transformation({
-          "input": lines_perturb_animated,
-          "target": poly_collection
-        });
-        tf_point_perturb_animation.set_mapping({
-          "type": "Vertex",
-          "mapping": "relative animation"
+          "input": lines_perturb,
+          "target": poly_collection,
+          "mapping": {
+            "type": "Vertex",
+            "mapping": "relative animation"
+          }
         });
         tf_point_perturb_animation.set_mapping_behavior("alternate");
-        tf_point_perturb_animation.tf_space_absolute = false;
-        tf_point_perturb_animation.tf_space_path_nsegments = 25;
-        tf_point_perturb_animation.tf_space_speed_factor = 1;
-        tf_point_perturb_animation.loop_max_count = 1;
+        tf_point_perturb_animation.tf_space_absolute = false; // tf_point_perturb_animation.tf_space_path_nsegments = 250;
+        // tf_point_perturb_animation.tf_space_speed_factor = 1;
+        // tf_point_perturb_animation.loop_max_count = 1;
+        // tf_point_perturb_animation.loop = true;
+
         tf_point_perturb.show_tf_space(false);
-        tf_point_perturb_animation.transform();
+        if (step == 5) tf_point_perturb_animation.transform();
+      }
+
+      if (step >= 6) {
+        var playback_loop1 = new _artwork.AMES_Ellipse({
+          "centroid": new Point(200, 150),
+          "rx": 25,
+          "ry": 25
+        }); // let playback_loop2 = new AMES_Ellipse({"centroid": new Point(200, 150), "rx": 50, "ry": 25});
+        // let playback_loop_collection = new AMES_Collection([playback_loop1, playback_loop2])
+
+        var tf_playback = new _transformation.AMES_Transformation({
+          "input": playback_loop1,
+          "target": tf_point_perturb_animation,
+          "mapping": {
+            "type": "Transformation",
+            "mapping": "playback"
+          }
+        });
+        tf_playback.tf_space_path_nsegments = 10; // tf_playback.loop_max_count = 10;
+
+        tf_playback.loop = true; // if (step == 6) tf_point_perturb_animation.transform();
+        // if (step >= 6) tf_playback.transform();
       }
     }
   }, {
@@ -1084,7 +1291,7 @@ var AMES = /*#__PURE__*/function () {
       var poly_collection;
 
       if (step >= 1) {
-        poly_collection = new _collection.AMES_Collection(tri);
+        poly_collection = new _collection.AMES_Collection([tri]);
         poly_collection.set_count(6);
       }
 
@@ -1096,7 +1303,7 @@ var AMES = /*#__PURE__*/function () {
         dot = new _artwork.AMES_Ellipse();
         dot.poly.fillColor = "blue";
         dot.poly.strokeWidth = 0;
-        dot_collection = new _collection.AMES_Collection(dot);
+        dot_collection = new _collection.AMES_Collection([dot]);
         dot_collection.set_count(6);
       }
 
@@ -1108,8 +1315,8 @@ var AMES = /*#__PURE__*/function () {
           "input": poly_collection,
           "target": dot_collection,
           "mapping": "motion path"
-        });
-        tf_motion_path.tf_space_speed_factor = 1;
+        }); // tf_motion_path.tf_space_speed_factor = 1;
+
         if (step == 3) tf_motion_path.transform();
 
         if (step > 3) {
@@ -1355,7 +1562,7 @@ var AMES = /*#__PURE__*/function () {
       // x.name = "List " + n_list;
       // console.log("list name set to", x.name);
 
-      x.editor = new _editors.AMES_List_Editor(x);
+      x.editor = new AMES_List_Editor(x);
       this.add_obj(x, _utils.AMES_Utils.L_CONTROLS[1]);
       x.show(true);
       this.lists[x.name] = x;
@@ -1370,16 +1577,21 @@ var AMES = /*#__PURE__*/function () {
     }
   }, {
     key: "hide_editors",
-    value: function hide_editors(obj) {
-      console.log("hide editors?");
+    value: function hide_editors(obj, force) {
       obj = obj || {};
 
       for (var i in this.objs) {
         if (this.objs[i].name != obj.name) {
-          if (!(obj.is_shape && this.objs[i].is_list && this.objs[i].has_shape(obj))) {
+          if (force) {
             this.objs[i].editor.show(false);
 
             this.objs[i]._clear_cb_helpers();
+          } else {
+            if (!(obj.is_artwork && this.objs[i].is_collection && this.objs[i].has_shape(obj))) {
+              this.objs[i].editor.show(false);
+
+              this.objs[i]._clear_cb_helpers();
+            }
           }
         }
       } // ames.colorpicker.visible = false;
@@ -1387,11 +1599,204 @@ var AMES = /*#__PURE__*/function () {
 
     }
   }, {
+    key: "update_layers",
+    value: function update_layers(opt) {
+      opt = opt || {};
+      var box;
+      if (opt.box) box = opt.box;else return; // Insert box into layers box
+
+      if (opt.insert) {
+        this.layers.insertChild(0, box);
+        box.sendToBack();
+      } // Delete box from layers box
+
+
+      if (opt.remove) {
+        var idx = box.index;
+        this.layers.removeChildren(idx, idx + 1);
+      } // Parent box to another box (change order of boxes)
+
+
+      if (opt.parent) {// let parent_idx = opt.parent_box.index;
+        // console.log(box);
+        // let box_idx = box.index;
+        // box.children[1].content = '    ' + box.children[1].content;
+        // this.layers.removeChildren(box_idx, box_idx+1);
+        // this.layers.insertChild(parent_idx, box);
+        // let str = "";
+        // for (let i in this.layers.children) {
+        // 	str += this.layers.children[i].children[1].content
+        // }
+        // console.log("layers: ", str);
+      } // TO DO: Keep all transformation functions without a target at the top
+      // Update view for layers box
+
+
+      this.layers.sendToBack();
+      var nchildren = this.layers.children.length;
+
+      for (var i = 0; i < nchildren; i++) {
+        var lbox = this.layers.children[i];
+        lbox.position.x = ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH;
+        lbox.position.y = i * lbox.bounds.height;
+      }
+
+      var layers_ypos = this.layers.scrollbar.top + this.layers.bounds.height / 2 + _utils.AMES_Utils.ICON_OFFSET / 2;
+      this.layers.position = new Point(ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH, layers_ypos);
+
+      for (var _i2 = 0; _i2 < nchildren; _i2++) {
+        var _lbox = this.layers.children[_i2];
+        _lbox.visible = true;
+        if (_lbox.position.y < this.layers.scrollbar.top) _lbox.visible = false;
+        if (_lbox.position.y > this.layers.scrollbar.bottom) _lbox.visible = false;
+      }
+
+      var str = "";
+
+      for (var _i3 in this.layers.children) {
+        str += this.layers.children[_i3].children[1].content;
+      }
+    }
+  }, {
+    key: "create_layers_box",
+    value: function create_layers_box(obj) {
+      var obj_box = new Group();
+      obj.obj_box = obj_box; // Create a box in the side panel
+
+      var ypos = 450;
+      var box = new Path.Rectangle({
+        point: [500, 450],
+        size: [_utils.AMES_Utils.SIDEBAR_WIDTH - 2 * _utils.AMES_Utils.SCROLLBAR_WIDTH, 20],
+        // fillColor: "white",
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 3,
+        strokeWidth: .75,
+        position: [ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH, ypos]
+      }); // box.sendToBack();
+
+      var box_label = new PointText({
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true,
+        point: [box.position.x - _utils.AMES_Utils.SIDEBAR_WIDTH / 2 + 5 * _utils.AMES_Utils.ICON_OFFSET, box.position.y + _utils.AMES_Utils.ICON_OFFSET]
+      });
+      var name;
+
+      obj_box.change_name = function () {
+        name = obj.name;
+
+        if (obj instanceof _transformation.AMES_Transformation) {
+          var obj_name_parts = obj.name.split(" ");
+          var mapping = obj.get_mapping();
+          var input = "input";
+          if (obj.input) input = obj.input.name;
+
+          if (mapping) {
+            mapping = mapping[0].toUpperCase() + mapping.substr(1);
+            input = input[0].toUpperCase() + input.substr(1);
+            name = obj.name + ": (" + input + ": " + mapping + ")";
+          }
+        }
+
+        box_label.content = name;
+      };
+
+      obj_box.change_name(); // Remove btn to remove obj
+
+      var trash = ames.icons['trash'].clone();
+      var trash_w = trash.bounds.width;
+      trash.scaling = .825;
+      trash.visible = true;
+      trash.position = new Point(box.position.x + box.bounds.width / 2 - trash_w, box.position.y);
+      trash.bringToFront();
+
+      trash.onClick = function (e) {
+        obj.remove();
+      };
+
+      obj_box.addChildren([box, box_label, trash]); // Visibility btns to toggle visibility
+
+      var eye = ames.icons['eye'].clone();
+      var eye_slash = ames.icons['eye-slash'].clone();
+      var eye_w = eye.bounds.width;
+      eye.visible = true;
+      eye_slash.visible = false;
+      var eye_pos = new Point(trash.position.x - eye_w - _utils.AMES_Utils.ICON_OFFSET, box.position.y);
+      eye.position = eye_pos;
+      eye_slash.position = eye_pos;
+      eye.bringToFront();
+      eye_slash.bringToFront();
+
+      eye.onClick = function (e) {
+        eye.visible = false;
+        eye_slash.visible = true;
+        obj.show(false);
+      };
+
+      eye_slash.onClick = function (e) {
+        eye_slash.visible = false;
+        eye.visible = true;
+        ames.hide_editors(obj, true);
+        obj.show(true);
+      };
+
+      box_label.onClick = function (e) {
+        ames.hide_editors(obj, true);
+        obj.show(true);
+        eye.visible = false;
+        eye_slash.visible = true;
+      };
+
+      obj_box.addChildren([eye, eye_slash]);
+
+      if (obj instanceof _transformation.AMES_Transformation) {
+        // For a transformation toggle whether or not the transformation space is visible
+        var axes = ames.icons['axes'].clone();
+        var axes_w = axes.bounds.width;
+        axes.position = new Point(eye_pos.x - axes_w - _utils.AMES_Utils.ICON_OFFSET, box.position.y);
+        axes.active = obj.tf_space_visible;
+
+        if (axes.active) {
+          axes.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+          axes.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+        }
+
+        axes.onClick = function (e) {
+          if (axes.active) {
+            axes.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+            axes.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+            obj.toggle_show_tf({
+              "deactivate": true
+            });
+            axes.active = false;
+          } else {
+            axes.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+            axes.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+            obj.toggle_show_tf();
+            axes.active = true;
+          }
+        };
+
+        axes.visible = true;
+        axes.bringToFront();
+        obj_box.addChild(axes);
+      }
+
+      this.update_layers({
+        insert: true,
+        box: obj_box
+      });
+      if (!this.obj_boxes_dict) this.obj_boxes_dict = {};
+      this.obj_boxes_dict[obj.name] = obj_box;
+    }
+  }, {
     key: "add_obj",
     value: function add_obj(x, t_obj) {
       this.objs[x.name] = x; // Hide all open editors
 
-      this.hide_editors(x); // let n = x.name;
+      this.hide_editors(x);
+      this.create_layers_box(x); // let n = x.name;
       // let box_idx;
       // if (t_obj == utils.L_CONTROLS[0]) {
       // 	box_idx = this.l_shape_idx;
@@ -1529,37 +1934,38 @@ var AMES = /*#__PURE__*/function () {
       // // start objects as active
       // this.activate_obj(n);
       // this.active_objs[n] = x;
-    } // active_obj: Activates layers box and enables object selection
+    } // // active_obj: Activates layers box and enables object selection
+    // activate_obj(n) {
+    // 	let x = this.objs[n];
+    // 	x.make_interactive(true);
+    // 	x.show_editor(true);
+    //
+    // 	// // Activate layers box
+    // 	// let box = this.obj_boxes[n];
+    // 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
+    // 	// box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
+    // 	// box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
+    // 	// for (let idx in utils.L_IDX_ICONS) {
+    // 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
+    // 	// }
+    // }
+    //
+    // // deactivate_obj: Deactivates layers box and disables object selection
+    // deactivate_obj(n) {
+    // 	let x = this.objs[n];
+    // 	x.make_interactive(false);
+    // 	x.show_editor(false);
+    //
+    // 	// // Deactivate layers box
+    // 	// let box = this.obj_boxes[n];
+    // 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
+    // 	// box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
+    // 	// box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
+    // 	// for (let idx in utils.L_IDX_ICONS) {
+    // 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
+    // 	// }
+    // }
 
-  }, {
-    key: "activate_obj",
-    value: function activate_obj(n) {
-      var x = this.objs[n];
-      x.make_interactive(true);
-      x.show_editor(true); // // Activate layers box
-      // let box = this.obj_boxes[n];
-      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
-      // box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
-      // box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
-      // for (let idx in utils.L_IDX_ICONS) {
-      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
-      // }
-    } // deactivate_obj: Deactivates layers box and disables object selection
-
-  }, {
-    key: "deactivate_obj",
-    value: function deactivate_obj(n) {
-      var x = this.objs[n];
-      x.make_interactive(false);
-      x.show_editor(false); // // Deactivate layers box
-      // let box = this.obj_boxes[n];
-      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
-      // box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
-      // box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
-      // for (let idx in utils.L_IDX_ICONS) {
-      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
-      // }
-    }
   }, {
     key: "remove_obj",
     value: function remove_obj(n, t_obj) {
@@ -1599,10 +2005,10 @@ var AMES = /*#__PURE__*/function () {
 
       var by = _utils.AMES_Utils.LAYER_HEIGHT;
 
-      for (var _i2 = idx; _i2 < this.idx_boxes.length; _i2++) {
-        var m = this.idx_boxes[_i2];
+      for (var _i4 = idx; _i4 < this.idx_boxes.length; _i4++) {
+        var m = this.idx_boxes[_i4];
         var m_box = this.obj_boxes[m];
-        var ny = _i2 * by + by / 2 + _i2 * .5;
+        var ny = _i4 * by + by / 2 + _i4 * .5;
         m_box.position = new Point(m_box.position.x, ny);
       }
     } // switch_shape_tool: toggles shape tool to enable drawing new shapes
@@ -2247,45 +2653,60 @@ var AMES = /*#__PURE__*/function () {
           return;
         }
 
-        point_in_box = false; // If end point is the bounding box of an active object
+        point_in_box = false;
+        var containing_objs = []; // If end point is the bounding box of an active object
 
         for (var k in _this10.objs) {
           // Snap the endpoint to the closest bounding box corner
           var obj = _this10.objs[k];
 
-          if (obj.is_geometry) {
+          if (obj.is_artwork) {
             if (obj.contains(e.point)) {
-              // Attach line to bbox corner with closest match
-              var p = obj.get_closest_bbox_corner(line_start);
-              if (p) line.lastSegment.point = p;else line.lastSegment.point = e.point;
-
-              if (obj != curr_obj) {
-                // Update highlighted object
-                if (c_reference_box) {
-                  c_reference_box.remove();
-                }
-
-                c_reference_box = obj.highlight(_utils.AMES_Utils.C_REFERENCE_HIGHLIGHT);
-                curr_obj = obj; // If list, hide list box
-
-                if (curr_obj.is_list) curr_obj.list_box.visible = false;
-              }
-
+              containing_objs.push(obj);
               point_in_box = true;
             }
           }
         }
 
-        if (!point_in_box) {
-          line.lastSegment.point = e.point;
+        if (point_in_box) {
+          var min_dist = Number.MAX_SAFE_INTEGER;
+          var closest_obj = null;
 
+          for (var i in containing_objs) {
+            var _obj = containing_objs[i];
+
+            var d = _obj.get_distance_from_bbox_center_to_point(e.point);
+
+            if (d < min_dist) {
+              min_dist = d;
+              closest_obj = _obj;
+            }
+          }
+
+          if (curr_obj != closest_obj) {
+            // Update highlighted object
+            if (c_reference_box) {
+              c_reference_box.remove();
+            }
+
+            if (curr_obj) curr_obj.hide_selection_opts();
+            c_reference_box = closest_obj.highlight(_utils.AMES_Utils.C_REFERENCE_HIGHLIGHT);
+            curr_obj = ames.selected_obj;
+            console.log("Selected", curr_obj); // If list, hide list box
+
+            if (curr_obj.is_list) curr_obj.list_box.visible = false;
+          }
+        } else {
           if (c_reference_box) {
             c_reference_box.remove();
             c_reference_box = null;
           }
 
+          if (curr_obj) curr_obj.hide_selection_opts();
           curr_obj = null;
         }
+
+        line.lastSegment.point = e.point;
       };
 
       var cb_enable_animation_link = function cb_enable_animation_link(e) {
@@ -2295,9 +2716,10 @@ var AMES = /*#__PURE__*/function () {
         var link_remove = geometry_field_info.link_remove;
 
         if (curr_obj) {
+          curr_obj.hide_selection_opts();
           var rel = ames.active_linking_transformation;
-          ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, curr_obj);
-          ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = curr_obj.name;
+          ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, ames.selected_obj);
+          ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = ames.selected_obj.name;
           link.visible = false;
           link_remove.visible = true;
         } // Turn off constraint tool

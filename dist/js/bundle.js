@@ -127,8 +127,6 @@ var AMES = /*#__PURE__*/function () {
     _defineProperty(this, "offset_mode", false);
 
     _defineProperty(this, "ux", []);
-
-    _defineProperty(this, "layers", {});
   }
 
   _createClass(AMES, [{
@@ -144,6 +142,7 @@ var AMES = /*#__PURE__*/function () {
     // State
     // Testing
     // UX
+    // layers = {};
     // Iniitalize AMES app properties after window loads
     function init() {
       // Get references to canvas objects
@@ -185,28 +184,49 @@ var AMES = /*#__PURE__*/function () {
     }
   }, {
     key: "test",
-    value: function test() {
-      // let a = new AMES_Ellipse();
+    value: function test() {// let line1 = new AMES_Artwork_Path();
+      // let line2 = new AMES_Artwork_Path();
+      // line1.add_points([new Point(75, 100), new Point(75, 90)]);
+      // line1.finish_creating_path();
+      // line2.add_points([new Point(100, 100), new Point(100, 110)]);
+      // line2.finish_creating_path();
+      //
+      // let line3 = new AMES_Artwork_Path();
+      // line3.add_points([new Point(500, 525), new Point(500, 500)]);
+      // line3.finish_creating_path();
+      //
+      // let lines = new AMES_Collection([line1, line2]);
+      // console.log(line1.poly);
+      // let e = new AMES_Ellipse({
+      // 	"centroid": new Point(150, 150),
+      // });
+      // let p = new AMES_Polygon({
+      // 	"centroid": new Point(300, 300),
+      // 	 "nsides": 12,
+      // 	 "radius": 50
+      //  });
+      // let t = new AMES_Transformation({
+      // 	"input": lines,
+      // 	"target": p,
+      // });
+      // t.set_mapping({"type": "Vertex", "mapping": "relative position"});
+      // t.set_mapping_behavior("alternate");
+      // t.tf_space_absolute = false;
+      // t.show(true);
       // a.poly.strokeColor = "pink";
       // let b = new AMES_Ellipse();
       // b.poly.sendToBack();
-      var a_triangle = new _artwork.AMES_Polygon();
-      var a_square = new _artwork.AMES_Polygon({
-        centroid: new Point(200, 200),
-        nsides: 4,
-        radius: 50
-      });
-      var a_dot = new _artwork.AMES_Ellipse({
-        centroid: new Point(500, 500),
-        rx: 5,
-        ry: 5
-      });
-      var a_ellipse = new _artwork.AMES_Ellipse({
-        centroid: new Point(750, 500),
-        rx: 50,
-        ry: 150
-      });
-      var t = new _transformation.AMES_Transformation();
+      // let a_triangle = new AMES_Polygon();
+      // let a_square = new AMES_Polygon({centroid: new Point(200, 200), nsides: 4, radius: 50});
+      // let a_dot = new AMES_Ellipse({centroid: new Point(500, 500), rx: 5, ry: 5});
+      // let a_ellipse = new AMES_Ellipse({centroid: new Point(750, 500), rx: 50, ry: 150});
+      // let c = new AMES_Collection([a_dot]);
+      // for (let i = 0; i < 9; i++) {
+      // 	c.duplicate();
+      // }
+      // let t = new AMES_Transformation({input: a_ellipse, mapping: "position"});
+      // t.set_target(c);
+      // ames.starfield(6)
     }
   }, {
     key: "create_toolbar",
@@ -314,15 +334,17 @@ var AMES = /*#__PURE__*/function () {
         radius: 0
       });
       ames_box.position = ames_text.position;
+      console.log("ames_box", ames_box.bounds.height, _utils.AMES_Utils.SIDEBAR_WIDTH);
       ames_box.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
       ames_box.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR; // Add ux show / hide carets
 
       sidebar.add_caret = function (i_name) {
         var button = ames.icons[i_name].clone();
-        var caret_position = new Point(ames_text.position.x - ames_text.bounds.width / 2 - 4 * _utils.AMES_Utils.ICON_OFFSET, ames_text.position.y);
+        var caret_position = new Point(ames_text.position.x - ames_text.bounds.width / 2 - 3 * _utils.AMES_Utils.ICON_OFFSET, ames_text.position.y);
         button.position = caret_position;
-        button.scaling = 0.75;
-        button.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR; // Show
+        button.scaling = 1.125;
+        button.strokeColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR;
+        button.fillColor = _utils.AMES_Utils.INACTIVE_DARK_COLOR; // Show
 
         if (i_name == "caret-right") {
           button.visible = false;
@@ -353,8 +375,6 @@ var AMES = /*#__PURE__*/function () {
       };
 
       sidebar.addChildren([r, ames_box, ames_text]);
-      var layers_panel = new Group();
-      sidebar.addChild(layers_panel);
 
       var get_position = function get_position() {
         var cw = ames.canvas_view.size.width / 2 - .5 * _utils.AMES_Utils.ICON_OFFSET;
@@ -366,10 +386,155 @@ var AMES = /*#__PURE__*/function () {
       sidebar.position = get_position();
       sidebar.visible = true;
       this.sidebar = sidebar;
+      var label_x = ames.canvas_view.size.width / 2;
+      var label_y = -ames.canvas_view.size.height / 2;
+      var save_label = new PointText({
+        point: [sidebar.position.x - sidebar.bounds.width / 2 + 5 * _utils.AMES_Utils.ICON_OFFSET, sidebar.position.y],
+        content: "Save",
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true
+      });
+      var save_btn = new Path.Rectangle({
+        position: [save_label.position.x, save_label.position.y],
+        size: [save_label.bounds.width + 5 * _utils.AMES_Utils.ICON_OFFSET, save_label.bounds.height + 2.5 * _utils.AMES_Utils.ICON_OFFSET],
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 5
+      });
+      var import_label = new PointText({
+        point: [sidebar.position.x - sidebar.bounds.width / 2 + save_label.bounds.width + 12 * _utils.AMES_Utils.ICON_OFFSET, sidebar.position.y],
+        content: "Import",
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true
+      });
+      var import_btn = new Path.Rectangle({
+        position: [import_label.position.x, import_label.position.y],
+        size: [import_label.bounds.width + 5 * _utils.AMES_Utils.ICON_OFFSET, import_label.bounds.height + 2.5 * _utils.AMES_Utils.ICON_OFFSET],
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 5
+      });
+
+      var sidebar_btn_click = function sidebar_btn_click(btn) {
+        if (btn == "import") {
+          document.getElementById('file_input').click();
+          import_btn.fillColor = "lightgray";
+          setTimeout(function () {
+            import_btn.fillColor = null;
+          }, 250);
+        }
+
+        if (btn == "save") {
+          save_btn.fillColor = "lightgray";
+          setTimeout(function () {
+            save_btn.fillColor = null;
+          }, 250); // TO DO: Save an ames file
+        }
+      };
+
+      import_btn.onMouseDown = function (e) {
+        sidebar_btn_click("import");
+      };
+
+      import_label.onMouseDown = function (e) {
+        sidebar_btn_click("import");
+      };
+
+      save_btn.onMouseDown = function (e) {
+        sidebar_btn_click("save");
+      };
+
+      save_btn.onMouseDown = function (e) {
+        sidebar_btn_click("save");
+      };
+
+      this.ux.push(import_btn, import_label, save_btn, save_label);
+      this.sidebar.addChildren[(save_label, save_btn, import_label, import_btn)];
+      var layers = new Group();
+      var scrollbar_top = sidebar.position.y + save_btn.bounds.height / 2 + 3 * _utils.AMES_Utils.ICON_OFFSET;
+      var scrollbar_x = sidebar.position.x + sidebar.bounds.width / 2 - 1.25 * _utils.AMES_Utils.ICON_OFFSET;
+      var scrollbar_bottom = sidebar.position.y + r.bounds.height / 2 - 3 * _utils.AMES_Utils.ICON_OFFSET;
+
+      layers.scroll = function (e) {
+        layers.sendToBack();
+        layers.position.y += -e.event.movementY;
+
+        for (var i in _this2.layers.children) {
+          var lbox = _this2.layers.children[i];
+          lbox.sendToBack();
+          lbox.visible = true;
+          if (lbox.position.y < scrollbar_top) lbox.visible = false;
+          if (lbox.position.y > scrollbar_bottom) lbox.visible = false;
+        }
+      };
+
+      var scrollbar = new Path.Line({
+        from: [scrollbar_x, scrollbar_top],
+        to: [scrollbar_x, scrollbar_bottom],
+        strokeColor: "lightgray",
+        strokeWidth: 4,
+        strokeCap: 'round'
+      });
+
+      scrollbar.onMouseDrag = function (e) {
+        layers.scroll(e);
+      };
+
+      var r_top = new Path.Rectangle({
+        point: [100, 100],
+        size: [sidebar.bounds.width + 2, 22],
+        fillColor: "white"
+      });
+      r_top.position = new Point(sidebar.position.x, scrollbar_top - 10.25);
+      var r_btm = r_top.clone();
+      r_btm.position = new Point(sidebar.position.x, scrollbar_bottom + 10.25);
+      r_top.sendToBack();
+      r_btm.sendToBack();
+      r_top.visible = false;
+      r_btm.visible = false;
+      scrollbar.top = scrollbar_top;
+      scrollbar.bottom = scrollbar_bottom;
+      sidebar.addChild(scrollbar);
+      layers.scrollbar = scrollbar;
+      this.layers = layers;
+      this.ux.push(scrollbar);
+      this.ux.push(layers);
+    }
+  }, {
+    key: "import_file",
+    value: function import_file(filename) {
+      var file_name_parts = filename.split(".");
+      var name = file_name_parts[0];
+      var ext = file_name_parts[1];
+
+      if (ext == "ames") {// TO DO: load an ames file
+      }
+
+      if (ext == "svg") {
+        project.importSVG(filename, {
+          onError: function onError() {
+            console.log("Error: unable to import svg file.");
+          },
+          onLoad: function onLoad(i, s) {
+            console.log(i, s);
+            i.visible = true; // create new artwork type to support
+          }
+        });
+      }
     }
   }, {
     key: "show_ux",
     value: function show_ux(bool) {
+      for (var i in this.objs) {
+        if (this.objs[i].is_transformation) {
+          this.objs[i].toggle_show_tf({
+            'deactivate': true
+          });
+        }
+      }
+
       for (var idx in this.ux) {
         this.ux[idx].visible = bool;
       }
@@ -378,7 +543,7 @@ var AMES = /*#__PURE__*/function () {
   }, {
     key: "import_icons",
     value: function import_icons() {
-      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen", "card-list", "nsides", "asterisk"];
+      var icons = ["eye", "eye-slash", "trash", "caret-down", "caret-right", "position", "scale", "rotation", "fillColor", "strokeWidth", "strokeColor", "close", "link", "link-remove", "path", "play", "axes", "brush", "pause", "rewind", "loop", "arrow", "dotted-circle", "dotted-square", "vector-pen", "card-list", "nsides", "asterisk", "plus", "arrow-right"];
 
       for (var idx in icons) {
         this.import_icon(icons[idx]);
@@ -420,7 +585,6 @@ var AMES = /*#__PURE__*/function () {
         var caret = _this3.icons[i_name].clone();
 
         var caret_w = caret.bounds.width;
-        caret.scaling = 0.65;
         var box_y = box.position.y;
         var caret_p = new Point(caret_w / 2 + _utils.AMES_Utils.ICON_OFFSET, box_y + 1);
         caret.position = caret_p;
@@ -855,7 +1019,7 @@ var AMES = /*#__PURE__*/function () {
         };
 
         colorpicker.load_color = function (c) {
-          if (!c) c = _utils.AMES_Utils.INACTIVE_COLOR; // update swatch
+          if (!c) c = new Color(_utils.AMES_Utils.INACTIVE_COLOR); // update swatch
 
           r.fillColor = c; // update color label
 
@@ -959,21 +1123,48 @@ var AMES = /*#__PURE__*/function () {
     value: function starfield(step) {
       if (step == null) step = 5;
       console.log("---AMES STARFIELD EXAMPLE LOG---------------------------");
-      if (step != 5) dproject.activeLayer.removeChildren();
+
+      if (step == -1) {
+        var line1 = new _artwork.AMES_Artwork_Path();
+        var line2 = new _artwork.AMES_Artwork_Path();
+        line1.add_points([new Point(75, 100), new Point(75, 90)]);
+        line2.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        var _lines_perturb = new _collection.AMES_Collection([line1, line2]);
+      }
+
+      var lines_collection;
+
+      if (step == 0) {
+        var _line = new _artwork.AMES_Artwork_Path();
+
+        var _line2 = new _artwork.AMES_Artwork_Path();
+
+        _line.add_points([new Point(75, 100), new Point(75, 90)]);
+
+        _line2.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        lines_collection = new _collection.AMES_Collection([_line, _line2]);
+      } // if (step != 5) project.activeLayer.removeChildren();
+
+
       var oct;
 
       if (step >= 0) {
         oct = new _artwork.AMES_Polygon({
-          "nsides": 20
+          "nsides": 12
         });
-        oct.poly.strokeColor = "pink";
+        oct.poly.strokeColor = "silver";
+        oct.poly.fillColor = "black";
+        oct.poly.scaling = 0.8;
+        oct.poly.strokeWidth = 2;
       }
 
       var poly_collection;
 
       if (step >= 1) {
-        poly_collection = new _collection.AMES_Collection(oct);
-        poly_collection.set_count(10);
+        poly_collection = new _collection.AMES_Collection([oct]);
+        poly_collection.set_count(12);
       }
 
       var tf_position;
@@ -995,11 +1186,15 @@ var AMES = /*#__PURE__*/function () {
       var lines_perturb;
 
       if (step >= 3) {
-        var line1 = new _artwork.AMES_Artwork_Path();
-        var line2 = new _artwork.AMES_Artwork_Path();
-        line1.add_points([new Point(75, 100), new Point(75, 90)]);
-        line2.add_points([new Point(100, 100), new Point(100, 105)]);
-        lines_perturb = new _collection.AMES_Collection([line1, line2]);
+        var _line3 = new _artwork.AMES_Artwork_Path();
+
+        var _line4 = new _artwork.AMES_Artwork_Path();
+
+        _line3.add_points([new Point(75, 100), new Point(75, 90)]);
+
+        _line4.add_points([new Point(100, 100), new Point(100, 110)]);
+
+        lines_perturb = new _collection.AMES_Collection([_line3, _line4]);
         tf_point_perturb = new _transformation.AMES_Transformation({
           "input": lines_perturb,
           "target": poly_collection
@@ -1018,52 +1213,64 @@ var AMES = /*#__PURE__*/function () {
       var tf_nsides;
 
       if (step >= 4) {
-        var line_nsides = new _artwork.AMES_Artwork_Path();
-        line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
-        tf_nsides = new _transformation.AMES_Transformation();
-        tf_nsides.set_target(poly_collection);
-        tf_nsides.set_input(line_nsides);
-        tf_nsides.set_mapping({
-          "type": "Polygon",
-          "mapping": "number of sides"
-        });
-        tf_nsides.set_tf_space({
-          "my1": 10,
-          "my2": 28
-        });
-        tf_nsides.show_tf_space(true);
-        tf_nsides.transform();
+        // let line_nsides = new AMES_Artwork_Path();
+        // line_nsides.add_points([new Point(50, 300), new Point(150, 200)]);
+        // tf_nsides = new AMES_Transformation();
+        // tf_nsides.set_target(poly_collection);
+        // tf_nsides.set_input(line_nsides);
+        // tf_nsides.set_mapping({"type": "Polygon", "mapping": "number of sides"});
+        // tf_nsides.set_tf_space({"my1": 10, "my2": 28});
+        // tf_nsides.show_tf_space(true);
+        // tf_nsides.transform();
         tf_point_perturb.transform();
       }
 
-      var tf_point_perturb_animation;
-      var lines_perturb_animated;
+      var tf_point_perturb_animation; // let lines_perturb_animated;
 
       if (step >= 5) {
-        var _line = new _artwork.AMES_Artwork_Path();
-
-        var _line2 = new _artwork.AMES_Artwork_Path();
-
-        _line.add_points([new Point(275, 100), new Point(275, 95)]);
-
-        _line2.add_points([new Point(300, 100), new Point(300, 105)]);
-
-        lines_perturb_animated = new _collection.AMES_Collection([_line, _line2]);
+        // let line1 = new AMES_Artwork_Path();
+        // let line2 = new AMES_Artwork_Path();
+        // line1.add_points([new Point(275, 100), new Point(275, 95)]);
+        // line2.add_points([new Point(300, 100), new Point(300, 105)]);
+        // lines_perturb_animated = new AMES_Collection([line1, line2]);
         tf_point_perturb_animation = new _transformation.AMES_Transformation({
-          "input": lines_perturb_animated,
-          "target": poly_collection
-        });
-        tf_point_perturb_animation.set_mapping({
-          "type": "Vertex",
-          "mapping": "relative animation"
+          "input": lines_perturb,
+          "target": poly_collection,
+          "mapping": {
+            "type": "Vertex",
+            "mapping": "relative animation"
+          }
         });
         tf_point_perturb_animation.set_mapping_behavior("alternate");
-        tf_point_perturb_animation.tf_space_absolute = false;
-        tf_point_perturb_animation.tf_space_path_nsegments = 25;
-        tf_point_perturb_animation.tf_space_speed_factor = 1;
-        tf_point_perturb_animation.loop_max_count = 1;
+        tf_point_perturb_animation.tf_space_absolute = false; // tf_point_perturb_animation.tf_space_path_nsegments = 250;
+        // tf_point_perturb_animation.tf_space_speed_factor = 1;
+        // tf_point_perturb_animation.loop_max_count = 1;
+        // tf_point_perturb_animation.loop = true;
+
         tf_point_perturb.show_tf_space(false);
-        tf_point_perturb_animation.transform();
+        if (step == 5) tf_point_perturb_animation.transform();
+      }
+
+      if (step >= 6) {
+        var playback_loop1 = new _artwork.AMES_Ellipse({
+          "centroid": new Point(200, 150),
+          "rx": 25,
+          "ry": 25
+        }); // let playback_loop2 = new AMES_Ellipse({"centroid": new Point(200, 150), "rx": 50, "ry": 25});
+        // let playback_loop_collection = new AMES_Collection([playback_loop1, playback_loop2])
+
+        var tf_playback = new _transformation.AMES_Transformation({
+          "input": playback_loop1,
+          "target": tf_point_perturb_animation,
+          "mapping": {
+            "type": "Transformation",
+            "mapping": "playback"
+          }
+        });
+        tf_playback.tf_space_path_nsegments = 10; // tf_playback.loop_max_count = 10;
+
+        tf_playback.loop = true; // if (step == 6) tf_point_perturb_animation.transform();
+        // if (step >= 6) tf_playback.transform();
       }
     }
   }, {
@@ -1085,7 +1292,7 @@ var AMES = /*#__PURE__*/function () {
       var poly_collection;
 
       if (step >= 1) {
-        poly_collection = new _collection.AMES_Collection(tri);
+        poly_collection = new _collection.AMES_Collection([tri]);
         poly_collection.set_count(6);
       }
 
@@ -1097,7 +1304,7 @@ var AMES = /*#__PURE__*/function () {
         dot = new _artwork.AMES_Ellipse();
         dot.poly.fillColor = "blue";
         dot.poly.strokeWidth = 0;
-        dot_collection = new _collection.AMES_Collection(dot);
+        dot_collection = new _collection.AMES_Collection([dot]);
         dot_collection.set_count(6);
       }
 
@@ -1109,8 +1316,8 @@ var AMES = /*#__PURE__*/function () {
           "input": poly_collection,
           "target": dot_collection,
           "mapping": "motion path"
-        });
-        tf_motion_path.tf_space_speed_factor = 1;
+        }); // tf_motion_path.tf_space_speed_factor = 1;
+
         if (step == 3) tf_motion_path.transform();
 
         if (step > 3) {
@@ -1356,7 +1563,7 @@ var AMES = /*#__PURE__*/function () {
       // x.name = "List " + n_list;
       // console.log("list name set to", x.name);
 
-      x.editor = new _editors.AMES_List_Editor(x);
+      x.editor = new AMES_List_Editor(x);
       this.add_obj(x, _utils.AMES_Utils.L_CONTROLS[1]);
       x.show(true);
       this.lists[x.name] = x;
@@ -1371,16 +1578,21 @@ var AMES = /*#__PURE__*/function () {
     }
   }, {
     key: "hide_editors",
-    value: function hide_editors(obj) {
-      console.log("hide editors?");
+    value: function hide_editors(obj, force) {
       obj = obj || {};
 
       for (var i in this.objs) {
         if (this.objs[i].name != obj.name) {
-          if (!(obj.is_shape && this.objs[i].is_list && this.objs[i].has_shape(obj))) {
+          if (force) {
             this.objs[i].editor.show(false);
 
             this.objs[i]._clear_cb_helpers();
+          } else {
+            if (!(obj.is_artwork && this.objs[i].is_collection && this.objs[i].has_shape(obj))) {
+              this.objs[i].editor.show(false);
+
+              this.objs[i]._clear_cb_helpers();
+            }
           }
         }
       } // ames.colorpicker.visible = false;
@@ -1388,11 +1600,204 @@ var AMES = /*#__PURE__*/function () {
 
     }
   }, {
+    key: "update_layers",
+    value: function update_layers(opt) {
+      opt = opt || {};
+      var box;
+      if (opt.box) box = opt.box;else return; // Insert box into layers box
+
+      if (opt.insert) {
+        this.layers.insertChild(0, box);
+        box.sendToBack();
+      } // Delete box from layers box
+
+
+      if (opt.remove) {
+        var idx = box.index;
+        this.layers.removeChildren(idx, idx + 1);
+      } // Parent box to another box (change order of boxes)
+
+
+      if (opt.parent) {// let parent_idx = opt.parent_box.index;
+        // console.log(box);
+        // let box_idx = box.index;
+        // box.children[1].content = '    ' + box.children[1].content;
+        // this.layers.removeChildren(box_idx, box_idx+1);
+        // this.layers.insertChild(parent_idx, box);
+        // let str = "";
+        // for (let i in this.layers.children) {
+        // 	str += this.layers.children[i].children[1].content
+        // }
+        // console.log("layers: ", str);
+      } // TO DO: Keep all transformation functions without a target at the top
+      // Update view for layers box
+
+
+      this.layers.sendToBack();
+      var nchildren = this.layers.children.length;
+
+      for (var i = 0; i < nchildren; i++) {
+        var lbox = this.layers.children[i];
+        lbox.position.x = ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH;
+        lbox.position.y = i * lbox.bounds.height;
+      }
+
+      var layers_ypos = this.layers.scrollbar.top + this.layers.bounds.height / 2 + _utils.AMES_Utils.ICON_OFFSET / 2;
+      this.layers.position = new Point(ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH, layers_ypos);
+
+      for (var _i2 = 0; _i2 < nchildren; _i2++) {
+        var _lbox = this.layers.children[_i2];
+        _lbox.visible = true;
+        if (_lbox.position.y < this.layers.scrollbar.top) _lbox.visible = false;
+        if (_lbox.position.y > this.layers.scrollbar.bottom) _lbox.visible = false;
+      }
+
+      var str = "";
+
+      for (var _i3 in this.layers.children) {
+        str += this.layers.children[_i3].children[1].content;
+      }
+    }
+  }, {
+    key: "create_layers_box",
+    value: function create_layers_box(obj) {
+      var obj_box = new Group();
+      obj.obj_box = obj_box; // Create a box in the side panel
+
+      var ypos = 450;
+      var box = new Path.Rectangle({
+        point: [500, 450],
+        size: [_utils.AMES_Utils.SIDEBAR_WIDTH - 2 * _utils.AMES_Utils.SCROLLBAR_WIDTH, 20],
+        // fillColor: "white",
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        radius: 3,
+        strokeWidth: .75,
+        position: [ames.sidebar.position.x - _utils.AMES_Utils.SCROLLBAR_WIDTH, ypos]
+      }); // box.sendToBack();
+
+      var box_label = new PointText({
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE,
+        visible: true,
+        point: [box.position.x - _utils.AMES_Utils.SIDEBAR_WIDTH / 2 + 5 * _utils.AMES_Utils.ICON_OFFSET, box.position.y + _utils.AMES_Utils.ICON_OFFSET]
+      });
+      var name;
+
+      obj_box.change_name = function () {
+        name = obj.name;
+
+        if (obj instanceof _transformation.AMES_Transformation) {
+          var obj_name_parts = obj.name.split(" ");
+          var mapping = obj.get_mapping();
+          var input = "input";
+          if (obj.input) input = obj.input.name;
+
+          if (mapping) {
+            mapping = mapping[0].toUpperCase() + mapping.substr(1);
+            input = input[0].toUpperCase() + input.substr(1);
+            name = obj.name + ": (" + input + ": " + mapping + ")";
+          }
+        }
+
+        box_label.content = name;
+      };
+
+      obj_box.change_name(); // Remove btn to remove obj
+
+      var trash = ames.icons['trash'].clone();
+      var trash_w = trash.bounds.width;
+      trash.scaling = .825;
+      trash.visible = true;
+      trash.position = new Point(box.position.x + box.bounds.width / 2 - trash_w, box.position.y);
+      trash.bringToFront();
+
+      trash.onClick = function (e) {
+        obj.remove();
+      };
+
+      obj_box.addChildren([box, box_label, trash]); // Visibility btns to toggle visibility
+
+      var eye = ames.icons['eye'].clone();
+      var eye_slash = ames.icons['eye-slash'].clone();
+      var eye_w = eye.bounds.width;
+      eye.visible = true;
+      eye_slash.visible = false;
+      var eye_pos = new Point(trash.position.x - eye_w - _utils.AMES_Utils.ICON_OFFSET, box.position.y);
+      eye.position = eye_pos;
+      eye_slash.position = eye_pos;
+      eye.bringToFront();
+      eye_slash.bringToFront();
+
+      eye.onClick = function (e) {
+        eye.visible = false;
+        eye_slash.visible = true;
+        obj.show(false);
+      };
+
+      eye_slash.onClick = function (e) {
+        eye_slash.visible = false;
+        eye.visible = true;
+        ames.hide_editors(obj, true);
+        obj.show(true);
+      };
+
+      box_label.onClick = function (e) {
+        ames.hide_editors(obj, true);
+        obj.show(true);
+        eye.visible = false;
+        eye_slash.visible = true;
+      };
+
+      obj_box.addChildren([eye, eye_slash]);
+
+      if (obj instanceof _transformation.AMES_Transformation) {
+        // For a transformation toggle whether or not the transformation space is visible
+        var axes = ames.icons['axes'].clone();
+        var axes_w = axes.bounds.width;
+        axes.position = new Point(eye_pos.x - axes_w - _utils.AMES_Utils.ICON_OFFSET, box.position.y);
+        axes.active = obj.tf_space_visible;
+
+        if (axes.active) {
+          axes.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+          axes.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+        }
+
+        axes.onClick = function (e) {
+          if (axes.active) {
+            axes.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+            axes.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+            obj.toggle_show_tf({
+              "deactivate": true
+            });
+            axes.active = false;
+          } else {
+            axes.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+            axes.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
+            obj.toggle_show_tf();
+            axes.active = true;
+          }
+        };
+
+        axes.visible = true;
+        axes.bringToFront();
+        obj_box.addChild(axes);
+      }
+
+      this.update_layers({
+        insert: true,
+        box: obj_box
+      });
+      if (!this.obj_boxes_dict) this.obj_boxes_dict = {};
+      this.obj_boxes_dict[obj.name] = obj_box;
+    }
+  }, {
     key: "add_obj",
     value: function add_obj(x, t_obj) {
       this.objs[x.name] = x; // Hide all open editors
 
-      this.hide_editors(x); // let n = x.name;
+      this.hide_editors(x);
+      this.create_layers_box(x); // let n = x.name;
       // let box_idx;
       // if (t_obj == utils.L_CONTROLS[0]) {
       // 	box_idx = this.l_shape_idx;
@@ -1530,37 +1935,38 @@ var AMES = /*#__PURE__*/function () {
       // // start objects as active
       // this.activate_obj(n);
       // this.active_objs[n] = x;
-    } // active_obj: Activates layers box and enables object selection
+    } // // active_obj: Activates layers box and enables object selection
+    // activate_obj(n) {
+    // 	let x = this.objs[n];
+    // 	x.make_interactive(true);
+    // 	x.show_editor(true);
+    //
+    // 	// // Activate layers box
+    // 	// let box = this.obj_boxes[n];
+    // 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
+    // 	// box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
+    // 	// box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
+    // 	// for (let idx in utils.L_IDX_ICONS) {
+    // 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
+    // 	// }
+    // }
+    //
+    // // deactivate_obj: Deactivates layers box and disables object selection
+    // deactivate_obj(n) {
+    // 	let x = this.objs[n];
+    // 	x.make_interactive(false);
+    // 	x.show_editor(false);
+    //
+    // 	// // Deactivate layers box
+    // 	// let box = this.obj_boxes[n];
+    // 	// box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
+    // 	// box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
+    // 	// box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
+    // 	// for (let idx in utils.L_IDX_ICONS) {
+    // 	// 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
+    // 	// }
+    // }
 
-  }, {
-    key: "activate_obj",
-    value: function activate_obj(n) {
-      var x = this.objs[n];
-      x.make_interactive(true);
-      x.show_editor(true); // // Activate layers box
-      // let box = this.obj_boxes[n];
-      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_COLOR;
-      // box.children[utils.L_IDX_BOX].strokeColor = utils.ACTIVE_S_COLOR;
-      // box.children[utils.L_IDX_NAME].fillColor = utils.ACTIVE_S_COLOR;
-      // for (let idx in utils.L_IDX_ICONS) {
-      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.ACTIVE_S_COLOR;
-      // }
-    } // deactivate_obj: Deactivates layers box and disables object selection
-
-  }, {
-    key: "deactivate_obj",
-    value: function deactivate_obj(n) {
-      var x = this.objs[n];
-      x.make_interactive(false);
-      x.show_editor(false); // // Deactivate layers box
-      // let box = this.obj_boxes[n];
-      // box.children[utils.L_IDX_BOX].fillColor = utils.INACTIVE_DARK_COLOR;
-      // box.children[utils.L_IDX_BOX].strokeColor = utils.INACTIVE_S_COLOR;
-      // box.children[utils.L_IDX_NAME].fillColor = utils.INACTIVE_S_COLOR;
-      // for (let idx in utils.L_IDX_ICONS) {
-      // 	box.children[utils.L_IDX_ICONS[idx]].fillColor = utils.INACTIVE_S_COLOR;
-      // }
-    }
   }, {
     key: "remove_obj",
     value: function remove_obj(n, t_obj) {
@@ -1600,10 +2006,10 @@ var AMES = /*#__PURE__*/function () {
 
       var by = _utils.AMES_Utils.LAYER_HEIGHT;
 
-      for (var _i2 = idx; _i2 < this.idx_boxes.length; _i2++) {
-        var m = this.idx_boxes[_i2];
+      for (var _i4 = idx; _i4 < this.idx_boxes.length; _i4++) {
+        var m = this.idx_boxes[_i4];
         var m_box = this.obj_boxes[m];
-        var ny = _i2 * by + by / 2 + _i2 * .5;
+        var ny = _i4 * by + by / 2 + _i4 * .5;
         m_box.position = new Point(m_box.position.x, ny);
       }
     } // switch_shape_tool: toggles shape tool to enable drawing new shapes
@@ -2248,45 +2654,60 @@ var AMES = /*#__PURE__*/function () {
           return;
         }
 
-        point_in_box = false; // If end point is the bounding box of an active object
+        point_in_box = false;
+        var containing_objs = []; // If end point is the bounding box of an active object
 
         for (var k in _this10.objs) {
           // Snap the endpoint to the closest bounding box corner
           var obj = _this10.objs[k];
 
-          if (obj.is_geometry) {
+          if (obj.is_artwork) {
             if (obj.contains(e.point)) {
-              // Attach line to bbox corner with closest match
-              var p = obj.get_closest_bbox_corner(line_start);
-              if (p) line.lastSegment.point = p;else line.lastSegment.point = e.point;
-
-              if (obj != curr_obj) {
-                // Update highlighted object
-                if (c_reference_box) {
-                  c_reference_box.remove();
-                }
-
-                c_reference_box = obj.highlight(_utils.AMES_Utils.C_REFERENCE_HIGHLIGHT);
-                curr_obj = obj; // If list, hide list box
-
-                if (curr_obj.is_list) curr_obj.list_box.visible = false;
-              }
-
+              containing_objs.push(obj);
               point_in_box = true;
             }
           }
         }
 
-        if (!point_in_box) {
-          line.lastSegment.point = e.point;
+        if (point_in_box) {
+          var min_dist = Number.MAX_SAFE_INTEGER;
+          var closest_obj = null;
 
+          for (var i in containing_objs) {
+            var _obj = containing_objs[i];
+
+            var d = _obj.get_distance_from_bbox_center_to_point(e.point);
+
+            if (d < min_dist) {
+              min_dist = d;
+              closest_obj = _obj;
+            }
+          }
+
+          if (curr_obj != closest_obj) {
+            // Update highlighted object
+            if (c_reference_box) {
+              c_reference_box.remove();
+            }
+
+            if (curr_obj) curr_obj.hide_selection_opts();
+            c_reference_box = closest_obj.highlight(_utils.AMES_Utils.C_REFERENCE_HIGHLIGHT);
+            curr_obj = ames.selected_obj;
+            console.log("Selected", curr_obj); // If list, hide list box
+
+            if (curr_obj.is_list) curr_obj.list_box.visible = false;
+          }
+        } else {
           if (c_reference_box) {
             c_reference_box.remove();
             c_reference_box = null;
           }
 
+          if (curr_obj) curr_obj.hide_selection_opts();
           curr_obj = null;
         }
+
+        line.lastSegment.point = e.point;
       };
 
       var cb_enable_animation_link = function cb_enable_animation_link(e) {
@@ -2296,9 +2717,10 @@ var AMES = /*#__PURE__*/function () {
         var link_remove = geometry_field_info.link_remove;
 
         if (curr_obj) {
+          curr_obj.hide_selection_opts();
           var rel = ames.active_linking_transformation;
-          ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, curr_obj);
-          ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = curr_obj.name;
+          ames.active_linking_transformation.set_geometry_field(ames.transformation_active_field, ames.selected_obj);
+          ames.active_linking_transformation.editor.geometry_field_info[ames.transformation_active_field].label.content = ames.selected_obj.name;
           link.visible = false;
           link_remove.visible = true;
         } // Turn off constraint tool
@@ -3494,6 +3916,10 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 // ----------------------------------------------------------------------------
 // Description: Basic artwork representation with visual & temporal properties
 var AMES_Artwork = /*#__PURE__*/function () {
+  // Display properties including name, visibility, layer
+  // Visual Properties: position, scale, rotate, stroke w, stroke c, fill
+  // Shape geoemtry
+  // State
   function AMES_Artwork() {
     _classCallCheck(this, AMES_Artwork);
 
@@ -3508,6 +3934,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "obj_type", "shape");
 
     _defineProperty(this, "visible", false);
+
+    _defineProperty(this, "number", 0);
 
     _defineProperty(this, "pos", {
       x: ames.canvas_cy,
@@ -3529,6 +3957,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "poly", void 0);
 
     _defineProperty(this, "is_selected", false);
+
+    _defineProperty(this, "selection_opts", []);
 
     _defineProperty(this, "path_control_shapes", []);
 
@@ -3556,6 +3986,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
     _defineProperty(this, "cb_helpers", {
       'shapes': []
     });
+
+    _defineProperty(this, "collections", []);
+
+    _defineProperty(this, "transformations", []);
 
     _defineProperty(this, "lists", {});
 
@@ -3630,14 +4064,68 @@ var AMES_Artwork = /*#__PURE__*/function () {
       },
       "path": {}
     });
-  }
+
+    this.number = AMES_Artwork.count;
+    AMES_Artwork.count += 1;
+  } // add_list: adds list to track which lists the shape is in so updates to the shape
+  // can update the list helper shapes
+
 
   _createClass(AMES_Artwork, [{
     key: "add_list",
-    value: // add_list: adds list to track which lists the shape is in so updates to the shape
-    // can update the list helper shapes
-    function add_list(list) {
+    value: function add_list(list) {
       this.lists[list.name] = list;
+    }
+  }, {
+    key: "add_collection",
+    value: function add_collection(collection) {
+      var missing = true;
+
+      for (var i in this.collections) {
+        if (this.collections[i] == collection) missing = false;
+      }
+
+      if (missing) this.collections.push(collection);
+      if (missing) console.log("add collection", this.collections, collection);
+    }
+  }, {
+    key: "add_transformation",
+    value: function add_transformation(transformation) {
+      var missing = true;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) missing = false;
+      }
+
+      if (missing) this.transformations.push(transformation);
+    }
+  }, {
+    key: "remove_collection",
+    value: function remove_collection(collection) {
+      var idx = -1;
+
+      for (var i in this.collections) {
+        if (this.collections[i] == collection) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.collections.splice(idx, 1);
+    }
+  }, {
+    key: "remove_transformation",
+    value: function remove_transformation(transformation) {
+      var idx = -1;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.transformations.splice(idx, 1);
     } // set_pos(pt, is_delta)
     // Description: Updates the position of the shape to the pt specified or by
     // the vector specified if is_delta is true
@@ -3734,9 +4222,30 @@ var AMES_Artwork = /*#__PURE__*/function () {
       return;
     }
   }, {
+    key: "get_large_bbox",
+    value: function get_large_bbox() {
+      var r = this.get_bbox();
+      this.update_selection_opts();
+      var h_min = this.selection_opt_names.length * _utils.AMES_Utils.LAYER_HEIGHT * .75;
+      var w_min = 20;
+      var h = r.height;
+      if (r.height < h_min) h = h_min;
+      if (h < 30) h = 30;
+      var w = r.width;
+      if (w < w_min) w = w_min;
+      var bbox = new Rectangle(r.point, new Size(w, h));
+      bbox.center = r.center;
+      return bbox;
+    }
+  }, {
+    key: "update_bbox",
+    value: function update_bbox() {
+      this.bbox = this.get_bbox();
+    } // get_pos: returns the position of this shape
+
+  }, {
     key: "get_pos",
-    value: // get_pos: returns the position of this shape
-    function get_pos() {
+    value: function get_pos() {
       return this.poly.position;
     } // is_inside(p)
     // Description: Checks if the point p is within the bounding box of shape
@@ -3745,12 +4254,19 @@ var AMES_Artwork = /*#__PURE__*/function () {
     key: "contains",
     value: function contains(p) {
       if (this.poly) {
-        var bounds = this.poly.strokeBounds;
-        if (!bounds) bounds = this.poly.bounds;
+        var bounds = this.get_large_bbox();
         return p.isInside(bounds);
       }
 
       return;
+    }
+  }, {
+    key: "get_distance_from_bbox_center_to_point",
+    value: function get_distance_from_bbox_center_to_point(p) {
+      var c = this.get_large_bbox().center;
+      var x = c.x - p.x;
+      var y = c.y - p.y;
+      return Math.sqrt(x * x + y * y);
     } // manipulate: enable interaction on a given property with opt sub properties
 
   }, {
@@ -3779,14 +4295,13 @@ var AMES_Artwork = /*#__PURE__*/function () {
       if (this.active_prop) {
         // Remove subproperty buttons
         this.editor.show_subprops(this.active_prop, false);
-        this.editor.select_prop(this.active_prop, false);
-        this.editor.show_constraint(false);
+        this.editor.select_prop(this.active_prop, false); // this.editor.show_constraint(false);
       } // If the new propety is not the property just turned off, turn it on
 
 
       if (this.active_prop != p) {
         // Turn off selection toggle and hide path control shapes
-        this.attach_interactivity(false);
+        // this.attach_interactivity(false);
         this.show_path_control_shapes(false);
         this.active_prop = p;
         var sub_p = 'all';
@@ -3799,8 +4314,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
 
 
         this.editor.show_subprops(p, true);
-        this.editor.select_prop(p, true);
-        this.editor.show_constraint(true, p, sub_p); // Activate new propety callback
+        this.editor.select_prop(p, true); // this.editor.show_constraint(true, p, sub_p);
+        // Activate new propety callback
 
         this.cbs[p](this, this.cb_helpers);
       } else {
@@ -3830,25 +4345,57 @@ var AMES_Artwork = /*#__PURE__*/function () {
       this._clear_cb_helpers();
 
       this.active_sub_p = sub;
-      this.editor.select_subprop(sub, true);
-      this.editor.show_constraint(true, this.active_prop, sub);
+      this.editor.select_subprop(sub, true); // this.editor.show_constraint(true, this.active_prop, sub);
+
       this.cbs[this.active_prop](this, this.cb_helpers, sub);
+    } // Update helpers after a transformation that changes the artwork
+    // If the transformation is geometric (changes the scale, position, rotation,
+    // stroke width of the shape)... ie anything that can change its bbox the
+    // bbox for the artwork is updated as well as the bbox for any collections
+    // that it belongs to and the transformation space bounds of any transformation
+    // spaces where it is an input
+
+  }, {
+    key: "update_helpers",
+    value: function update_helpers(artwork, is_geometric) {
+      console.log(artwork); // artwork.update_constraints();
+
+      if (is_geometric) {
+        artwork.update_bbox();
+        artwork.update_collections();
+        artwork.update_transformations();
+      }
     }
   }, {
     key: "update_constraints",
     value: function update_constraints() {
       var p = this.active_prop;
       var s = this.active_sub_p;
-      if (!s) s = 'all';
+      if (!s) s = 'all'; // constraints.update_constraints(p, s, this);
 
-      _constraints.AMES_Constraint.update_constraints(p, s, this);
-
-      for (var i in this.lists) {
-        this.lists[i].update_constraints();
+      for (var i in this.lists) {// this.lists[i].update_constraints();
       }
 
       for (var _i in ames.lists) {
         ames.lists[_i].update_show_box_bounds();
+      }
+    }
+  }, {
+    key: "update_collections",
+    value: function update_collections() {
+      for (var i in this.collections) {
+        this.collections[i].update_show_box();
+
+        for (var j in this.collections[i].tranformations) {
+          this.collections[i].transformations[j].update_tf_space();
+        }
+      }
+    }
+  }, {
+    key: "update_transformations",
+    value: function update_transformations() {
+      for (var i in this.transformations) {
+        this.transformations[i].update_tf_space();
       }
     }
   }, {
@@ -3879,30 +4426,54 @@ var AMES_Artwork = /*#__PURE__*/function () {
       if (this.cb_helpers['rotation']) this.show_rotation_control_shapes(false);
       this.cb_helpers = {};
       this.cb_helpers['shapes'] = [];
+      this.attach_interactivity(true);
+    }
+  }, {
+    key: "_apply_cb_to_collections",
+    value: function _apply_cb_to_collections(cb, e) {
+      for (var i in this.collections) {
+        var c = this.collections[i];
+
+        if (c.active_prop == this.active_prop) {
+          if (c.active_sub_p == this.active_sub_p) {
+            for (var j in c.shapes) {
+              var s = c.shapes[j];
+
+              if (s != this) {
+                console.log(s.name);
+                s.poly[cb](e, true);
+              }
+            }
+          }
+        }
+      }
     }
   }, {
     key: "_position_cb",
     value: function _position_cb(shape, cb_helpers, sub) {
       if (shape.poly) {
-        shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+        shape.poly.onMouseDown = function (e, in_chain) {
+          // ames.hide_editors(shape);
+          // shape.show_all_editors();
+          console.log(shape.name, 'onMouseDown', e, in_chain);
           shape.notify_lists_shape_is_active();
           var pos = shape.poly.position;
           var offset = pos.subtract(e.point);
           if (sub && sub == 'x') cb_helpers['y'] = pos.y;
           if (sub && sub == 'y') cb_helpers['x'] = pos.x;
           cb_helpers['offset'] = offset;
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
         };
 
-        shape.poly.onMouseDrag = function (e) {
+        shape.poly.onMouseDrag = function (e, in_chain) {
           var offset = cb_helpers['offset'];
           var point = e.point.add(offset);
           if (sub && sub == 'x') point.y = cb_helpers['y'];
           if (sub && sub == 'y') point.x = cb_helpers['x'];
-          if (offset) shape.set_pos(point); // Update constraints
+          if (offset) shape.set_pos(point); // Update helpers
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
         };
       }
     }
@@ -3917,9 +4488,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
           var scale_box = shape.scale_control_shapes.scale_box;
           var scale_dots = shape.scale_control_shapes.scale_dots;
 
-          shape.poly.onMouseDown = function (e) {
-            ames.hide_editors(shape);
-            shape.show_all_editors();
+          shape.poly.onMouseDown = function (e) {// ames.hide_editors(shape);
+            // shape.show_all_editors();
           };
 
           var bbox = shape.get_bbox();
@@ -3939,7 +4509,7 @@ var AMES_Artwork = /*#__PURE__*/function () {
             var scale_start_x = 1;
             var scale_start_y = 1;
 
-            d.onMouseDown = function (e) {
+            d.onMouseDown = function (e, in_chain) {
               shape.notify_lists_shape_is_active();
               pf = 1;
               scale_start_x = shape.scale.x;
@@ -3949,9 +4519,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
               bf = b.length;
               if (sub == 'x') bf = b.x;
               if (sub == 'y') bf = b.y;
+              if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
             };
 
-            d.onMouseDrag = function (e) {
+            d.onMouseDrag = function (e, in_chain) {
               var p = shape.poly.position.subtract(e.point);
               var f = p.length / bf;
               var fx = scale_start_x * p.x / bf;
@@ -3981,10 +4552,11 @@ var AMES_Artwork = /*#__PURE__*/function () {
 
               for (var n = 0; n < 4; n++) {
                 scale_dots[n].position = scale_box.segments[n].point;
-              } // Update constraints
+              } // Update helpers
 
 
-              shape.update_constraints();
+              shape.update_helpers(shape, true);
+              if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
             };
           };
 
@@ -4007,10 +4579,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
         shape.show_rotation_control_shapes(true);
         cb_helpers['rotation'] = true;
         var line = shape.rotation_control_shapes.line;
-        var da = shape.rotation_control_shapes.da;
+        shape.da = shape.rotation_control_shapes.da;
         var dt = shape.rotation_control_shapes.dt;
-        var anchor = da.position;
-        var x_base = dt.position.subtract(da.position);
+        var anchor = shape.da.position;
+        var x_base = dt.position.subtract(shape.da.position);
         var prev_ro = 0;
 
         var get_rotation_a = function get_rotation_a(p, anchor) {
@@ -4021,38 +4593,38 @@ var AMES_Artwork = /*#__PURE__*/function () {
           return a;
         };
 
-        shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+        shape.poly.onMouseDown = function (e) {// ames.hide_editors(shape);
+          // shape.show_all_editors();
         }; // Update anchor point for rotation
 
 
-        da.onMouseDrag = function (e) {
-          da.position = e.point; // Update line
+        shape.da.onMouseDrag = function (e, in_chain) {
+          shape.da.position = e.point; // Update line
 
           line.firstSegment.point = e.point; // Update x_base and total rotation using new reference
 
-          anchor = da.position;
+          anchor = shape.da.position;
           x_base = dt.position.subtract(anchor);
           prev_ro = 0;
           shape.rotation_control_shapes.a_offset = e.point.subtract(shape.poly.position);
           console.log(shape.rotation_control_shapes.a_offset);
-          console.log(da.position);
+          console.log(shape.da.position);
         }; // Rotate based on angle between subsequent rays created by dragging
 
 
         var ro;
         var asum = 0;
 
-        dt.onMouseDown = function (e) {
+        dt.onMouseDown = function (e, in_chain) {
           shape.notify_lists_shape_is_active();
           ro = dt.position;
           prev_ro = shape.poly.rotation;
-          x_base = dt.position.subtract(da.position);
+          x_base = dt.position.subtract(shape.da.position);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDown", e);
         }; // Update rotation
 
 
-        dt.onMouseDrag = function (e) {
+        dt.onMouseDrag = function (e, in_chain) {
           anchor = shape.rotation_control_shapes.da.position;
           var a = get_rotation_a(e.point, anchor);
           shape.set_rotation(a, anchor); // shape.poly.rotate(a, anchor);
@@ -4063,9 +4635,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
           // Update line segment to match dt
 
           dt.position = e.point;
-          line.lastSegment.point = dt.position; // Update constraints
+          line.lastSegment.point = dt.position; // Update helpers
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
+          if (!in_chain) shape._apply_cb_to_collections("onMouseDrag", e);
         };
       }
     }
@@ -4105,15 +4678,16 @@ var AMES_Artwork = /*#__PURE__*/function () {
         }
 
         var shape_color_target = function shape_color_target(c) {
-          color_function(c);
-          shape.update_constraints();
+          color_function(c); // Update helpers
+
+          shape.update_helpers(shape);
         };
 
         ames.colorpicker.color_target = shape_color_target;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           ames.colorpicker.color_target = shape_color_target;
         };
@@ -4129,8 +4703,8 @@ var AMES_Artwork = /*#__PURE__*/function () {
         var w;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           yo = e.point.y;
           w = shape.poly.strokeWidth;
@@ -4144,10 +4718,10 @@ var AMES_Artwork = /*#__PURE__*/function () {
             shape.poly.strokeWidth = 0;
           } else {
             shape.poly.strokeWidth = nw;
-          } // Update constraints
+          } // Update helpers
 
 
-          shape.update_constraints();
+          shape.update_helpers(shape, true);
         };
       }
     }
@@ -4187,15 +4761,16 @@ var AMES_Artwork = /*#__PURE__*/function () {
         }
 
         var shape_color_target = function shape_color_target(c) {
-          color_function(c);
-          shape.update_constraints();
+          color_function(c); // Update helpers
+
+          shape.update_helpers(shape);
         };
 
         ames.colorpicker.color_target = shape_color_target;
 
         shape.poly.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
+
           shape.notify_lists_shape_is_active();
           ames.colorpicker.color_target = shape_color_target;
         };
@@ -4212,8 +4787,7 @@ var AMES_Artwork = /*#__PURE__*/function () {
         cb_helpers['path'] = true;
 
         shape.onMouseDown = function (e) {
-          ames.hide_editors(shape);
-          shape.show_all_editors();
+          ames.hide_editors(shape); // shape.show_all_editors();
         };
       }
     } // create_control_shapes: create all control shapes
@@ -4488,13 +5062,17 @@ var AMES_Artwork = /*#__PURE__*/function () {
           var n_h1 = s.handleIn.add(s.point);
 
           if (s.handleIn.x == 0 && s.handleIn.y == 0) {
-            n_h1 = n_h1.add(s.previous.point.subtract(s.point).normalize().multiply(8));
+            var previous = s.previous;
+            if (!previous) previous = s;
+            n_h1 = n_h1.add(previous.point.subtract(s.point).normalize().multiply(8));
           }
 
           var n_h2 = s.handleOut.add(s.point);
 
           if (s.handleOut.x == 0 && s.handleOut.y == 0) {
-            n_h2 = n_h2.add(s.next.point.subtract(s.point).normalize().multiply(8));
+            var next = s.next;
+            if (!next) next = s;
+            n_h2 = n_h2.add(next.point.subtract(s.point).normalize().multiply(8));
           }
 
           d_h1.position = n_h1;
@@ -4609,12 +5187,153 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "highlight",
     value: function highlight(color) {
+      this.show_selection_opts();
+
       if (this.poly) {
-        var bbox = this.get_bbox();
+        var bbox = this.get_large_bbox();
         return _utils.AMES_Utils.make_rect(bbox, color);
       }
 
       return null;
+    }
+  }, {
+    key: "update_selection_opts",
+    value: function update_selection_opts() {
+      var opts = {};
+      var opt_names = [];
+      this.selection_opt_names = null;
+      this.selection_opt_references = null;
+
+      if (ames.transformation_active_field != 'playback_transformation') {
+        opt_names.push(this.name);
+        opts[this.name] = this;
+
+        for (var i in this.collections) {
+          var c = this.collections[i];
+          opt_names.push(c.name);
+          opts[c.name] = c;
+        }
+      }
+
+      if (ames.transformation_active_field != "input") {
+        for (var _i3 in this.transformations) {
+          var t = this.transformations[_i3];
+          var mapping = t.get_mapping();
+          mapping = mapping[0].toUpperCase() + mapping.substr(1);
+          var str = t.name + " : (" + t.input.name + ": " + mapping + ")";
+          opt_names.push(str);
+          opts[str] = t;
+        }
+
+        for (var _i4 in this.collections) {
+          var _c = this.collections[_i4];
+
+          for (var j in _c.transformations) {
+            var _t = _c.transformations[j];
+
+            var _mapping = _t.get_mapping();
+
+            _mapping = _mapping[0].toUpperCase() + _mapping.substr(1);
+
+            var _str = _t.name + " : (" + _t.input.name + ": " + _mapping + ")";
+
+            opt_names.push(_str);
+            opts[_str] = _t;
+          }
+        }
+      }
+
+      this.selection_opt_names = opt_names;
+      this.selection_opt_references = opts;
+    }
+  }, {
+    key: "show_selection_opts",
+    value: function show_selection_opts() {
+      var _this3 = this;
+
+      this.update_selection_opts();
+      var opt_names = this.selection_opt_names;
+      var opts = this.selection_opt_references;
+      console.log(opt_names, opts);
+      var box = this.get_large_bbox();
+      var bx = box.topRight.x;
+      var by = box.topRight.y;
+      var selected_opt_box;
+      var a_opt_box;
+
+      var _loop4 = function _loop4(i) {
+        var opt = new Group();
+        var opt_box = new Path.Rectangle({
+          point: new Point(bx - 7.5, by - 0.25),
+          size: new Size(225, _utils.AMES_Utils.LAYER_HEIGHT * .75),
+          fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+          strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+          strokeWidth: 0,
+          radius: 1.25
+        });
+        var opt_label = new PointText({
+          point: [bx + 15, by + 12.5],
+          content: opt_names[i],
+          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+          fontFamily: _utils.AMES_Utils.FONT,
+          fontSize: _utils.AMES_Utils.FONT_SIZE
+        });
+        opt_box.bringToFront();
+        opt_label.bringToFront();
+
+        if (opt_names[i] == _this3.name) {
+          opt_box.strokeWidth = 1;
+          ames.selected_obj = _this3;
+          a_opt_box = opt_box;
+          selected_opt_box = opt_box;
+          ames.selected_obj = _this3;
+        }
+
+        by += opt_box.bounds.height;
+        opt.addChildren([opt_box, opt_label]);
+        opt.bringToFront();
+
+        opt.onMouseEnter = function (e) {
+          selected_opt_box = opt_box;
+          if (opt_box != a_opt_box) a_opt_box.strokeWidth = 0;
+          selected_opt_box.strokeWidth = 1;
+          ames.selected_obj = opts[opt_names[i]];
+        };
+
+        opt.onMouseLeave = function (e) {
+          selected_opt_box.strokeWidth = 0;
+          selected_opt_box = null;
+          setTimeout(function () {
+            if (!selected_opt_box) {
+              a_opt_box.strokeWidth = 1;
+              selected_opt_box = a_opt_box;
+              ames.selected_obj = _this3;
+            }
+          }, 250);
+        };
+
+        opt.onMouseUp = function (e) {
+          ames.selected_obj = opts[opt_names[i]];
+          console.log("mouse up on", opt_names[i]);
+
+          _this3.hide_selection_opts();
+        };
+
+        _this3.selection_opts.push(opt);
+      };
+
+      for (var i in opt_names) {
+        _loop4(i);
+      }
+
+      console.log(opts);
+    }
+  }, {
+    key: "hide_selection_opts",
+    value: function hide_selection_opts() {
+      for (var i in this.selection_opts) {
+        this.selection_opts[i].remove();
+      }
     }
   }, {
     key: "get_closest_bbox_corner",
@@ -4677,7 +5396,15 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "remove",
     value: function remove() {
-      console.log("To do -- Shape.remove()");
+      // this.editor.remove();
+      var idx = -1; // Remove from all collections
+      // Remove from all transformations
+
+      this.poly.remove();
+      ames.update_layers({
+        "remove": true,
+        "box": this.obj_box
+      });
     } // make_interactive: if true, enable interacitivty & open editor; otherwise disable and close
 
   }, {
@@ -4690,22 +5417,22 @@ var AMES_Artwork = /*#__PURE__*/function () {
   }, {
     key: "attach_interactivity",
     value: function attach_interactivity(bool) {
-      var _this3 = this;
+      var _this4 = this;
 
       if (this.poly) {
         if (bool) {
           this.poly.onMouseDown = function (e) {
             // Show only editors for this object
-            ames.hide_editors(_this3);
+            ames.hide_editors(_this4);
 
-            _this3.show_all_editors();
+            _this4.editor.show(true);
           }; // select and de-select on click
 
 
           this.poly.onClick = function (e) {
-            var toggle = !_this3.is_selected;
+            var toggle = !_this4.is_selected;
 
-            _this3.select(toggle); // this.open_editor(toggle);
+            _this4.select(toggle); // this.open_editor(toggle);
 
           };
         } else {
@@ -4750,7 +5477,9 @@ var AMES_Artwork = /*#__PURE__*/function () {
     key: "clone",
     value: function clone(obj) {
       obj = Object.assign(obj, this);
-      obj.poly = this.poly.clone();
+      obj.poly = this.poly.clone({
+        insert: false
+      });
       obj.create_in_ames();
       return obj;
     }
@@ -4789,44 +5518,44 @@ var AMES_Polygon = /*#__PURE__*/function (_AMES_Artwork) {
   var _super = _createSuper(AMES_Polygon);
 
   function AMES_Polygon(opt) {
-    var _this4;
+    var _this5;
 
     _classCallCheck(this, AMES_Polygon);
 
-    _this4 = _super.call(this);
+    _this5 = _super.call(this);
 
-    _defineProperty(_assertThisInitialized(_this4), "name", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "name", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "shape_type", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "shape_type", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "artwork_type", "Polygon");
+    _defineProperty(_assertThisInitialized(_this5), "artwork_type", "Polygon");
 
-    _defineProperty(_assertThisInitialized(_this4), "sides", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "sides", void 0);
 
-    _defineProperty(_assertThisInitialized(_this4), "radius", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "radius", void 0);
 
-    _defineProperty(_assertThisInitialized(_this4), "centroid", void 0);
+    _defineProperty(_assertThisInitialized(_this5), "centroid", void 0);
 
     opt = opt || {};
     if (!opt.centroid) opt.centroid = ames.canvas_view.center;
     if (!opt.nsides) opt.nsides = 3;
     if (!opt.radius) opt.radius = 25;
-    _this4.sides = opt.nsides;
-    _this4.radius = opt.radius;
-    _this4.centroid = opt.centroid;
+    _this5.sides = opt.nsides;
+    _this5.radius = opt.radius;
+    _this5.centroid = opt.centroid;
 
     if (!opt.clone) {
-      _this4.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, _this4.radius);
-      _this4.poly.strokeWidth = 1;
-      _this4.poly.strokeColor = 'darkgray';
+      _this5.poly = new Path.RegularPolygon(opt.centroid, opt.nsides, _this5.radius);
+      _this5.poly.strokeWidth = 1;
+      _this5.poly.strokeColor = 'darkgray';
 
-      _this4.to_path();
+      _this5.to_path();
 
-      _this4.create_in_ames();
+      _this5.create_in_ames();
     }
 
-    _this4.cbs['nsides'] = _this4._nsides_cb;
-    return _this4;
+    _this5.cbs['nsides'] = _this5._nsides_cb;
+    return _this5;
   }
 
   _createClass(AMES_Polygon, [{
@@ -4861,26 +5590,43 @@ var AMES_Polygon = /*#__PURE__*/function (_AMES_Artwork) {
       AMES_Polygon.type_count += 1;
     }
   }, {
-    key: "set_scaling",
-    value: function set_scaling(x) {
-      _get(_getPrototypeOf(AMES_Polygon.prototype), "set_scaling", this).call(this, x);
-
-      this.radius *= x;
-    }
-  }, {
     key: "set_number_of_sides",
     value: function set_number_of_sides(nsides) {
       var style = this.poly.style;
       var position = this.poly.position;
-      this.poly.remove();
-      this.poly = new Path.RegularPolygon(position, nsides, this.radius);
+      var radius; // Find the radius (the distance between the centroid and the farthest)
+
+      var n = this.poly.segments.length;
+      var x_sum = 0;
+      var y_sum = 0;
+
+      for (var i = 0; i < n; i++) {
+        x_sum += this.poly.segments[i].point.x;
+        y_sum += this.poly.segments[i].point.y;
+      }
+
+      var centroid = new Point(x_sum / n, y_sum / n);
+      var max_dist = 0;
+
+      for (var _i5 = 0; _i5 < n; _i5++) {
+        var p = this.poly.segments[_i5].point;
+        var x = p.x - centroid.x;
+        var y = p.y - centroid.y;
+        var dist = Math.sqrt(x * x + y * y);
+        if (dist > max_dist) radius = dist;
+      }
+
+      var new_poly = new Path.RegularPolygon(position, nsides, radius);
+      new_poly.remove();
+      this.poly = this.poly.replaceWith(new_poly); // console.log("replaced?", replaced);
+
       this.poly.style = style;
 
-      if (nsides == 6) {
+      if (nsides == 6 || nsides == 9) {
         this.poly.rotate(-90);
-      } // this.poly.position = position;
+      }
 
-
+      this.poly.position = position;
       this.sides = nsides;
     }
   }, {
@@ -4906,19 +5652,19 @@ var AMES_Ellipse = /*#__PURE__*/function (_AMES_Artwork2) {
   var _super2 = _createSuper(AMES_Ellipse);
 
   function AMES_Ellipse(opt) {
-    var _this5;
+    var _this6;
 
     _classCallCheck(this, AMES_Ellipse);
 
-    _this5 = _super2.call(this);
+    _this6 = _super2.call(this);
 
-    _defineProperty(_assertThisInitialized(_this5), "name", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "name", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "shape_type", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "shape_type", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "artwork_type", "Ellipse");
+    _defineProperty(_assertThisInitialized(_this6), "artwork_type", "Ellipse");
 
-    _defineProperty(_assertThisInitialized(_this5), "is_ames_ellipse", true);
+    _defineProperty(_assertThisInitialized(_this6), "is_ames_ellipse", true);
 
     opt = opt || {};
     if (!opt.centroid) opt.centroid = ames.canvas_view.center;
@@ -4927,23 +5673,23 @@ var AMES_Ellipse = /*#__PURE__*/function (_AMES_Artwork2) {
     if (!opt.ry) opt.ry = opt.rx;
 
     if (!opt.clone) {
-      _this5.poly = new Shape.Ellipse({
+      _this6.poly = new Shape.Ellipse({
         center: [opt.centroid.x, opt.centroid.y],
         radius: [opt.rx, opt.ry],
         visible: true,
         strokeWidth: 1,
         strokeColor: 'darkgray'
       });
-      _this5.poly.visible = true;
+      _this6.poly.visible = true;
 
-      _this5.to_path();
+      _this6.to_path();
 
-      _this5.poly.rotate(-90);
+      _this6.poly.rotate(-90);
 
-      _this5.create_in_ames();
+      _this6.create_in_ames();
     }
 
-    return _this5;
+    return _this6;
   }
 
   _createClass(AMES_Ellipse, [{
@@ -4983,26 +5729,26 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
   var _super3 = _createSuper(AMES_Artwork_Path);
 
   function AMES_Artwork_Path(opt) {
-    var _this6;
+    var _this7;
 
     _classCallCheck(this, AMES_Artwork_Path);
 
-    _this6 = _super3.call(this);
+    _this7 = _super3.call(this);
 
-    _defineProperty(_assertThisInitialized(_this6), "name", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "name", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "shape_type", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "shape_type", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "artwork_type", "Path");
+    _defineProperty(_assertThisInitialized(_this7), "artwork_type", "Path");
 
-    _defineProperty(_assertThisInitialized(_this6), "bbox", void 0);
+    _defineProperty(_assertThisInitialized(_this7), "bbox", void 0);
 
-    _defineProperty(_assertThisInitialized(_this6), "is_ames_path", true);
+    _defineProperty(_assertThisInitialized(_this7), "is_ames_path", true);
 
     opt = opt || {};
 
     if (!opt.clone) {
-      _this6.poly = new Path({
+      _this7.poly = new Path({
         strokeColor: 'darkgray',
         strokeWidth: 1,
         visible: true,
@@ -5010,7 +5756,7 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
       });
     }
 
-    return _this6;
+    return _this7;
   }
 
   _createClass(AMES_Artwork_Path, [{
@@ -5025,6 +5771,7 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
   }, {
     key: "finish_creating_path",
     value: function finish_creating_path() {
+      console.log("finished path", this.name, this.poly);
       this.create_in_ames();
     }
   }, {
@@ -5043,16 +5790,14 @@ var AMES_Artwork_Path = /*#__PURE__*/function (_AMES_Artwork3) {
       for (var i in points) {
         this.poly.add(points[i]);
       }
-    }
-  }, {
-    key: "update_bbox",
-    value: function update_bbox() {
-      this.bbox = new Path.Rectangle(this.poly.strokeBounds);
-      this.bbox.visible = true;
-      this.bbox.sendToBack();
-      this.bbox.fillColor = "lavender";
-      this.bbox.opacity = 0;
-    }
+    } // update_bbox() {
+    // 	this.bbox = new Path.Rectangle(this.poly.strokeBounds);
+    // 	this.bbox.visible = true;
+    // 	this.bbox.sendToBack();
+    // 	this.bbox.fillColor = "lavender";
+    // 	this.bbox.opacity = 0;
+    // }
+
   }, {
     key: "make_path_helper",
     value: function make_path_helper() {
@@ -5133,6 +5878,8 @@ var AMES_Collection = /*#__PURE__*/function () {
     _defineProperty(this, "shapes", []);
 
     _defineProperty(this, "original", []);
+
+    _defineProperty(this, "transformations", []);
 
     _defineProperty(this, "count", 1);
 
@@ -5246,7 +5993,7 @@ var AMES_Collection = /*#__PURE__*/function () {
       this.is_duplicator = false; // Sort shapes by x_position
 
       artwork.sort(function (a, b) {
-        return a.pos.x - b.pos.x;
+        return a.number - b.number;
       });
 
       for (var idx in artwork) {
@@ -5311,7 +6058,7 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "create_editor",
     value: function create_editor() {
-      this.editor = new _editors.AMES_List_Editor(this);
+      this.editor = new _editors.AMES_Collection_Editor(this);
       var bounds = this.editor.box.bounds;
       var w = bounds.width / 2 + _utils.AMES_Utils.ICON_OFFSET * 3 + 12.5;
       var x = ames.toolbar.get_position().x + w;
@@ -5320,10 +6067,34 @@ var AMES_Collection = /*#__PURE__*/function () {
     }
   }, {
     key: "update_offset_mode",
-    value: function update_offset_mode() {
-      for (var i in this.list_constraints) {
-        this.list_constraints[i].offset_mode = this.offset_mode;
+    value: function update_offset_mode() {// for (let i in this.list_constraints) {
+      // 	this.list_constraints[i].offset_mode = this.offset_mode;
+      // }
+    }
+  }, {
+    key: "add_transformation",
+    value: function add_transformation(transformation) {
+      var missing = true;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) missing = false;
       }
+
+      if (missing) this.transformations.push(transformation);
+    }
+  }, {
+    key: "remove_transformation",
+    value: function remove_transformation(transformation) {
+      var idx = -1;
+
+      for (var i in this.transformations) {
+        if (this.transformations[i] == transformation) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) this.transformations.splice(idx, 1);
     } // show_editor: if true open editor; otherwise close;
 
   }, {
@@ -5351,15 +6122,16 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "duplicate",
     value: function duplicate() {
-      console.log("duplicator: ", this.is_duplicator, this.shapes);
-      var original_shape = this.original[0]; // if (!this.bottom) this.bottom = original_shape;
+      var original_shape = this.shapes[0];
 
       if (this.is_duplicator) {
-        // TO DO: insertion order bug. Having trouble changing relative ordering of shapes. 
+        // TO DO: insertion order bug. Having trouble changing relative ordering of shapes.
         var shape = original_shape.clone();
+        var prev = this.shapes[this.shapes.length - 1];
+        shape.poly.insertBelow(prev.poly);
         this.shapes.push(shape);
+        shape.add_collection(this);
         ames.hide_editors(this);
-        this.editor.show(true);
         this.show(true);
       }
     }
@@ -5373,13 +6145,13 @@ var AMES_Collection = /*#__PURE__*/function () {
         var og = this.shapes[0]; // this.shapes = [];
 
         for (var i = 1; i < n; i++) {
-          var a = Object.create(og);
-          a.poly = null;
-          a.poly = og.poly.clone();
-          a.poly.style = og.poly.style;
+          var a = og.clone();
           var c = i * 10;
           a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
           this.shapes.push(a);
+          a.add_collection(this); // this.add_to_collection(a, true);
+
+          ames.hide_editors(this);
           this.show(true);
         }
 
@@ -5398,52 +6170,49 @@ var AMES_Collection = /*#__PURE__*/function () {
     }
   }, {
     key: "add_to_collection",
-    value: function add_to_collection(s) {
-      if (!this.is_para_style_list && this.shapes.length > 0) {
-        var fs = this.shapes[0];
-        var ls = this.shapes[this.shapes.length - 1]; // Remove constraint connecting ls to fs
+    value: function add_to_collection(s, use_constraints) {
+      // if (use_constraints || (!this.is_para_style_list && this.shapes.length > 0)) {
+      // 	let fs = this.shapes[0];
+      // 	let ls = this.shapes[this.shapes.length - 1];
+      // 	// Remove constraint connecting ls to fs
+      // 	for (let i = 0; i < utils.VIS_PROPS.length; i++) {
+      // 		let p = utils.VIS_PROPS[i];
+      // 		if (p != 'path') {
+      // 			if (this.shapes.length > 1) {
+      // 				let oc;
+      // 				for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+      // 					let sub = utils.SUB_PROPS[p][sub_idx];
+      // 					// console.log(sub);
+      // 					oc = ls.c_outbound[p][sub][fs.name];
+      // 					this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+      // 					oc.remove();
+      // 				}
+      // 				oc = ls.c_outbound[p]['all'][fs.name];
+      // 				this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
+      // 				oc.remove();
+      // 			}
+      //
+      // 			let c_append = new AMES_Constraint(s, ls, p, 'all');
+      // 			let c_loop = new AMES_Constraint(fs, s, p, 'all');
+      //
+      // 			this.list_constraints.push(c_append);
+      // 			this.list_constraints.push(c_loop);
+      //
+      // 			for (let sub_idx = 0; sub_idx < utils.SUB_PROPS[p].length; sub_idx++) {
+      // 				let sub = utils.SUB_PROPS[p][sub_idx];
+      // 				this.list_constraints.push(s.c_inbound[p][sub][ls.name]);
+      // 				this.list_constraints.push(fs.c_inbound[p][sub][s.name]);
+      // 			}
+      // 		}
+      // 	}
+      // }
+      this.shapes.push(s); // s.add_list(this);
 
-        for (var i = 0; i < _utils.AMES_Utils.VIS_PROPS.length; i++) {
-          var p = _utils.AMES_Utils.VIS_PROPS[i];
-
-          if (p != 'path') {
-            if (this.shapes.length > 1) {
-              var oc = void 0;
-
-              for (var sub_idx = 0; sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; sub_idx++) {
-                var sub = _utils.AMES_Utils.SUB_PROPS[p][sub_idx]; // console.log(sub);
-
-                oc = ls.c_outbound[p][sub][fs.name];
-                this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-                oc.remove();
-              }
-
-              oc = ls.c_outbound[p]['all'][fs.name];
-              this.list_constraints.splice(this.list_constraints.indexOf(oc), 1);
-              oc.remove();
-            }
-
-            var c_append = new _constraints.AMES_Constraint(s, ls, p, 'all');
-            var c_loop = new _constraints.AMES_Constraint(fs, s, p, 'all');
-            this.list_constraints.push(c_append);
-            this.list_constraints.push(c_loop);
-
-            for (var _sub_idx = 0; _sub_idx < _utils.AMES_Utils.SUB_PROPS[p].length; _sub_idx++) {
-              var _sub = _utils.AMES_Utils.SUB_PROPS[p][_sub_idx];
-              this.list_constraints.push(s.c_inbound[p][_sub][ls.name]);
-              this.list_constraints.push(fs.c_inbound[p][_sub][s.name]);
-            }
-          }
-        }
-      }
-
-      this.shapes.push(s);
-      s.add_list(this);
+      s.add_collection(this);
     }
   }, {
     key: "update_constraints",
-    value: function update_constraints() {
-      AMES_List.update_constraints(this);
+    value: function update_constraints() {// AMES_Collection.update_constraints(this);
     }
   }, {
     key: "get_shape_names",
@@ -5461,10 +6230,11 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "show",
     value: function show(bool) {
-      // this.show_editor(bool);
+      this.show_editor(bool);
       this.update_show_box();
 
       if (bool) {
+        // let prev = null; let res;
         this._update_list();
       }
     } // _update_list: updates the artwork that the list contains
@@ -5484,6 +6254,9 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "remove_item",
     value: function remove_item() {
       if (this.count == 1) return;
+      var shape = this.shapes[this.shapes.length - 1];
+      shape.remove();
+      this.shapes.pop();
       this.count = this.count - 1;
       this.update_show_box();
     }
@@ -5530,7 +6303,7 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "update_show_box_count",
     value: function update_show_box_count() {
       this.count = this.shapes.length;
-      this.text_count.content = this.count;
+      if (this.text_count) this.text_count.content = this.count;
     }
   }, {
     key: "_make_show_box",
@@ -5573,13 +6346,13 @@ var AMES_Collection = /*#__PURE__*/function () {
           if (total_drag < 0) ames.canvas.style.cursor = 'w-resize';
           if (total_drag > 0) ames.canvas.style.cursor = 'e-resize';
 
-          if (total_drag < -10) {
+          if (total_drag < -5) {
             _this2.remove_item();
 
             total_drag = 0;
           }
 
-          if (total_drag > 10) {
+          if (total_drag > 5) {
             _this2.add_item();
 
             total_drag = 0;
@@ -5610,16 +6383,19 @@ var AMES_Collection = /*#__PURE__*/function () {
     value: function manipulate(p, sub) {
       this._clear_cb_helpers();
 
+      for (var i in this.shapes) {
+        this.shapes[i]._clear_cb_helpers();
+      }
+
       console.log("Manipulate list", p, sub); // Turn off the active property
 
       if (this.active_prop) {
         // Remove subproperty buttons
         this.editor.show_subprops(this.active_prop, false);
-        this.editor.select_prop(this.active_prop, false);
-        this.editor.show_constraint(false);
+        this.editor.select_prop(this.active_prop, false); // this.editor.show_constraint(false);
 
-        for (var i in this.shapes) {
-          if (this.shapes[i].active_prop == p) this.shapes[i].manipulate(p);
+        for (var _i2 in this.shapes) {
+          if (this.shapes[_i2].active_prop == p) this.shapes[_i2].manipulate(p);
         }
       } // If the new propety is not the property just turned off, turn it on
 
@@ -5633,21 +6409,21 @@ var AMES_Collection = /*#__PURE__*/function () {
         var sub_p = 'all';
         this.active_sub_p = sub_p;
 
-        for (var _i2 in this.shapes) {
-          console.log('...iterating over', this.shapes[_i2].name);
+        for (var _i3 in this.shapes) {
+          console.log('...iterating over', this.shapes[_i3].name);
 
-          if (this.shapes[_i2].active_prop == p) {
-            this.shapes[_i2].manipulate_helper('all');
+          if (this.shapes[_i3].active_prop == p) {
+            this.shapes[_i3].manipulate_helper('all');
           } else {
-            this.shapes[_i2].manipulate(p, sub);
+            this.shapes[_i3].manipulate(p, sub);
           }
         } // this.cbs[p](this, this.cb_helpers);
         // Indicate active property and show subproperty buttons
 
 
         this.editor.show_subprops(p, true);
-        this.editor.select_prop(p, true);
-        this.editor.show_constraint(true, p, sub_p);
+        this.editor.select_prop(p, true); // this.editor.show_constraint(true, p, sub_p);
+
         this.active_prop = p;
         this.active_sub_p = sub_p;
       } else {
@@ -5661,16 +6437,14 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "set_active_obj",
     value: function set_active_obj(obj) {
-      this.active_obj = obj;
-      this.editor.update_constraint(this.active_prop, this.active_sub_p);
+      this.active_obj = obj; // this.editor.update_constraint(this.active_prop, this.active_sub_p);
     }
   }, {
     key: "manipulate_helper",
     value: function manipulate_helper(sub) {
       this._clear_cb_helpers();
 
-      this.active_sub_p = sub;
-      this.editor.show_constraint(true, this.active_prop, sub);
+      this.active_sub_p = sub; // this.editor.show_constraint(true, this.active_prop, sub);
 
       for (var i in this.shapes) {
         this.shapes[i].manipulate_helper(sub);
@@ -5756,33 +6530,56 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "remove",
     value: function remove() {
       console.log("To do -- List.remove()");
-    }
-  }, {
-    key: "make_list_group",
-    value: function make_list_group() {
-      var box = new Group();
 
       for (var i in this.shapes) {
-        box.addChild(this.shapes[i].poly);
+        var a = this.shapes[i];
+        a.remove_collection(this);
       }
 
-      return box;
-    }
-  }, {
-    key: "empty_list_group",
-    value: function empty_list_group(box) {
-      for (var i in box.children) {
-        box.children[i].addTo(ames.canvas_view._project);
-      }
-    } // get_bbox: returns the bounding box of the group containing the list items
+      this.show(false);
+      ames.update_layers({
+        "remove": true,
+        "box": ames.obj_boxes_dict[this.name]
+      });
+    } // make_list_group() {
+    // 	let box = new Group();
+    // 	for (let i in this.shapes) {
+    // 		box.addChild(this.shapes[i].poly);
+    // 	}
+    // 	return box;
+    // }
+    //
+    // empty_list_group(box) {
+    // 	for (let i in box.children) {
+    // 		box.children[i].addTo(ames.canvas_view._project);
+    // 	}
+    // }
+    // get_bbox: returns the bounding box of the group containing the list items
 
   }, {
     key: "get_bbox",
     value: function get_bbox() {
-      var bbox;
-      var box = this.make_list_group();
-      if (box.strokeBounds) bbox = box.strokeBounds;else bbox = box.bounds;
-      this.empty_list_group(box);
+      // let bbox;
+      // let box = this.make_list_group();
+      // if (box.strokeBounds) bbox = box.strokeBounds;
+      // else bbox = box.bounds;
+      // this.empty_list_group(box);
+      var xmin = Number.MAX_VALUE;
+      var ymin = Number.MAX_VALUE;
+      var xmax = Number.MIN_VALUE;
+      var ymax = Number.MIN_VALUE;
+
+      for (var i in this.shapes) {
+        var box = this.shapes[i].get_bbox();
+        var TL = box.topLeft;
+        var BR = box.bottomRight;
+        if (TL.x < xmin) xmin = TL.x;
+        if (TL.y < ymin) ymin = TL.y;
+        if (BR.x > xmax) xmax = BR.x;
+        if (BR.y > ymax) ymax = BR.y;
+      }
+
+      var bbox = new Rectangle(new Point(xmin, ymin), new Point(xmax, ymax));
       return bbox;
       ;
     }
@@ -5816,9 +6613,7 @@ var AMES_Collection = /*#__PURE__*/function () {
     key: "update_constraints",
     value: function update_constraints(list) {
       var s = list.active_sub_p;
-      if (!s) s = "all";
-
-      _constraints.AMES_Constraint.update_constraints(list.active_prop, s, list);
+      if (!s) s = "all"; // AMES_Constraint.update_constraints(list.active_prop, s, list);
     }
   }]);
 
@@ -6857,13 +7652,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.AMES_List_Editor = exports.AMES_Shape_Editor = exports.AMES_Transformation_Editor = void 0;
+exports.AMES_Collection_Editor = exports.AMES_Shape_Editor = exports.AMES_Transformation_Editor = void 0;
 
 var _utils = require("./utils.js");
 
 var _artwork = require("./artwork.js");
 
-var _lists = require("./lists.js");
+var _collection = require("./collection.js");
 
 function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
 
@@ -6896,7 +7691,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 // Base editor that creates named editor for the specified object
 var AMES_Editor = /*#__PURE__*/function () {
   // Display properties
-  function AMES_Editor(obj) {
+  function AMES_Editor(obj, opt) {
     var _this = this;
 
     _classCallCheck(this, AMES_Editor);
@@ -6909,21 +7704,23 @@ var AMES_Editor = /*#__PURE__*/function () {
 
     _defineProperty(this, "pos_is_set", false);
 
-    var box = new Group(); // Add background rectangle
+    var box = new Group();
+    opt = opt || {}; // Add background rectangle
 
-    var e_width = 150;
+    var e_width = 167.5;
     this.box_width = e_width;
-    var e_height = this.e_height || 150;
+    var e_height = opt.e_height || 150;
     var rect = new Shape.Rectangle({
       point: [0, 0],
       size: [e_width, e_height],
-      fillColor: _utils.AMES_Utils.INACTIVE_COLOR,
+      // fillColor: utils.INACTIVE_COLOR,
       strokeWidth: 1,
       radius: 5,
       strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
       opacity: 0.5
     });
-    box.addChild(rect); // Add obj name
+    box.addChild(rect);
+    this.box_rect = rect; // Add obj name
 
     var by = _utils.AMES_Utils.LAYER_HEIGHT;
     var n_text = new PointText({
@@ -7025,7 +7822,8 @@ var AMES_Editor = /*#__PURE__*/function () {
       }
 
       this.is_visible = bool;
-      this.box.visible = bool; // if (!bool) {
+      this.box.visible = bool;
+      if (this.editor_close_cleanup) this.editor_close_cleanup(); // if (!bool) {
       // 	// Disable property interactivity if any
       // 	if (this.obj.active_prop) {
       // 		this.obj.manipulate(this.obj.active_prop)
@@ -7050,38 +7848,43 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
     _classCallCheck(this, AMES_Transformation_Editor);
 
-    _this2 = _super.call(this, obj);
-
-    _defineProperty(_assertThisInitialized(_this2), "box_width", void 0);
-
-    _defineProperty(_assertThisInitialized(_this2), "e_height", 175);
-
+    _this2 = _super.call(this, obj, {
+      "e_height": AMES_Transformation_Editor.e_height
+    });
     var box = _this2.box;
     var by = _utils.AMES_Utils.LAYER_HEIGHT;
-    var e_width = _this2.box_width; // Make geometry link button for artwork
+    _this2.box_width = 167.5; // Make geometry link button for artwork
 
     _this2.geometry_field_info = {};
     var x_off = 4 * _utils.AMES_Utils.ICON_OFFSET;
-    var y_off = _utils.AMES_Utils.LAYER_HEIGHT * 3.5;
+    var y_off = _utils.AMES_Utils.LAYER_HEIGHT * 6.5;
 
     _this2.make_link_button([x_off, y_off], 'target');
 
-    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'input'); // Create a play button
+    _this2.make_link_button([x_off, y_off + _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'input');
 
-
-    _this2.make_button(0, "play", "transform"); // this.make_button(0, "pause", "pause");
-    // this.make_button(0, "rewind", "rewind");
-
-
-    _this2.make_button(0, "loop", "loop", {
+    _this2.make_button(0, "axes", "toggle_show_tf", {
       "deactivate_required": true
     });
 
-    _this2.make_button(1, "axes", "toggle_show_tf", {
+    _this2.make_button(0, "brush", "change_transformation_property");
+
+    _this2.make_button(0, "play", "transform");
+
+    _this2.make_button(0, "loop", "toggle_loop", {
       "deactivate_required": true
     });
 
-    _this2.make_button(1, "brush", "change_transformation_property"); // Initialize editor position
+    _this2.make_dropdown([x_off, _utils.AMES_Utils.LAYER_HEIGHT * 1.5], 'mapping', 'change_mapping');
+
+    _this2.make_dropdown([x_off, _utils.AMES_Utils.LAYER_HEIGHT * 3], 'behavior', 'set_mapping_behavior');
+
+    _this2.make_dropdown([x_off, _utils.AMES_Utils.LAYER_HEIGHT * 4.5], 'mode', 'set_mapping_mode'); // Add playback points UX and button
+
+
+    _this2.create_playback_points_editor();
+
+    _this2.make_playback_point_btn([x_off - _utils.AMES_Utils.ICON_OFFSET, _utils.AMES_Utils.LAYER_HEIGHT * 11]); // Initialize editor position
 
 
     _this2.set_editor_position();
@@ -7090,35 +7893,405 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
   }
 
   _createClass(AMES_Transformation_Editor, [{
+    key: "set_editor_position",
+    value: function set_editor_position() {
+      _get(_getPrototypeOf(AMES_Transformation_Editor.prototype), "set_editor_position", this).call(this);
+
+      this.playback_box.position.x = this.box.position.x + this.box_width + 4 * _utils.AMES_Utils.ICON_OFFSET;
+      this.playback_box.position.y = this.box.position.y + AMES_Transformation_Editor.e_height / 2 - this.playback_box.bounds.height / 2;
+    }
+  }, {
+    key: "editor_close_cleanup",
+    value: function editor_close_cleanup() {
+      this.playback_editor_close_cleanup();
+
+      for (var f in this.dropdown) {
+        if (this.dropdown[f].drop_opts) {
+          this.dropdown[f].drop_opts.remove();
+        }
+      }
+    }
+  }, {
+    key: "make_playback_point_btn",
+    value: function make_playback_point_btn(editor_loc) {
+      var _this3 = this;
+
+      var x_off = editor_loc[0];
+      var y_off = editor_loc[1];
+      var playback_pt_btn = new Group();
+      var box = new Path.Rectangle({
+        point: new Point(x_off - 5, y_off),
+        size: new Size(150, _utils.AMES_Utils.LAYER_HEIGHT * .75),
+        fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        strokeWidth: 1,
+        radius: 1.25
+      });
+      var label = new PointText({
+        point: [3.25 * _utils.AMES_Utils.ICON_OFFSET + x_off, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET + 10],
+        content: 'Edit Playback Points',
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE
+      });
+      playback_pt_btn.addChildren([box, label]);
+
+      playback_pt_btn.onClick = function (e) {
+        console.log("Edit Playback Points");
+        _this3.playback_box.visible = true;
+      };
+
+      this.box.addChild(playback_pt_btn);
+    }
+  }, {
+    key: "playback_editor_close_cleanup",
+    value: function playback_editor_close_cleanup() {
+      this.playback_box.visible = false;
+    }
+  }, {
+    key: "load_playback_points",
+    value: function load_playback_points() {
+      var _this4 = this;
+
+      var triggers = this.obj.transformation_functions_to_trigger;
+      if (!triggers) return;
+      var x_off = this.playback_box.position.x - this.playback_box.bounds.width / 2 + 2 * _utils.AMES_Utils.ICON_OFFSET;
+      var y_off = this.playback_box.position.y - this.playback_box.bounds.height / 2 + 5.5 * _utils.AMES_Utils.LAYER_HEIGHT;
+
+      if (!this.playback_pt_ux) {
+        this.playback_pt_ux = [];
+      } else {
+        for (var i in this.playback_pt_ux) {
+          this.playback_pt_ux[i].remove();
+        }
+
+        this.playback_pt_ux = [];
+      }
+
+      console.log("load_playback_points", triggers);
+
+      var _loop = function _loop(_i) {
+        console.log(_i, triggers[_i]);
+        var trigger = triggers[_i];
+        var condition = trigger.condition;
+        var tf = trigger.tf;
+        var q = trigger.q;
+        var playback_pt = new Group(); // Delete button
+
+        var del_button = ames.icons["close"].clone();
+        del_button.scaling = 0.75;
+        var del_w = del_button.bounds.width;
+        del_button.position = new Point(x_off + del_w / 2, y_off);
+        del_button.visible = true; // Label for trigger condition
+
+        var trigger_name = tf.name ? tf.name : tf;
+        var str_playback_pt = condition[0].toUpperCase() + condition.substr(1) + ": " + trigger_name[0].toUpperCase() + trigger_name.substr(1);
+        var label_text = new PointText({
+          point: [x_off + del_w / 2 + 2 * _utils.AMES_Utils.ICON_OFFSET, y_off],
+          content: str_playback_pt,
+          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+          fontFamily: _utils.AMES_Utils.FONT,
+          fontSize: _utils.AMES_Utils.FONT_SIZE
+        });
+        label_text.position.y += label_text.bounds.height / 4; // Box for trigger transformation function
+        // Label for trigger transformation function
+        // Enable deleting playback points
+
+        del_button.onClick = function (e) {
+          console.log("remove playback point");
+
+          _this4.obj.remove_playback_point(trigger);
+
+          _this4.load_playback_points();
+        };
+
+        playback_pt.addChildren([del_button, label_text]);
+
+        _this4.playback_box.addChild(playback_pt);
+
+        _this4.playback_pt_ux.push(playback_pt); // Increment y_off
+
+
+        y_off += 15;
+      };
+
+      for (var _i = triggers.length - 1; _i >= 0; _i--) {
+        _loop(_i);
+      }
+    }
+  }, {
+    key: "create_playback_points_editor",
+    value: function create_playback_points_editor() {
+      var _this5 = this;
+
+      var playback_box = new Group();
+      var by = _utils.AMES_Utils.LAYER_HEIGHT;
+      var e_height = AMES_Transformation_Editor.e_height * 3 / 4;
+      var box = new Shape.Rectangle({
+        point: [0, 0],
+        size: [this.box_width, e_height],
+        // fillColor: utils.INACTIVE_COLOR,
+        strokeWidth: 1,
+        radius: 5,
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        opacity: 0.5
+      });
+      playback_box.addChild(box);
+      var n_text = new PointText({
+        point: [2 * _utils.AMES_Utils.ICON_OFFSET, by / 2 + _utils.AMES_Utils.FONT_SIZE / 2],
+        content: "Playback Points" + " :\n" + this.obj.name,
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE
+      }); // Add close icon
+
+      var close_button = ames.icons["close"].clone();
+      close_button.scaling = 0.75;
+      var close_w = close_button.bounds.width;
+      close_button.position = new Point(this.box_width - _utils.AMES_Utils.ICON_OFFSET - close_w / 2, by / 2 - close_w / 2);
+      close_button.visible = true;
+
+      close_button.onClick = function (e) {
+        _this5.playback_box.visible = false;
+        _this5.pos_is_set = false;
+        if (_this5.editor_close_cleanup) _this5.editor_close_cleanup();
+      }; // Create buttons to add playback pt
+
+
+      var plus_button = ames.icons["plus"].clone();
+      plus_button.scaling = 0.75;
+      var plus_w = close_button.bounds.width;
+      plus_button.position = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + plus_w / 2, n_text.position.y + n_text.bounds.height + 2 * _utils.AMES_Utils.ICON_OFFSET);
+      plus_button.visible = true;
+
+      plus_button.onClick = function (e) {
+        console.log("Add playback point");
+      };
+
+      this.make_dropdown([plus_button.position.x, plus_button.position.y], 'condition', 'set_new_playback_condition', playback_box);
+      this.dropdown['condition'].field_label.position.x += plus_w;
+      this.make_link_button([plus_button.position.x + _utils.AMES_Utils.ICON_OFFSET, plus_button.position.y + 1.75 * _utils.AMES_Utils.LAYER_HEIGHT], 'playback transformation', playback_box);
+
+      plus_button.onClick = function (e) {
+        var c = _this5.obj.new_playback_condition;
+        var tf = _this5.obj.new_playback_transformation;
+        if (!tf) tf = "remove";
+        console.log(c, tf);
+        var q = _this5.obj.new_playback_q;
+
+        if (c && tf) {
+          _this5.obj.use_playback_points_to_trigger_transformation({
+            'tf': tf,
+            'condition': c,
+            'q': q
+          });
+        }
+
+        _this5.load_playback_points();
+      }; // Make editor draggable
+
+
+      var dragging = false;
+      var drag_offset = 0;
+
+      box.onMouseDown = function (e) {
+        var n_children = playback_box.children.length;
+
+        for (var idx = 1; idx < n_children; idx++) {
+          var c = playback_box.children[idx];
+
+          if (c.contains(e.point)) {
+            dragging = false;
+            return;
+          }
+        }
+
+        drag_offset = e.point.subtract(playback_box.position);
+        dragging = true;
+      };
+
+      box.onMouseDrag = function (e) {
+        if (dragging) playback_box.position = e.point.subtract(drag_offset);
+      };
+
+      box.onMouseUp = function (e) {
+        if (dragging) dragging = false;
+      };
+
+      playback_box.addChildren([n_text, close_button, plus_button]);
+      playback_box.position = ames.canvas_view.center;
+      this.playback_box = playback_box;
+      this.playback_box.visible = false;
+    }
+  }, {
+    key: "make_dropdown",
+    value: function make_dropdown(editor_location, field, dropdown_function, parent, args) {
+      var _this6 = this;
+
+      // this.obj[btn_function](args);
+      if (!this.dropdown) this.dropdown = {};
+      this.dropdown[field] = {};
+      var x_off = editor_location[0];
+      var y_off = editor_location[1];
+      var dropdown = new Group();
+      var label = new PointText({
+        point: [3 * _utils.AMES_Utils.ICON_OFFSET, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET],
+        content: field[0].toUpperCase() + field.substring(1) + ":",
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE
+      });
+      this.dropdown[field].field_label = label;
+      y_off += 10;
+      var box = new Path.Rectangle({
+        point: new Point(x_off - 5, y_off),
+        size: new Size(150, _utils.AMES_Utils.LAYER_HEIGHT * .75),
+        fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+        strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        strokeWidth: 1,
+        radius: 1.25
+      });
+      var caret_a = ames.icons['caret-down'].clone();
+      caret_a.scaling = .625;
+      caret_a.position = new Point(x_off + 2.5, y_off + 12.5);
+      caret_a.visible = true;
+      var caret_b = caret_a.clone();
+      caret_b.position = new Point(x_off + 2.5, y_off + 5);
+      caret_b.rotation = 180;
+      var opts = this.obj.get_dropdown_opts(field);
+      this.dropdown[field].selected_opt = this.obj.get_mapping_opt(field);
+      var selected_label = new PointText({
+        point: [x_off + 25, y_off + 12.5],
+        content: this.dropdown[field].selected_opt,
+        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+        fontFamily: _utils.AMES_Utils.FONT,
+        fontSize: _utils.AMES_Utils.FONT_SIZE
+      });
+      this.dropdown[field].label = selected_label;
+      this.dropdown[field].opts_visible = false;
+
+      var set_dropdown_selected = function set_dropdown_selected(field, opt) {
+        console.log("editor dropdown selection: ", field, opt);
+
+        _this6.obj[dropdown_function](opt);
+
+        _this6.dropdown[field].label.content = opt;
+        _this6.dropdown[field].selected_opt = opt;
+
+        if (_this6.dropdown[field].drop_opts) {
+          _this6.dropdown[field].drop_opts.remove();
+        }
+
+        _this6.dropdown[field].opts_visible = false;
+      };
+
+      var get_dropdown_position = function get_dropdown_position() {
+        var position = dropdown.position;
+        return {
+          "x_off": position.x,
+          "y_off": position.y
+        };
+      }; // On click show menu with remaining options that enable selection
+
+
+      this.dropdown[field].drop_opts;
+
+      dropdown.onMouseDown = function (e) {
+        console.log("Clicked on dropdown");
+        e.stopPropagation();
+
+        if (_this6.dropdown[field].opts_visible) {
+          // Click on same opt resets the menu and hides the visible options
+          set_dropdown_selected(field, _this6.dropdown[field].selected_opt);
+        } else {
+          _this6.dropdown[field].opts_visible = true; // console.log("Show drop opts")
+          // Show the visible options so the user can select them
+
+          _this6.dropdown[field].drop_opts = new Group();
+          var p = get_dropdown_position();
+          p.x_off -= 69;
+
+          var _loop2 = function _loop2(i) {
+            var opt = opts[i];
+
+            if (opt != _this6.dropdown[field].selected_opt) {
+              // console.log(opt, p);
+              var opt_group = new Group();
+              p.y_off += box.bounds.height;
+              var opt_box = new Path.Rectangle({
+                point: new Point(p.x_off - 5, p.y_off - 0.25),
+                size: new Size(150, _utils.AMES_Utils.LAYER_HEIGHT * .75),
+                fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+                strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+                strokeWidth: 1,
+                radius: 1.25
+              });
+              var opt_label = new PointText({
+                point: [p.x_off + 25, p.y_off + 12.5],
+                content: opt,
+                fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
+                fontFamily: _utils.AMES_Utils.FONT,
+                fontSize: _utils.AMES_Utils.FONT_SIZE
+              });
+              opt_group.addChildren([opt_box, opt_label]);
+
+              _this6.dropdown[field].drop_opts.addChild(opt_group);
+
+              opt_group.onMouseDown = function (e) {
+                set_dropdown_selected(field, opt);
+              };
+            }
+          };
+
+          for (var i in opts) {
+            _loop2(i);
+          }
+        }
+      };
+
+      dropdown.addChildren([label, box, caret_a, caret_b, selected_label]);
+      if (!parent) parent = this.box;
+      parent.addChild(dropdown);
+    }
+  }, {
     key: "make_button",
     value: function make_button(btn_row, icon_name, btn_function, args) {
-      var _this3 = this;
+      var _this7 = this;
 
       args = args || {};
       var btn = ames.icons[icon_name].clone();
       var bw = btn.bounds.width;
-      var by = _utils.AMES_Utils.LAYER_HEIGHT + bw * btn_row;
+      var by = 4.5 * _utils.AMES_Utils.LAYER_HEIGHT + bw * btn_row + 10;
       if (!this.n_btns) this.n_btns = {};
       if (!this.n_btns[btn_row]) this.n_btns[btn_row] = 0;
-      btn.position = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + this.n_btns[btn_row] * (_utils.AMES_Utils.ICON_OFFSET + bw) + bw / 2, by * 2);
+      btn.position = new Point(3.5 * _utils.AMES_Utils.ICON_OFFSET + this.n_btns[btn_row] * (_utils.AMES_Utils.ICON_OFFSET + bw) + bw / 2, by * 2);
       btn.visible = true;
+      btn.active = false;
+      args.btn = btn;
+
+      btn.deactivate = function () {
+        btn.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+        btn.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
+
+        if (args.deactivate_required) {
+          args.deactivate = true;
+
+          _this7.obj[btn_function](args);
+        }
+
+        btn.active = false;
+      };
 
       btn.onClick = function (e) {
         if (btn.active) {
-          btn.strokeColor = _utils.AMES_Utils.INACTIVE_COLOR;
-          btn.fillColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-
-          if (args.deactivate_required) {
-            console.log('deactivate', btn_function);
-            args.deactivate = true;
-
-            _this3.obj[btn_function](args);
-          }
+          btn.deactivate();
         } else {
           btn.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
           btn.fillColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
 
-          _this3.obj[btn_function](args);
+          _this7.obj[btn_function](args);
+
+          btn.active = true;
         }
       };
 
@@ -7127,13 +8300,13 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
     }
   }, {
     key: "make_link_button",
-    value: function make_link_button(editor_location, field) {
-      var _this4 = this;
+    value: function make_link_button(editor_location, field, parent) {
+      var _this8 = this;
 
       var x_off = editor_location[0];
       var y_off = editor_location[1];
       var field_label = new PointText({
-        point: [2 * _utils.AMES_Utils.ICON_OFFSET, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET],
+        point: [3 * _utils.AMES_Utils.ICON_OFFSET, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET],
         content: field[0].toUpperCase() + field.substring(1) + ":",
         fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
         fontFamily: _utils.AMES_Utils.FONT,
@@ -7142,7 +8315,7 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
       y_off += 15;
       var link = ames.icons['link'].clone();
       link.scaling = 1.25;
-      link.position = new Point(x_off, y_off);
+      link.position = new Point(x_off + _utils.AMES_Utils.ICON_OFFSET, y_off);
       link.visible = true;
       link.strokeWidth = .25;
       var link_remove = ames.icons['link-remove'].clone();
@@ -7151,9 +8324,13 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
       link_remove.visible = false;
       link_remove.strokeWidth = .25;
       this.geometry_field_info[field] = {};
+      var field_name;
+      if (this.obj[field]) field_name = this.obj[field].name;
+      field_name = field_name || field;
+      if (field_name == "playback transformation") field_name = "remove";
       var label = new PointText({
-        point: [2.25 * _utils.AMES_Utils.ICON_OFFSET + x_off, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET],
-        content: field,
+        point: [3.25 * _utils.AMES_Utils.ICON_OFFSET + x_off, y_off + .75 * _utils.AMES_Utils.ICON_OFFSET],
+        content: field_name,
         fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
         fontFamily: _utils.AMES_Utils.FONT,
         fontSize: _utils.AMES_Utils.FONT_SIZE
@@ -7162,7 +8339,7 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
       link.onMouseDown = function (e) {
         console.log("click animation link button", field);
-        ames.active_linking_transformation = _this4.obj;
+        ames.active_linking_transformation = _this8.obj;
         ames.transformation_active_field = field;
         ames.tools['Animation_Link'].activate(); // Little workaround... to start drawing line that defines constraint
 
@@ -7173,19 +8350,25 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
       link_remove.onMouseDown = function (e) {
         // Remove obj field
-        _this4.obj.remove_geometry_field(field);
+        _this8.obj.set_geometry_field(field, null);
 
-        _this4.geometry_field_info[field].label.content = field;
+        _this8.geometry_field_info[field].label.content = field;
+
+        if (field == "playback transformation") {
+          _this8.geometry_field_info[field].label.content = "remove";
+        }
+
         link.visible = true;
         link_remove.visible = false;
       };
 
       this.geometry_field_info[field].link = link;
       this.geometry_field_info[field].link_remove = link_remove;
-      this.box.addChild(field_label);
-      this.box.addChild(label);
-      this.box.addChild(link);
-      this.box.addChild(link_remove);
+      if (!parent) parent = this.box;
+      parent.addChild(field_label);
+      parent.addChild(label);
+      parent.addChild(link);
+      parent.addChild(link_remove);
     }
   }]);
 
@@ -7194,37 +8377,44 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
 
 exports.AMES_Transformation_Editor = AMES_Transformation_Editor;
 
+_defineProperty(AMES_Transformation_Editor, "e_height", 305);
+
 var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
   _inherits(AMES_Shape_Editor, _AMES_Editor2);
 
   var _super2 = _createSuper(AMES_Shape_Editor);
 
   function AMES_Shape_Editor(obj) {
-    var _this5;
+    var _this9;
 
     _classCallCheck(this, AMES_Shape_Editor);
 
-    _this5 = _super2.call(this, obj);
+    _this9 = _super2.call(this, obj);
 
-    _defineProperty(_assertThisInitialized(_this5), "props", {});
+    _defineProperty(_assertThisInitialized(_this9), "props", {});
 
-    _defineProperty(_assertThisInitialized(_this5), "subprops", {});
+    _defineProperty(_assertThisInitialized(_this9), "subprops", {});
 
-    _defineProperty(_assertThisInitialized(_this5), "constraint_info", {});
+    _defineProperty(_assertThisInitialized(_this9), "constraint_info", {});
 
-    _defineProperty(_assertThisInitialized(_this5), "selected_subprop", void 0);
+    _defineProperty(_assertThisInitialized(_this9), "selected_subprop", void 0);
 
-    _defineProperty(_assertThisInitialized(_this5), "selected_prop", void 0);
+    _defineProperty(_assertThisInitialized(_this9), "selected_prop", void 0);
 
-    var box = _this5.box;
+    var box = _this9.box;
     var by = _utils.AMES_Utils.LAYER_HEIGHT;
-    var e_width = _this5.box_width;
+    var e_width = _this9.box_width;
     var props = _utils.AMES_Utils.VIS_PROPS; // create all sub-property box
 
-    _this5._make_subprop('all', 0, box); // Create property buttons
+    _this9._make_subprop('all', 0, box); // Create property buttons
 
 
-    var properties = _utils.AMES_Utils.VIS_PROPS; // Add nsides for Polygon
+    var properties = [];
+
+    for (var p in _utils.AMES_Utils.VIS_PROPS) {
+      properties.push(_utils.AMES_Utils.VIS_PROPS[p]);
+    } // Add nsides for Polygon
+
 
     if (obj.artwork_type == "Polygon") {
       properties.push("nsides");
@@ -7232,7 +8422,7 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
     var b_w;
 
-    var _loop = function _loop(idx) {
+    var _loop3 = function _loop3(idx) {
       var p = properties[idx];
       var button = ames.icons[p].clone();
       b_w = button.bounds.width;
@@ -7244,7 +8434,7 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
       for (var s_idx = 1; s_idx <= p_subprops.length; s_idx++) {
         var s = p_subprops[s_idx - 1]; // Make a new subproperty box if necessary
 
-        _this5._make_subprop(s, s_idx, box);
+        _this9._make_subprop(s, s_idx, box);
       } // Clicking enables intearctivity on selected trait
 
 
@@ -7254,17 +8444,17 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
 
       box.addChild(button);
-      _this5.props[p] = button;
+      _this9.props[p] = button;
     };
 
     for (var idx in properties) {
-      _loop(idx);
+      _loop3(idx);
     } // Add special slider for polygon (nsides)
 
 
     if (obj.artwork_type == "Polygon") {
       var p_text = new Point(2 * _utils.AMES_Utils.ICON_OFFSET + properties.length * (_utils.AMES_Utils.ICON_OFFSET + b_w) + b_w / 2, by * 2);
-      _this5.nsides = new PointText({
+      _this9.nsides = new PointText({
         point: [p_text.x, p_text.y + _utils.AMES_Utils.ICON_OFFSET],
         content: obj.sides,
         fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
@@ -7274,14 +8464,13 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
       });
       var total_drag = 0;
 
-      _this5.nsides.onMouseDown = function (e) {
+      _this9.nsides.onMouseDown = function (e) {
         ames.canvas.style.cursor = 'move';
       };
 
-      _this5.nsides.onMouseDrag = function (e) {
+      _this9.nsides.onMouseDrag = function (e) {
         // ames.canvas.style.cursor = null;
         total_drag += e.event.movementX;
-        console.log(total_drag);
 
         if (total_drag < 0) {
           if (total_drag > 0) total_drag = 0;
@@ -7297,7 +8486,7 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
           // Decrement nsides
           if (obj.sides > 3) {
             obj.set_number_of_sides(Number(obj.sides) - 1);
-            _this5.nsides.content = obj.sides;
+            _this9.nsides.content = obj.sides;
           }
 
           total_drag = 0;
@@ -7305,26 +8494,25 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
         if (total_drag > 5) {
           // Increase nsides
-          console.log("incremenet nsides to", obj.sides + 1);
           obj.set_number_of_sides(Number(obj.sides) + 1);
-          _this5.nsides.content = obj.sides;
+          _this9.nsides.content = obj.sides;
           total_drag = 0;
         }
       };
 
-      _this5.nsides.onMouseUp = function (e) {
+      _this9.nsides.onMouseUp = function (e) {
         ames.canvas.style.cursor = null;
         total_drag = 0;
       };
 
-      box.addChild(_this5.nsides);
+      box.addChild(_this9.nsides);
     }
 
-    _this5.box = box; // Initialize editor
+    _this9.box = box; // Initialize editor
 
-    _this5.set_editor_position();
+    _this9.set_editor_position();
 
-    return _this5;
+    return _this9;
   }
 
   _createClass(AMES_Shape_Editor, [{
@@ -7370,7 +8558,7 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
   }, {
     key: "_make_subprop",
     value: function _make_subprop(s, s_idx, box) {
-      var _this6 = this;
+      var _this10 = this;
 
       // Calculate offset for property boxes after all
       var offset = 0;
@@ -7419,228 +8607,206 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
         subprop_line.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
         subprop_line.strokeWidth = 1;
         subprop_line.opacity = 0.5;
-        box.addChild(subprop_line); // Make and hide link and unlink buttons
-
-        var link = ames.icons['link'].clone();
-        link.scaling = 1.25;
-        link.position = new Point(3.5 * _utils.AMES_Utils.ICON_OFFSET, _utils.AMES_Utils.LAYER_HEIGHT * 3.75);
-        link.visible = true;
-        link.strokeWidth = .25;
-        var link_remove = ames.icons['link-remove'].clone();
-        link_remove.scaling = 1.25;
-        link_remove.position = link.position;
-        link_remove.visible = false;
-        link_remove.strokeWidth = .25; // When the link button is clicked activate constraint tool
-
-        link.onMouseDown = function (e) {
-          ames.c_relative = _this6.obj;
-          ames.tools['Constraint'].activate(); // Little workaround... to start drawing line that defines constraint
-
-          link.strokeColor = _utils.AMES_Utils.ACTIVE_S_COLOR;
-          ames.tools['Constraint'].onMouseDown(e);
-          ames.tools['Constraint'].onMouseDrag(e);
-        };
-
-        link_remove.onMouseDown = function (e) {
-          var p = _this6.obj.active_prop;
-          var s = _this6.obj.active_sub_p;
-          console.log("link remove constraint", p, s);
-          if (!s) s = "all";
-          var c_ins = _this6.obj.c_inbound[p][s];
-          var c = null;
-
-          for (var i in c_ins) {
-            if (c_ins[i].is_manual_constraint) c = c_ins[i];
-          }
-
-          if (c) {
-            console.log(c);
-            c.remove();
-          }
-        };
-
-        this.constraint_info.link = link;
-        this.constraint_info.link_remove = link_remove; // Name of relative that defines the constraint
-
-        var link_name = new PointText({
-          point: [link.position.x + 3 * _utils.AMES_Utils.ICON_OFFSET, link.position.y + link.bounds.height / 4],
-          content: 'Constraint',
-          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-          fontFamily: _utils.AMES_Utils.FONT,
-          fontSize: _utils.AMES_Utils.FONT_SIZE
-        });
-        this.constraint_info.link_name = link_name;
-        var offset_label = new PointText({
-          point: [subline_start.x + _utils.AMES_Utils.ICON_OFFSET, link.position.y + 5 * _utils.AMES_Utils.ICON_OFFSET],
-          content: 'relative offset',
-          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-          fontFamily: _utils.AMES_Utils.FONT,
-          fontSize: _utils.AMES_Utils.FONT_SIZE
-        });
-        this.constraint_info.offset_label = offset_label;
-        var offset_val = new PointText({
-          point: [subline_start.x + offset_label.bounds.width + 2.5 * _utils.AMES_Utils.ICON_OFFSET, link.position.y + 5 * _utils.AMES_Utils.ICON_OFFSET],
-          content: '10',
-          fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-          fontFamily: _utils.AMES_Utils.FONT,
-          fontSize: _utils.AMES_Utils.FONT_SIZE
-        });
-        this.constraint_info.offset_val = offset_val; // Make offset val draggable
-
-        this.constraint_info.offset_val.onMouseDown = function (e) {
-          console.log("mouse down on offset val");
-          ames.canvas.style.cursor = 'move';
-        };
-
-        var offset_val_drag = 0;
-
-        this.constraint_info.offset_val.onMouseDrag = function (e) {
-          offset_val_drag += e.event.movementX;
-          if (offset_val_drag < 0) ames.canvas.style.cursor = 'w-resize';
-          if (offset_val_drag > 0) ames.canvas.style.cursor = 'e-resize';
-          var c_ins = _this6.obj.c_inbound[_this6.obj.active_prop][_this6.obj.active_sub_p];
-
-          if (offset_val_drag < -5) {
-            // Manipulate active constraint
-            for (var i in c_ins) {
-              if (c_ins[i].is_manual_constraint) {
-                c_ins[i].change_offset(-1);
-              }
-            }
-
-            offset_val_drag = 0;
-          }
-
-          if (offset_val_drag > 5) {
-            // Manipulate active constraint
-            for (var _i in c_ins) {
-              if (c_ins[_i].is_manual_constraint) {
-                c_ins[_i].change_offset(1);
-              }
-            }
-
-            offset_val_drag = 0;
-          }
-        };
-
-        this.constraint_info.offset_val.onMouseUp = function (e) {
-          ames.canvas.style.cursor = null;
-        };
-
-        var ox = offset_val.position.x;
-        var oy = offset_val.position.y + offset_val.bounds.height / 2;
-        var offset_line = new Path.Line(new Point(ox - 1.25 * _utils.AMES_Utils.ICON_OFFSET, oy), new Point(ox + 6 * _utils.AMES_Utils.ICON_OFFSET, oy));
-        offset_line.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-        offset_line.strokeWidth = 1;
-        offset_line.opacity = 0.5;
-        this.constraint_info.offset_line = offset_line;
-        box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
-        this.show_constraint(false);
+        box.addChild(subprop_line); // // Make and hide link and unlink buttons
+        // let link = ames.icons['link'].clone();
+        // link.scaling = 1.25;
+        // link.position = new Point(3.5*utils.ICON_OFFSET, utils.LAYER_HEIGHT*3.75);
+        // link.visible = true;
+        // link.strokeWidth = .25;
+        // let link_remove = ames.icons['link-remove'].clone();
+        // link_remove.scaling = 1.25;
+        // link_remove.position = link.position;
+        // link_remove.visible = false;
+        // link_remove.strokeWidth = .25;
+        // // When the link button is clicked activate constraint tool
+        // link.onMouseDown = (e) => {
+        // 	ames.c_relative = this.obj;
+        // 	ames.tools['Constraint'].activate();
+        // 	// Little workaround... to start drawing line that defines constraint
+        // 	link.strokeColor = utils.ACTIVE_S_COLOR;
+        // 	ames.tools['Constraint'].onMouseDown(e);
+        // 	ames.tools['Constraint'].onMouseDrag(e);
+        // }
+        // link_remove.onMouseDown = (e) => {
+        // 	let p = this.obj.active_prop;
+        // 	let s = this.obj.active_sub_p;
+        // 	console.log("link remove constraint", p, s);
+        // 	if (!s) s = "all";
+        // 	let c_ins = this.obj.c_inbound[p][s];
+        // 	let c = null;
+        // 	for (let i in c_ins) {
+        // 		if (c_ins[i].is_manual_constraint)
+        // 			c = c_ins[i];
+        // 	}
+        // 	if (c) {
+        // 		console.log(c);
+        // 		c.remove();
+        // 	}
+        // }
+        // this.constraint_info.link = link;
+        // this.constraint_info.link_remove = link_remove;
+        // // Name of relative that defines the constraint
+        // let link_name = new PointText({
+        // 	point: [link.position.x + 3*utils.ICON_OFFSET, link.position.y + link.bounds.height/4],
+        // 	content: 'Constraint',
+        // 	fillColor: utils.INACTIVE_S_COLOR,
+        // 	fontFamily: utils.FONT,
+        // 	fontSize: utils.FONT_SIZE,
+        // });
+        // this.constraint_info.link_name = link_name;
+        // let offset_label = new PointText({
+        // 	point: [subline_start.x + utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
+        // 	content: 'relative offset',
+        // 	fillColor: utils.INACTIVE_S_COLOR,
+        // 	fontFamily: utils.FONT,
+        // 	fontSize: utils.FONT_SIZE,
+        // });
+        // this.constraint_info.offset_label = offset_label;
+        // let offset_val = new PointText({
+        // 	point: [subline_start.x + offset_label.bounds.width + 2.5*utils.ICON_OFFSET, link.position.y + 5*utils.ICON_OFFSET],
+        // 	content: '10',
+        // 	fillColor: utils.INACTIVE_S_COLOR,
+        // 	fontFamily: utils.FONT,
+        // 	fontSize: utils.FONT_SIZE,
+        // });
+        // this.constraint_info.offset_val = offset_val;
+        // // Make offset val draggable
+        // this.constraint_info.offset_val.onMouseDown = (e) => {
+        // 	console.log("mouse down on offset val")
+        // 	ames.canvas.style.cursor = 'move';
+        // }
+        // let offset_val_drag = 0;
+        // this.constraint_info.offset_val.onMouseDrag = (e) => {
+        // 	offset_val_drag += e.event.movementX;
+        // 	if (offset_val_drag < 0) ames.canvas.style.cursor = 'w-resize';
+        // 	if (offset_val_drag > 0) ames.canvas.style.cursor = 'e-resize';
+        // 	let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+        // 	if (offset_val_drag < -5) {
+        // 		// Manipulate active constraint
+        // 		for (let i in c_ins) {
+        // 			if (c_ins[i].is_manual_constraint) {
+        // 				c_ins[i].change_offset(-1);
+        // 			}
+        //
+        // 		}
+        // 		offset_val_drag = 0;
+        // 	}
+        // 	if (offset_val_drag > 5) {
+        // 		// Manipulate active constraint
+        // 		for (let i in c_ins) {
+        // 			if (c_ins[i].is_manual_constraint) {
+        // 				c_ins[i].change_offset(1);
+        // 			}
+        // 		}
+        // 		offset_val_drag = 0;
+        // 	}
+        // }
+        // this.constraint_info.offset_val.onMouseUp = (e) => {
+        // 	ames.canvas.style.cursor = null;
+        // }
+        // let ox = offset_val.position.x; let oy = offset_val.position.y + offset_val.bounds.height/2;
+        // let offset_line = new Path.Line(new Point(ox - 1.25*utils.ICON_OFFSET, oy), new Point(ox + 6*utils.ICON_OFFSET, oy));
+        // offset_line.strokeColor = utils.INACTIVE_S_COLOR;
+        // offset_line.strokeWidth = 1;
+        // offset_line.opacity = 0.5;
+        // this.constraint_info.offset_line = offset_line;
+        // box.addChildren([link, link_name, offset_label, offset_val, offset_line, link_remove]);
+        // this.show_constraint(false);
       } // When the subproperty is clicked enable editing on it
 
 
       subprop_box.onClick = function (e) {
-        if (!_this6.obj.active_prop) return;
+        if (!_this10.obj.active_prop) return;
 
-        _this6.select_subprop(s, true);
+        _this10.select_subprop(s, true);
 
-        _this6.obj.manipulate_helper(s);
+        _this10.obj.manipulate_helper(s);
       };
 
       subprop_text.onClick = function (e) {
-        if (!_this6.obj.active_prop) return;
+        if (!_this10.obj.active_prop) return;
 
-        _this6.select_subprop(s, true);
+        _this10.select_subprop(s, true);
 
-        _this6.obj.manipulate_helper(s);
+        _this10.obj.manipulate_helper(s);
       };
 
       box.addChild(subprop_text);
       box.addChild(subprop_box);
       this.subprops[s] = [subprop_text, subprop_box];
-    } // _show_constraint
-
-  }, {
-    key: "show_constraint",
-    value: function show_constraint(bool, p, sub_p) {
-      if (p == 'path') {
-        bool = false;
-      }
-
-      if (p == 'nsides') {
-        bool = false;
-      }
-
-      for (var k in this.constraint_info) {
-        this.constraint_info[k].visible = bool;
-      } // Hide link remove button
-
-
-      this.constraint_info.link_remove.visible = false; // Show link remove button if there is an active constraint
-
-      if (bool && this.obj) {
-        var s = sub_p;
-        if (!s) s = "all";
-        var c_ins = this.obj.c_inbound[p][s];
-        var c = null;
-
-        for (var i in c_ins) {
-          if (c_ins[i].is_manual_constraint) c = c_ins[i];
-        }
-
-        if (c) {
-          this.constraint_info.link_remove.visible = true;
-          this.constraint_info.link.visible = false;
-        }
-      }
-
-      if (sub_p == 'all') {
-        this.constraint_info['offset_label'].visible = false;
-        this.constraint_info['offset_val'].visible = false;
-        this.constraint_info['offset_line'].visible = false;
-      } // Update property value
-
-
-      if (bool) this.update_constraint(p, sub_p);
-    }
-  }, {
-    key: "update_constraint",
-    value: function update_constraint(p, s) {
-      if (!p) p = this.obj.active_prop;
-      if (!s) s = this.obj.active_sub_p;
-      if (!s) s = "all";
-      var link_name = 'Unconstrained';
-      var offset_val = 0;
-      var c = null;
-
-      if (p) {
-        var c_ins = this.obj.c_inbound[p][s]; // console.log(c_ins);
-
-        for (var i in c_ins) {
-          if (c_ins[i].is_manual_constraint) c = c_ins[i];
-        }
-
-        if (c) {
-          link_name = c.reference.name;
-
-          if (s != "all") {
-            var offset = c.get_offset();
-            offset_val = offset.toFixed(2);
-          } // Show unlink button
-
-
-          this.constraint_info.link.visible = false;
-          this.constraint_info.link_remove.visible = true;
-        } else {
-          // Show link button
-          this.constraint_info.link.visible = true;
-          this.constraint_info.link_remove.visible = false;
-        }
-      }
-
-      this.constraint_info.link_name.content = link_name;
-      this.constraint_info.offset_val.content = offset_val;
-    } // _select_subprop: Activate subproperty including display if true; deselect otherwise
+    } // // _show_constraint
+    // show_constraint(bool, p, sub_p) {
+    // 	if (p == 'path') { bool = false;}
+    // 	if (p == 'nsides') { bool = false; }
+    //
+    // 	for (let k in this.constraint_info) {
+    // 		this.constraint_info[k].visible = bool;
+    // 	}
+    // 	// Hide link remove button
+    // 	this.constraint_info.link_remove.visible = false;
+    // 	// Show link remove button if there is an active constraint
+    // 	if (bool && this.obj) {
+    // 		let s = sub_p;
+    // 		if (!s) s = "all";
+    // 		let c_ins = this.obj.c_inbound[p][s];
+    // 		let c = null;
+    // 		for (let i in c_ins) {
+    // 			if (c_ins[i].is_manual_constraint)
+    // 				c = c_ins[i];
+    // 		}
+    // 		if (c) {
+    // 			this.constraint_info.link_remove.visible = true;
+    // 			this.constraint_info.link.visible = false;
+    // 		}
+    // 	}
+    //
+    // 	if (sub_p == 'all') {
+    // 		this.constraint_info['offset_label'].visible = false;
+    // 		this.constraint_info['offset_val'].visible = false;
+    // 		this.constraint_info['offset_line'].visible = false;
+    // 	}
+    //
+    // 	// Update property value
+    // 	if (bool) this.update_constraint(p, sub_p);
+    // }
+    //
+    // update_constraint(p, s) {
+    // 	if (!p) p = this.obj.active_prop;
+    // 	if (!s) s = this.obj.active_sub_p;
+    // 	if (!s) s = "all"
+    //
+    // 	let link_name = 'Unconstrained';
+    // 	let offset_val = 0;
+    //
+    // 	let c = null;
+    // 	if (p) {
+    // 		let c_ins = this.obj.c_inbound[p][s];
+    // 		// console.log(c_ins);
+    // 		for (let i in c_ins) {
+    // 			if (c_ins[i].is_manual_constraint)
+    // 				c = c_ins[i];
+    // 		}
+    // 		if (c) {
+    // 			link_name = c.reference.name;
+    //
+    // 			if (s != "all") {
+    // 				let offset = c.get_offset();
+    // 				offset_val = offset.toFixed(2);
+    // 			}
+    // 			// Show unlink button
+    // 			this.constraint_info.link.visible = false;
+    // 			this.constraint_info.link_remove.visible = true;
+    // 		} else {
+    // 			// Show link button
+    // 			this.constraint_info.link.visible = true;
+    // 			this.constraint_info.link_remove.visible = false;
+    // 		}
+    // 	}
+    //
+    // 	this.constraint_info.link_name.content = link_name;
+    // 	this.constraint_info.offset_val.content = offset_val;
+    // }
+    // _select_subprop: Activate subproperty including display if true; deselect otherwise
 
   }, {
     key: "select_subprop",
@@ -7706,172 +8872,163 @@ var AMES_Shape_Editor = /*#__PURE__*/function (_AMES_Editor2) {
 
 exports.AMES_Shape_Editor = AMES_Shape_Editor;
 
-var AMES_List_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
-  _inherits(AMES_List_Editor, _AMES_Shape_Editor);
+var AMES_Collection_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
+  _inherits(AMES_Collection_Editor, _AMES_Shape_Editor);
 
-  var _super3 = _createSuper(AMES_List_Editor);
+  var _super3 = _createSuper(AMES_Collection_Editor);
 
-  function AMES_List_Editor(obj) {
-    var _this7;
+  function AMES_Collection_Editor(obj) {
+    var _this11;
 
-    _classCallCheck(this, AMES_List_Editor);
+    _classCallCheck(this, AMES_Collection_Editor);
 
-    _this7 = _super3.call(this, obj);
+    _this11 = _super3.call(this, obj); // this.add_relative_index_to_constraint_info();
 
-    _defineProperty(_assertThisInitialized(_this7), "rel_idx_val", void 0);
+    _defineProperty(_assertThisInitialized(_this11), "rel_idx_val", void 0);
 
-    _defineProperty(_assertThisInitialized(_this7), "e_height", 175);
+    _defineProperty(_assertThisInitialized(_this11), "e_height", 175);
 
-    _this7.add_relative_index_to_constraint_info();
-
-    return _this7;
-  }
-
-  _createClass(AMES_List_Editor, [{
-    key: "add_relative_index_to_constraint_info",
-    value: function add_relative_index_to_constraint_info() {
-      var _this8 = this;
-
-      // Group relative coords
-      var bx = this.constraint_info.offset_label.position.x - this.constraint_info.offset_label.bounds.width / 2;
-      var by = this.constraint_info.offset_label.position.y; // Add obj name
-
-      var uy = _utils.AMES_Utils.LAYER_HEIGHT;
-      var rel_idx_label = new PointText({
-        point: [bx, by + 5 * _utils.AMES_Utils.ICON_OFFSET],
-        content: 'relative index',
-        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-        fontFamily: _utils.AMES_Utils.FONT,
-        fontSize: _utils.AMES_Utils.FONT_SIZE
-      });
-      var rel_idx_val = new PointText({
-        point: [this.constraint_info.offset_val.position.x - this.constraint_info.offset_val.bounds.width / 2, rel_idx_label.position.y + 3],
-        content: '0',
-        fillColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
-        fontFamily: _utils.AMES_Utils.FONT,
-        fontSize: _utils.AMES_Utils.FONT_SIZE
-      });
-      var ox = this.constraint_info.offset_line.position.x - this.constraint_info.offset_line.bounds.width / 2;
-      var oy = rel_idx_val.position.y + rel_idx_val.bounds.height / 2;
-      var rel_idx_line = new Path.Line(new Point(ox, oy), new Point(this.constraint_info.offset_val.position.x + 6 * _utils.AMES_Utils.ICON_OFFSET, oy));
-      rel_idx_line.strokeColor = _utils.AMES_Utils.INACTIVE_S_COLOR;
-      rel_idx_line.strokeWidth = 1;
-      rel_idx_line.opacity = 0.5;
-      rel_idx_line.visible = true; // switch y position
-
-      var y1_label = rel_idx_label.position.y;
-      var y1_val = rel_idx_val.position.y;
-      var y1_line = rel_idx_line.position.y;
-      var y2_label = this.constraint_info.offset_label.position.y;
-      var y2_val = this.constraint_info.offset_val.position.y;
-      var y2_line = this.constraint_info.offset_line.position.y;
-      this.constraint_info.offset_label.position.y = y1_label;
-      this.constraint_info.offset_val.position.y = y1_val;
-      this.constraint_info.offset_line.position.y = y1_line;
-      rel_idx_label.position.y = y2_label;
-      rel_idx_val.position.y = y2_val;
-      rel_idx_line.position.y = y2_line;
-      rel_idx_label.visible = false;
-      rel_idx_val.visible = false;
-      rel_idx_line.visible = false; // Add to constraint info
-
-      this.constraint_info.rel_idx_label = rel_idx_label;
-      this.constraint_info.rel_idx_val = rel_idx_val;
-      this.constraint_info.rel_idx_line = rel_idx_line; // Add to editor box
-
-      this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]); // Draggable editability to change rel idx value
-
-      this.constraint_info.rel_idx_val.onMouseDown = function (e) {
-        ames.canvas.style.cursor = 'move';
-      };
-
-      var rel_idx_drag = 0;
-
-      this.constraint_info.rel_idx_val.onMouseDrag = function (e) {
-        rel_idx_drag += e.event.movementX;
-        if (rel_idx_drag < 0) ames.canvas.style.cursor = 'w-resize';
-        if (rel_idx_drag > 0) ames.canvas.style.cursor = 'e-resize';
-
-        if (rel_idx_drag < -5) {
-          var c_ins = _this8.obj.c_inbound[_this8.obj.active_prop][_this8.obj.active_sub_p];
-
-          for (var i in c_ins) {
-            if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(-1);
-          }
-
-          console.log("drag left", c_ins);
-          rel_idx_drag = 0;
-        }
-
-        if (rel_idx_drag > 5) {
-          var _c_ins = _this8.obj.c_inbound[_this8.obj.active_prop][_this8.obj.active_sub_p];
-
-          for (var _i2 in _c_ins) {
-            if (_c_ins[_i2].is_manual_constraint) _c_ins[_i2].change_rel_idx(1);
-          }
-
-          console.log("drag right", _c_ins);
-          rel_idx_drag = 0;
-        }
-      };
-
-      this.constraint_info.rel_idx_val.onMouseUp = function (e) {
-        ames.canvas.style.cursor = null;
-      };
-    }
-  }, {
-    key: "update_constraint",
-    value: function update_constraint(p, s) {
-      if (!p) p = this.obj.active_prop;
-      if (!s) s = this.obj.active_sub_p;
-      if (!s) s = "all";
-
-      _get(_getPrototypeOf(AMES_List_Editor.prototype), "update_constraint", this).call(this, p, s);
-
-      var c = null;
-      var rel_idx;
-      var c_ins = this.obj.c_inbound[p][s]; // console.log(c_ins);
-
-      for (var i in c_ins) {
-        if (c_ins[i].is_manual_constraint) c = c_ins[i];
-      }
-
-      if (c) {
-        rel_idx = c.get_rel_idx();
-        rel_idx = rel_idx.toFixed(0);
-      }
-
-      this.constraint_info.rel_idx_val.content = rel_idx;
-    } // show_constraint: also include relative index information
-
-  }, {
-    key: "show_constraint",
-    value: function show_constraint(bool, p, sub_p) {
-      _get(_getPrototypeOf(AMES_List_Editor.prototype), "show_constraint", this).call(this, bool, p, sub_p); // if (sub_p == 'all') {
-      // 	this.constraint_info['rel_idx_label'].visible = false;
-      // 	this.constraint_info['rel_idx_val'].visible = false;
-      // 	this.constraint_info['rel_idx_line'].visible = false;
-      // }
-      // Update property value
+    return _this11;
+  } // add_relative_index_to_constraint_info() {
+  // 	// Group relative coords
+  // 	let bx = this.constraint_info.offset_label.position.x - this.constraint_info.offset_label.bounds.width/2;
+  // 	let by = this.constraint_info.offset_label.position.y;
+  //
+  // 	// Add obj name
+  // 	let uy = utils.LAYER_HEIGHT;
+  // 	let rel_idx_label = new PointText({
+  // 		point: [bx, by + 5*utils.ICON_OFFSET],
+  // 		content: 'relative index',
+  // 		fillColor: utils.INACTIVE_S_COLOR,
+  // 		fontFamily: utils.FONT,
+  // 		fontSize: utils.FONT_SIZE
+  // 	});
+  // 	let rel_idx_val = new PointText({
+  // 		point: [this.constraint_info.offset_val.position.x - this.constraint_info.offset_val.bounds.width/2, rel_idx_label.position.y + 3],
+  // 		content: '0',
+  // 		fillColor: utils.INACTIVE_S_COLOR,
+  // 		fontFamily: utils.FONT,
+  // 		fontSize: utils.FONT_SIZE
+  // 	});
+  // 	let ox = this.constraint_info.offset_line.position.x - this.constraint_info.offset_line.bounds.width/2;
+  // 	let oy = rel_idx_val.position.y + rel_idx_val.bounds.height/2;
+  // 	let rel_idx_line = new Path.Line(new Point(ox, oy), new Point(this.constraint_info.offset_val.position.x+ 6*utils.ICON_OFFSET, oy));
+  // 	rel_idx_line.strokeColor = utils.INACTIVE_S_COLOR;
+  // 	rel_idx_line.strokeWidth = 1;
+  // 	rel_idx_line.opacity = 0.5;
+  // 	rel_idx_line.visible = true;
+  //
+  // 	// switch y position
+  // 	let y1_label = rel_idx_label.position.y;
+  // 	let y1_val = rel_idx_val.position.y;
+  // 	let y1_line = rel_idx_line.position.y;
+  //
+  // 	let y2_label = this.constraint_info.offset_label.position.y;
+  // 	let y2_val = this.constraint_info.offset_val.position.y;
+  // 	let y2_line = this.constraint_info.offset_line.position.y;
+  //
+  // 	this.constraint_info.offset_label.position.y = y1_label;
+  // 	this.constraint_info.offset_val.position.y = y1_val;
+  // 	this.constraint_info.offset_line.position.y = y1_line;
+  //
+  // 	rel_idx_label.position.y = y2_label;
+  // 	rel_idx_val.position.y = y2_val;
+  // 	rel_idx_line.position.y = y2_line;
+  //
+  // 	rel_idx_label.visible = false;
+  // 	rel_idx_val.visible = false;
+  // 	rel_idx_line.visible = false;
+  //
+  // 	// Add to constraint info
+  // 	this.constraint_info.rel_idx_label = rel_idx_label;
+  // 	this.constraint_info.rel_idx_val = rel_idx_val;
+  // 	this.constraint_info.rel_idx_line = rel_idx_line;
+  //
+  // 	// Add to editor box
+  // 	this.box.addChildren([rel_idx_label, rel_idx_val, rel_idx_line]);
+  //
+  // 	// Draggable editability to change rel idx value
+  // 	this.constraint_info.rel_idx_val.onMouseDown = (e) => {
+  // 		ames.canvas.style.cursor = 'move';
+  // 	}
+  // 	let rel_idx_drag = 0;
+  // 	this.constraint_info.rel_idx_val.onMouseDrag = (e) => {
+  // 		rel_idx_drag += e.event.movementX;
+  // 		if (rel_idx_drag < 0) ames.canvas.style.cursor = 'w-resize';
+  // 		if (rel_idx_drag > 0) ames.canvas.style.cursor = 'e-resize';
+  // 		if (rel_idx_drag < -5) {
+  //
+  // 			let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+  // 			for (let i in c_ins) {
+  // 				if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(-1)
+  // 			}
+  // 			console.log("drag left", c_ins);
+  // 			rel_idx_drag = 0;
+  // 		}
+  // 		if (rel_idx_drag > 5) {
+  //
+  // 			let c_ins = this.obj.c_inbound[this.obj.active_prop][this.obj.active_sub_p];
+  // 			for (let i in c_ins) {
+  // 				if (c_ins[i].is_manual_constraint) c_ins[i].change_rel_idx(1);
+  // 			}
+  // 			console.log("drag right", c_ins);
+  // 			rel_idx_drag = 0;
+  // 		}
+  // 	}
+  // 	this.constraint_info.rel_idx_val.onMouseUp = (e) => {
+  // 		ames.canvas.style.cursor = null;
+  // 	}
+  // }
+  // update_constraint(p, s) {
+  // 	if (!p) p = this.obj.active_prop;
+  // 	if (!s) s = this.obj.active_sub_p;
+  // 	if (!s) s = "all";
+  // 	super.update_constraint(p, s);
+  //
+  // 	let c = null; let rel_idx;
+  // 	let c_ins = this.obj.c_inbound[p][s];
+  // 	// console.log(c_ins);
+  // 	for (let i in c_ins) {
+  // 		if (c_ins[i].is_manual_constraint)
+  // 			c = c_ins[i];
+  // 	}
+  // 	if (c) {
+  // 		rel_idx = c.get_rel_idx();
+  // 		rel_idx = rel_idx.toFixed(0);
+  // 	}
+  //
+  // 	this.constraint_info.rel_idx_val.content = rel_idx;
+  // }
+  // // show_constraint: also include relative index information
+  // show_constraint(bool, p, sub_p) {
+  // 	super.show_constraint(bool, p, sub_p);
+  //
+  // 	// if (sub_p == 'all') {
+  // 	// 	this.constraint_info['rel_idx_label'].visible = false;
+  // 	// 	this.constraint_info['rel_idx_val'].visible = false;
+  // 	// 	this.constraint_info['rel_idx_line'].visible = false;
+  // 	// }
+  //
+  // 	// Update property value
+  // 	if (bool) this.update_constraint(p, sub_p);
+  // }
 
 
-      if (bool) this.update_constraint(p, sub_p);
-    }
-  }, {
+  _createClass(AMES_Collection_Editor, [{
     key: "show",
     value: function show(bool) {
       // Show / hide list highlight box
       this.obj.show_box(bool);
 
-      _get(_getPrototypeOf(AMES_List_Editor.prototype), "show", this).call(this, bool);
+      _get(_getPrototypeOf(AMES_Collection_Editor.prototype), "show", this).call(this, bool);
     }
   }]);
 
-  return AMES_List_Editor;
+  return AMES_Collection_Editor;
 }(AMES_Shape_Editor);
 
-exports.AMES_List_Editor = AMES_List_Editor;
-},{"./artwork.js":4,"./lists.js":8,"./utils.js":11}],8:[function(require,module,exports){
+exports.AMES_Collection_Editor = AMES_Collection_Editor;
+},{"./artwork.js":4,"./collection.js":5,"./utils.js":11}],8:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -10152,7 +11309,6 @@ var AMES_Transformation = /*#__PURE__*/function () {
   // transformation function (e.g. translation or scale vs index)
   // many:many mapping behavior
   // coord space used to interpret the input artwork
-  // TBD the location of the artwork
   // supported transformations
   // TF space
   // The number of frames used to interpret the path
@@ -10163,7 +11319,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
   // pointers to the cues that trigger this transformation
   // projection of transformation space onto the target artwork
   // points that are cues that trigger other transformations
-  function AMES_Transformation(opt) {
+  function AMES_Transformation(_opt) {
     _classCallCheck(this, AMES_Transformation);
 
     _defineProperty(this, "target", void 0);
@@ -10176,13 +11332,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
     _defineProperty(this, "transformation_space", void 0);
 
-    _defineProperty(this, "page", void 0);
+    _defineProperty(this, "obj_box", null);
+
+    _defineProperty(this, "is_transformation", true);
 
     _defineProperty(this, "mapping", 0);
 
     _defineProperty(this, "mapping_behavior", "interpolate");
 
-    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position"]);
+    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue"]);
 
     _defineProperty(this, "typed_mappings", [{
       "mapping_type": "Polygon",
@@ -10193,6 +11351,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
     }, {
       "mapping_type": "Vertex",
       "mapping": "relative animation"
+    }, {
+      "mapping_type": "Transformation",
+      "mapping": "playback"
     }]);
 
     _defineProperty(this, "MOTION_PATH", 0);
@@ -10207,11 +11368,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
     _defineProperty(this, "POSITION", 5);
 
+    _defineProperty(this, "FILL_HUE", 6);
+
     _defineProperty(this, "NUMBER_OF_SIDES", -1);
 
     _defineProperty(this, "RELATIVE_POSITION", -2);
 
     _defineProperty(this, "RELATIVE_ANIMATION", -3);
+
+    _defineProperty(this, "PLAYBACK", -4);
 
     _defineProperty(this, "tf_space_absolute", true);
 
@@ -10270,132 +11435,99 @@ var AMES_Transformation = /*#__PURE__*/function () {
     _defineProperty(this, "start_state_idx", 0);
 
     _defineProperty(this, "play_helper", /*#__PURE__*/function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(state_idx, a, a_idx, a_smooth, v_idx) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(opt) {
         var _this = this;
 
-        var DELTA, DURATION;
+        var state_idx, a, a_idx, a_smooth, v_idx, stop_state_idx, timing_factor, reverse, n_target, nxt_state_idx, sv, _sv, DELTA, DURATION;
+
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                if (!(state_idx == this.tf_space_path_nsegments)) {
-                  _context.next = 20;
+                opt = opt || {};
+                if (opt.state_idx != null) state_idx = Number(opt.state_idx);
+                if (opt.a != null) a = opt.a;
+                if (opt.a_idx != null) a_idx = Number(opt.a_idx);
+                if (opt.a_smooth != null) a_smooth = opt.a_smooth;
+                if (opt.v_idx != null) v_idx = Number(opt.v_idx);
+                if (opt.stop_state_idx != null) stop_state_idx = Number(opt.stop_state_idx);else stop_state_idx = this.tf_space_path_nsegments;
+                if (opt.timing_factor != null) timing_factor = Number(opt.timing_factor);else timing_factor = 1;
+                if (opt.reverse != null) reverse = opt.reverse;else reverse = false;
+                if (opt.n_target) n_target = opt.n_target;else n_target = this.n_target;
+                nxt_state_idx = state_idx + 1;
+                if (reverse) nxt_state_idx = state_idx - 1; // Base case with support for looping
+
+                if (!(!reverse && state_idx >= stop_state_idx || reverse && state_idx <= stop_state_idx)) {
+                  _context.next = 29;
                   break;
                 }
 
-                if (!false) {
-                  _context.next = 12;
+                if (!(stop_state_idx == this.tf_space_path_nsegments)) {
+                  _context.next = 28;
                   break;
                 }
 
-                if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx][v_idx] < this.loop_max_count))) {
-                  _context.next = 7;
-                  break;
+                if (this.mapping == this.PLAYBACK) {
+                  console.log("end state for playback transformation of artwork: ", a_idx);
+                  console.log(this.curr_remainder[a_idx], this.curr_state[a_idx], state_idx, stop_state_idx);
                 }
 
-                state_idx = 0;
+                this.trigger_end(a, a_idx); // console.log(this.name, a.name, "play from state a to b", state_idx, nxt_state_idx, "reverse?", reverse);
 
-                if (this.loop_max_count != this.LOOP_INFINITY) {
-                  this.loop_count[a_idx][v_idx] += 1;
-                }
-
-                _context.next = 10;
-                break;
-
-              case 7:
-                this.is_playing[a_idx][v_idx] = 0;
-                this.trigger_end(a, a_idx, v_idx);
-                return _context.abrupt("return");
-
-              case 10:
-                _context.next = 20;
-                break;
-
-              case 12:
                 if (!(this.loop && (this.loop_max_count == this.LOOP_INFINITY || this.loop_count[a_idx] < this.loop_max_count))) {
-                  _context.next = 17;
+                  _context.next = 24;
                   break;
                 }
 
+                // console.log("reset?");
                 state_idx = 0;
+                nxt_state_idx = 1;
 
                 if (this.loop_max_count != this.LOOP_INFINITY) {
                   this.loop_count[a_idx] += 1;
                 }
 
-                _context.next = 20;
+                if (this.target.is_transformation) this.target.setup_playback_trackers();
+
+                if (this.tf_space_absolute) {
+                  if (this.mapping == this.PLAYBACK) {
+                    if (this.target.tf_space_absolute) {
+                      sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                      this.target.set_artwork_value_to(a, sv);
+                    }
+                  } else {
+                    _sv = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                    this.set_artwork_value_to(a, _sv);
+                  }
+                }
+
+                _context.next = 26;
                 break;
 
-              case 17:
+              case 24:
                 this.is_playing[a_idx] = 0;
-                this.trigger_end(a, a_idx);
                 return _context.abrupt("return");
 
-              case 20:
+              case 26:
+                _context.next = 29;
+                break;
+
+              case 28:
+                return _context.abrupt("return");
+
+              case 29:
                 DELTA = 0;
                 DURATION = 1; // For a vertex animation
 
                 if (this.vertex_mapping) {
                   (function () {
-                    // Get the update across all vertices for this object
-                    // let a_smooth = a.poly.clone(); a_smooth.smooth();
-                    // a_smooth.visible = false;
-                    // if (state_idx == 0) a.poly.clone();
-                    // return;
-                    var n_segments = a.poly.segments.length; //
-                    // let vertex_update = this.get_transform_artwork_at_state(state_idx, v_idx);
-                    // let d = vertex_update[DELTA];
-                    // let time = vertex_update[DURATION];
-                    // let t_frame = 1000/ames.fps;
-                    // let nframes = Math.ceil(time / t_frame);
-                    //
-                    // let p = a_smooth.getNearestPoint(a.poly.segments[v_idx].point);
-                    // let o = a_smooth.getOffsetOf(p);
-                    // let n = a_smooth.getNormalAt(o);
-                    // let center = a.poly.position;
-                    // if (n.dot(center.subtract(p)) < 0) n = n.multiply(-1);
-                    // let t = a_smooth.getTangentAt(o);
-                    //
-                    // let npath = new Path({
-                    // 	segments: [p, p.add(n.multiply(5))],
-                    // 	strokeColor: "red",
-                    // 	strokeWidth: 1
-                    // });
-                    // npath.visible = false;
-                    //
-                    // let tpath = new Path({
-                    // 	segments: [p, p.add(t.multiply(5))],
-                    // 	strokeColor: "green",
-                    // 	strokeWidth: 1
-                    // });
-                    // tpath.visible = false;
-                    //
-                    //
-                    // let nx = d.y*n.x + d.x*t.x;
-                    // let ny = d.y*n.y + d.x*t.y;
-                    // let vu = new Point(nx, ny);
-                    //
-                    // let perturb_path = new Path({
-                    // 	segments: [p, p.add(vu.multiply(20))],
-                    // 	strokeColor: "black",
-                    // 	strokeWidth: 1
-                    // });
-                    // perturb_path.visible = false;
-                    //
-                    // this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-                    //
-                    // for (let n = 1;  n < nframes; n++) {
-                    // 	setTimeout(() => {
-                    // 		this.tween(a_idx, a, vu, nframes, state_idx, v_idx);
-                    // 	}, n*t_frame);
-                    // }
-
+                    var n_segments = a.poly.segments.length;
                     var time = [];
                     var vertex_delta = [];
                     var max_time = 0;
 
                     for (var _v_idx = 0; _v_idx < n_segments; _v_idx++) {
-                      var vertex_update = _this.get_transform_artwork_at_state(state_idx, _v_idx);
+                      var vertex_update = _this.get_transform_artwork_at_state(state_idx, _v_idx, nxt_state_idx);
 
                       var d = vertex_update[DELTA];
                       time[_v_idx] = vertex_update[DURATION];
@@ -10445,12 +11577,21 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
 
                     setTimeout(function () {
-                      _this.play_helper(state_idx + 1, a, a_idx, a_smooth, v_idx);
-                    }, max_time);
+                      _this.play_helper({
+                        "state_idx": nxt_state_idx,
+                        "a": a,
+                        "a_idx": a_idx,
+                        "a_smooth": a_smooth,
+                        "v_idx": v_idx,
+                        "stop_state_idx": stop_state_idx,
+                        "reverse": reverse,
+                        "n_target": n_target
+                      });
+                    }, max_time * timing_factor);
                   })();
                 } else {
                   (function () {
-                    var update = _this.get_transform_artwork_at_state(state_idx, a_idx);
+                    var update = _this.get_transform_artwork_at_state(state_idx, a_idx, nxt_state_idx, n_target);
 
                     var d = update[DELTA];
                     var t = update[DURATION];
@@ -10473,12 +11614,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
                     }
 
                     setTimeout(function () {
-                      _this.play_helper(state_idx + 1, a, a_idx);
-                    }, t);
+                      _this.play_helper({
+                        "state_idx": nxt_state_idx,
+                        "a": a,
+                        "a_idx": a_idx,
+                        "stop_state_idx": stop_state_idx,
+                        "reverse": reverse,
+                        "n_target": n_target
+                      });
+                    }, t * timing_factor);
                   })();
                 }
 
-              case 23:
+              case 32:
               case "end":
                 return _context.stop();
             }
@@ -10486,27 +11634,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
         }, _callee, this);
       }));
 
-      return function (_x, _x2, _x3, _x4, _x5) {
+      return function (_x) {
         return _ref.apply(this, arguments);
       };
     }());
 
     this.name = "Transformation" + " (" + AMES_Transformation.count + ")";
     AMES_Transformation.count += 1;
-    opt = opt || {};
+    _opt = _opt || {};
     this.tf_space_setup_visuals();
-    if (opt.input) this.set_input(opt.input);
-    if (opt.target) this.set_target(opt.target);
-    if (opt.mapping) this.set_mapping(opt.mapping);
+    if (_opt.input) this.set_input(_opt.input);else this.input = null;
+    if (_opt.target) this.set_target(_opt.target);else this.target = null;
+    if (_opt.mapping) this.set_mapping(_opt.mapping);else this.set_mapping("motion path");
     this.create_in_ames();
   }
 
   _createClass(AMES_Transformation, [{
     key: "create_in_ames",
     value: function create_in_ames() {
-      console.log("create tf in ames");
       this.create_editor();
       ames.add_obj(this);
+      if (this.target) ames.update_layers({
+        parent: true,
+        parent_box: this.target.obj_box,
+        box: this.obj_box
+      });
     }
   }, {
     key: "create_editor",
@@ -10527,14 +11679,49 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "set_input",
     value: function set_input(input) {
+      console.log("set input", input);
+      if (this.input && this.input.remove_transformation) this.input.remove_transformation(this);
       this.input = input;
-      if (input.is_collection) this.update_count(input);else this.n_input = 1;
-      this.tf_space_speed = this.SPEED_CONSTANT; // # of segments in the path,
-      // i.e. if speed is 1, # of frames at frame rate to traverse transform
 
-      this.tf_space_path_nsegments = 1000;
-      var path_length;
-      if (input.is_artwork) path_length = this.input.poly.length;
+      if (input) {
+        if (input.is_collection) this.update_count(input);else this.n_input = 1;
+
+        if (input.is_artwork || input.is_collection) {
+          input.add_transformation(this);
+        }
+
+        this.tf_space_speed = this.SPEED_CONSTANT; // # of segments in the path,
+        // i.e. if speed is 1, # of frames at frame rate to traverse transform
+        // this.tf_space_path_nsegments = 1000;
+        // let avg_path_length;
+        // if (input.is_artwork) avg_path_length = this.input.poly.length;
+        // if (input.is_collection) {
+        // 	let total_length = 0;
+        // 	for (let idx = 0; idx < this.n_input; idx++) {
+        // 		total_length += this.input.shapes[idx].poly.length;
+        // 	}
+        // 	avg_path_length = total_length/this.n_input;
+        // }
+        // this.avg_path_length = avg_path_length;
+        // this.tf_space_path_nsegments = Math.round(avg_path_length);
+
+        this.set_tf_space_path_nsegments(input); // if (this.target && this.input) this.transform();
+
+        if (this.input && this.mapping) this.set_tf_space_to_defaults();
+      } else {
+        for (var x in this.tf_s) {
+          this.tf_s[x].remove();
+        }
+      }
+
+      if (this.obj_box) this.obj_box.change_name();
+    }
+  }, {
+    key: "set_tf_space_path_nsegments",
+    value: function set_tf_space_path_nsegments(input) {
+      if (!input) input = this.input;
+      var avg_path_length;
+      if (input.is_artwork) avg_path_length = this.input.poly.length;
 
       if (input.is_collection) {
         var total_length = 0;
@@ -10543,10 +11730,11 @@ var AMES_Transformation = /*#__PURE__*/function () {
           total_length += this.input.shapes[idx].poly.length;
         }
 
-        path_length = total_length / this.n_input;
+        avg_path_length = total_length / this.n_input;
       }
 
-      this.tf_space_path_length_relative_scale = this.tf_space_path_nsegments / path_length; // if (this.target && this.input) this.transform();
+      this.avg_path_length = avg_path_length;
+      this.tf_space_path_nsegments = Math.round(avg_path_length);
     } // set_target_artwork
     // ------------------------------------------------------------------------
     // Modifies the target artwork that the transformation affects
@@ -10562,8 +11750,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (target) {
         // If the mapping is typed, check the target is of the correct type
         if (this.mapping < 0) {
-          var mapping = this.typed_mappings[-1 * this.mapping].mapping_type;
-          valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
+          var mapping_type = this.typed_mappings[-1 * this.mapping].mapping_type;
+          var valid_type = this.check_valid_target_for_typed_mapping(target, mapping_type);
           if (!valid_type) change_target = false;
         }
       } else {
@@ -10572,9 +11760,17 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       if (change_target) {
         this.target = target;
-        if (target.is_collection) this.update_count(target);else this.n_target = 1;
-        if (this.mapping) this.set_tf_space_to_defaults();
-        this.setup_playback_trackers();
+        console.log("set target to", target);
+
+        if (target) {
+          if (target.is_collection) this.update_count(target);else this.n_target = 1;
+          this.setup_playback_trackers();
+          ames.update_layers({
+            parent: true,
+            parent_box: this.target.obj_box,
+            box: this.obj_box
+          });
+        }
       }
     } // update_count
     // ------------------------------------------------------------------------
@@ -10588,6 +11784,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
     value: function update_count(collection) {
       if (this.input == collection) this.n_input = collection.count;
       if (this.target == collection) this.n_target = collection.count;
+    } // Returns text describing the mapping type
+
+  }, {
+    key: "get_mapping",
+    value: function get_mapping() {
+      var m = Number(this.mapping);
+
+      if (m >= 0) {
+        return this.mappings[m];
+      } else {
+        var typed_mapping = this.typed_mappings[-1 * m - 1];
+        if (typed_mapping) return typed_mapping.mapping_type + ": " + typed_mapping.mapping;
+      }
     } // set_property_mapping
     // ------------------------------------------------------------------------
     //
@@ -10598,7 +11807,6 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "set_mapping",
     value: function set_mapping(mapping) {
-      console.log("set_mapping", mapping);
       var changed_mapping = false;
 
       if (!mapping) {
@@ -10617,13 +11825,13 @@ var AMES_Transformation = /*#__PURE__*/function () {
       this.vertex_mapping = false; // Check for mappings applicable to specific types (polygon, etc)
 
       if (mapping && mapping.type) {
-        for (var _x6 in this.typed_mappings) {
-          if (this.typed_mappings[_x6].mapping == mapping.mapping) {
+        for (var _x2 in this.typed_mappings) {
+          if (this.typed_mappings[_x2].mapping == mapping.mapping) {
             // If all the objects match, set the mapping accordingly
-            var _mapping_type = this.typed_mappings[_x6].mapping_type;
+            var mapping_type = this.typed_mappings[_x2].mapping_type;
 
-            if (this.check_valid_target_for_typed_mapping(this.target, _mapping_type)) {
-              this.mapping = -(Number(_x6) + 1);
+            if (this.check_valid_target_for_typed_mapping(this.target, mapping_type)) {
+              this.mapping = -(Number(_x2) + 1);
               changed_mapping = true;
             }
           }
@@ -10634,33 +11842,28 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (!changed_mapping) {
         console.log("Transformation: Invalid mapping");
         return false;
-      } else this.set_tf_space_to_defaults(); // Indicate if transformation property is a playbale mapping
+      } else {
+        if (this.input) this.set_tf_space_to_defaults();
+      }
 
+      if (this.obj_box) this.obj_box.change_name(); // Indicate if transformation property is a playbale mapping
 
       if (this.mapping == this.MOTION_PATH) this.is_playable = true;
       if (this.mapping == this.NUMBER_OF_SIDES) this.is_playable = false;
       if (this.mapping == this.STATIC_SCALE) this.is_playable = false;
       if (this.mapping == this.SCALE) this.is_playable = true;
       if (this.mapping == this.HUE) this.is_playable = false;
+      if (this.mapping == this.FILL_HUE) this.is_playable = false;
       if (this.mapping == this.POSITION) this.is_playable = false;
       if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
       if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
 
       if (this.mapping == this.DUPLICATE_EACH) {
         this.is_playable = true;
-        this.tf_space_path_nsegments = 1;
       }
 
+      if (this.mapping == this.PLAYBACK) this.is_playable = true;
       return true;
-    }
-  }, {
-    key: "set_mapping_behavior",
-    value: function set_mapping_behavior(behavior) {
-      var is_valid_behavior = false;
-      if (behavior == "alternate") is_valid_behavior = true;
-      if (behavior == "interpoalte") is_valid_behavior = true;
-      if (behavior == "random") is_valid_behavior = true;
-      if (is_valid_behavior) this.mapping_behavior = behavior;
     } // check_valid_target_for_mapping
     // ------------------------------------------------------------------------
     // Returns bool indicating if target matches type necessary for a typed
@@ -10677,6 +11880,12 @@ var AMES_Transformation = /*#__PURE__*/function () {
         return valid_type;
       } // Check all of the items in the target match the mapping
 
+
+      if (mapping_type == "Transformation") {
+        if (!this.target || this.target.is_transformation) valid_type = true;
+      }
+
+      if (!target) return true;
 
       if (target.is_artwork) {
         if (target.artwork_type == mapping_type) {
@@ -10794,7 +12003,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
           "mx1": 0,
           "mx2": n_target - 1,
           "my": "scaling",
-          "my1": 1,
+          "my1": .5,
           "my2": 1 + _my,
           "mp": null,
           "show": true,
@@ -10829,16 +12038,16 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.mapping == this.DUPLICATE_EACH) {
-        var _my3 = this.linear_map(0, TR.x - TL.x, 0, 1, BL.y - TL.y);
+        var _my3 = Math.abs(this.linear_map(0, 25, 0, 1, BL.y - TL.y));
 
         this.set_tf_space({
-          "mx": "time",
+          "mx": null,
           "mx1": 0,
-          "mx2": 1,
+          "mx2": null,
           "my": "duplicates",
           "my1": 1,
-          "my2": 1 + _my3,
-          "mp": null,
+          "my2": Math.ceil(1 + _my3),
+          "mp": "time",
           "show": true,
           "yflip": true,
           "sx1": TL.x,
@@ -10849,7 +12058,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         return;
       }
 
-      if (this.mapping == this.HUE) {
+      if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
         var _my4 = this.linear_map(0, TR.x - TL.x, 0, 360, BL.y - TL.y);
 
         this.set_tf_space({
@@ -10869,6 +12078,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
         });
         return;
       }
+
+      if (this.mapping == this.PLAYBACK) {
+        this.set_tf_space({
+          "mx": null,
+          "mx1": null,
+          "mx2": null,
+          "my": "iterations",
+          "my1": 0,
+          "my2": 1,
+          "mp": "time",
+          "show": true,
+          "yflip": true,
+          "sx1": TL.x,
+          "sx2": TR.x,
+          "sy1": TL.y,
+          "sy2": BL.y
+        });
+        return;
+      }
+    }
+  }, {
+    key: "update_tf_space",
+    value: function update_tf_space() {
+      // For now see how this feels
+      if (this.mapping) this.set_tf_space_to_defaults();
     }
   }, {
     key: "set_tf_space",
@@ -10892,6 +12126,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "tf_space_setup_visuals",
     value: function tf_space_setup_visuals() {
+      var _this2 = this;
+
       var tf_s = {};
       var w = 200;
       var h = 100;
@@ -10943,11 +12179,126 @@ var AMES_Transformation = /*#__PURE__*/function () {
         tf_s[x].visible = false;
       }
 
-      this.tf_s = tf_s;
+      this.tf_s = tf_s; // Add interactivity to axis labels
+
+      var total_drag;
+
+      var move_cursor_cb = function move_cursor_cb(e) {
+        ames.canvas.style.cursor = 'move';
+        total_drag = 0;
+      };
+
+      var drag_cursor_cb = function drag_cursor_cb(e, label, value, mode, check_mode, check_value) {
+        console.log(total_drag);
+        if (mode == "horizontal") total_drag += e.event.movementX;
+        if (mode == "vertical") total_drag += e.event.movementY;
+
+        if (total_drag < 0) {
+          if (total_drag > 0) total_drag = 0;
+          if (mode == "horizontal") ames.canvas.style.cursor = 'w-resize';
+          if (mode == "vertical") ames.canvas.style.cursor = 'n-resize';
+        }
+
+        if (total_drag > 0) {
+          if (total_drag < 0) total_drag = 0;
+          if (mode == "horizontal") ames.canvas.style.cursor = 'e-resize';
+          if (mode == "vertical") ames.canvas.style.cursor = 's-resize';
+        }
+
+        if (total_drag < -2.5) {
+          // Decrement
+          var min_check = false;
+
+          if (mode == "vertical" && _this2.tf_s_yflip) {
+            min_check = _this2[value] + .5 < _this2[check_value];
+          } else {
+            min_check = _this2[check_value] < _this2[value] - .5;
+          }
+
+          if (check_mode == "max" || check_mode == "min" && min_check) {
+            if (mode == "vertical" && _this2.tf_s_yflip) {
+              _this2[value] += .5;
+            } else {
+              _this2[value] -= .5;
+            }
+          }
+
+          console.log("decrement", _this2[value], _this2[check_value], _this2[value]);
+          _this2.tf_s[label].content = Math.round(_this2[value]);
+          total_drag = 0;
+        }
+
+        if (total_drag > 2.5) {
+          // Increment
+          var max_check = false;
+
+          if (mode == "vertical" && _this2.tf_s_yflip) {
+            max_check = _this2[check_value] < _this2.value + .5;
+          } else {
+            max_check = _this2[check_value] > _this2[value] + .5;
+          }
+
+          if (check_mode == "min" || check_mode == "max" && max_check) {
+            if (mode == "vertical" && _this2.tf_s_yflip) {
+              _this2[value] -= .5;
+            } else {
+              _this2[value] += .5;
+            }
+          }
+
+          console.log("increment", _this2[value]);
+          _this2.tf_s[label].content = _this2[value].toFixed(1);
+          total_drag = 0;
+        }
+      };
+
+      var up_cursor_cb = function up_cursor_cb(e) {
+        ames.canvas.style.cursor = null;
+        total_drag = 0;
+      };
+
+      var labels = ["mx1_label", "mx2_label", "my1_label", "my2_label"];
+      var values = ["tf_mx1", "tf_mx2", "tf_my1", "tf_my2"];
+      var check_modes = ["max", "min", "max", "min"];
+      var check_values = ["tf_sx2", "tf_sx1", "tf_sy2", "tf_sy1"];
+
+      var _loop = function _loop(i) {
+        var label = labels[i];
+        var value = values[i];
+        _this2.tf_s[label].onMouseDown = move_cursor_cb;
+        var mode = void 0;
+
+        if (i < 2) {
+          mode = "horizontal";
+        } else {
+          mode = "vertical";
+        }
+
+        _this2.tf_s[label].onMouseDrag = function (e) {
+          drag_cursor_cb(e, label, value, mode, check_modes[i], check_values[i]);
+        };
+
+        _this2.tf_s[label].onMouseUp = up_cursor_cb;
+      };
+
+      for (var i in labels) {
+        _loop(i);
+      }
+
+      this.tf_s.mx1_label.onMouseDown = move_cursor_cb;
+      this.tf_s.mx2_label.onMouseDown = move_cursor_cb;
+      this.tf_s.my1_label.onMouseDown = move_cursor_cb;
+      this.tf_s.my2_label.onMouseDown = move_cursor_cb;
+    }
+  }, {
+    key: "show",
+    value: function show(bool) {
+      this.editor.show(bool);
     }
   }, {
     key: "show_tf_space",
     value: function show_tf_space(bool) {
+      if (!this.input) return;
       if (bool == null) bool = true;
 
       if (bool) {
@@ -10973,10 +12324,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
         var loff = 10; // label offset
 
-        this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(0) : 0;
-        this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(0) : 0;
-        this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(0) : 0;
-        this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(0) : 0;
+        this.tf_s.mx1_label.content = this.tf_mx1 ? this.tf_mx1.toFixed(1) : 0;
+        this.tf_s.mx2_label.content = this.tf_mx2 ? this.tf_mx2.toFixed(1) : 0;
+        this.tf_s.my1_label.content = this.tf_my1 ? this.tf_my1.toFixed(1) : 0;
+        this.tf_s.my2_label.content = this.tf_my2 ? this.tf_my2.toFixed(1) : 0;
         this.tf_s.mp_label.content = this.tf_mp ? this.tf_mp : "";
 
         if (!this.tf_mx) {
@@ -11018,11 +12369,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
         for (var x in this.tf_s) {
           this.tf_s[x].visible = true;
         }
+
+        this.tf_space_visible = true;
       } else {
         // Hide all items
-        for (var _x7 in this.tf_s) {
-          this.tf_s[_x7].visible = false;
+        for (var _x3 in this.tf_s) {
+          this.tf_s[_x3].visible = false;
         }
+
+        this.tf_space_visible = false;
       }
     }
   }, {
@@ -11077,25 +12432,134 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
   }, {
     key: "transform",
-    value: function transform() {
-      if (!this.mapping) this.set_mapping();
+    value: function transform(args) {
+      console.log("transform: ", this.name);
+      if (this.mapping == null) this.set_mapping();
       if (!this.input || !this.target) return;
 
       if (this.is_playable) {
         this.play();
+
+        if (args && args.btn) {
+          setTimeout(function () {
+            args.btn.deactivate();
+          }, 1000);
+        }
       } else {
-        console.log("applying transformation?");
         this.apply();
+
+        if (args && args.btn) {
+          setTimeout(function () {
+            args.btn.deactivate();
+          }, 1000);
+        }
       }
     }
   }, {
     key: "_clear_cb_helpers",
-    value: function _clear_cb_helpers() {
-      this.show_tf_space(false);
+    value: function _clear_cb_helpers() {}
+  }, {
+    key: "get_dropdown_opts",
+    value: function get_dropdown_opts(field) {
+      if (field == "behavior") {
+        // "interpolate", "alternate", "random"
+        return ["interpolate", "alternate", "random"];
+      }
+
+      if (field == "mode") {
+        // "absolute", "relative"
+        return ["absolute", "relative"];
+      }
+
+      if (field == "mapping") {
+        var mappings = [];
+        var idx = 0;
+
+        for (var i in this.mappings) {
+          mappings[idx++] = this.mappings[i];
+          idx++;
+        }
+
+        for (var _i in this.typed_mappings) {
+          mappings[idx++] = this.typed_mappings[_i].mapping_type + ": " + this.typed_mappings[_i].mapping;
+        }
+
+        return mappings;
+      }
+
+      if (field == "condition") {
+        // if (tf.Q) {
+        // 	if (tf.condition == "f(x,y) == Q" && (v_prev < tf.Q && tf.Q < v_next)) trigger_tf = true;
+        // 	if (tf.condition == "f(x) == Q" && (x_prev < tf.Q && tf.Q < x_next)) trigger_tf = true;
+        // 	if (tf.condition == "f(y) == Q" && (y_prev < tf.Q && tf.Q < y_next)) trigger_tf = true;
+        // } else {
+        // 	if (tf.condition == "x direction change" && x_direction_change) trigger_tf = true;
+        // 	if (tf.condition == "y direction change" && y_direction_change) trigger_tf = true;
+        // 	if (tf.condition == "x or y direction change" && (x_direction_change || y_direction_change)) trigger_tf = true;
+        // 	if (tf.condition == "x and y direction change" && (x_direction_change && y_direction_change)) trigger_tf = true;
+        // 	if (tf.condition == "slope change" && slope_change) trigger_tf = true;
+        // }
+        return ["start", "end", "slope change", "x direction change", "y direction change", "f(x, y) == Q", "f(y) == Q", "new instance"];
+      }
     }
   }, {
-    key: "loop",
-    value: function loop(args) {
+    key: "get_mapping_opt",
+    value: function get_mapping_opt(field) {
+      if (field == "behavior") {
+        if (!this.mapping_behavior) return "interpolate";else return this.mapping_behavior;
+      }
+
+      if (field == "mode") {
+        if (this.tf_space_absolute) return "absolute";else return "relative";
+      }
+
+      if (field == "mapping") {
+        return this.get_mapping();
+      }
+
+      if (field == "condition") {
+        if (!this.default_playback_condition) this.default_playback_condition = "slope change";
+        this.new_playback_condition = this.default_playback_condition;
+        return this.default_playback_condition;
+      }
+    }
+  }, {
+    key: "set_new_playback_condition",
+    value: function set_new_playback_condition(condition) {
+      this.new_playback_condition = condition;
+    }
+  }, {
+    key: "set_new_playback_transformation",
+    value: function set_new_playback_transformation(transformation) {
+      this.new_playback_transformation = transformation;
+    }
+  }, {
+    key: "set_mapping_behavior",
+    value: function set_mapping_behavior(behavior) {
+      var is_valid_behavior = false;
+      if (behavior == "alternate") is_valid_behavior = true;
+      if (behavior == "interpoalte") is_valid_behavior = true;
+      if (behavior == "random") is_valid_behavior = true;
+      if (is_valid_behavior) this.mapping_behavior = behavior;
+    }
+  }, {
+    key: "set_mapping_mode",
+    value: function set_mapping_mode(opt) {
+      if (opt == "absolute") {
+        this.tf_space_absolute = true;
+      }
+
+      if (opt == "relative") {
+        this.tf_space_absolute = false;
+      }
+
+      console.log("Set mapping mode... absolute?", this.tf_space_absolute);
+    }
+  }, {
+    key: "toggle_loop",
+    value: function toggle_loop(args) {
+      args = args || {};
+
       if (args.deactivate) {
         this.loop = false;
       } else {
@@ -11105,10 +12569,12 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "toggle_show_tf",
     value: function toggle_show_tf(args) {
+      args = args || {};
+
       if (args.deactivate) {
         this.show_tf_space(false);
       } else {
-        this.set_mapping("position");
+        if (!this.mapping) this.set_mapping("position");
         this.show_tf_space(true);
       }
     }
@@ -11121,12 +12587,31 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       if (field == "target") {
         this.set_target(obj);
-      } // this.show_tf_space(false);
+      }
 
+      if (field == "playback transformation") {
+        this.set_new_playback_transformation(obj);
+      }
+    }
+  }, {
+    key: "change_mapping",
+    value: function change_mapping(property) {
+      property = property.split(": ");
+
+      if (property.length == 1) {
+        this.set_mapping(property[0]);
+      } else {
+        this.set_mapping({
+          "type": property[0],
+          "mapping": property[1]
+        });
+      }
     }
   }, {
     key: "change_transformation_property",
     value: function change_transformation_property(args) {
+      args = args || {};
+
       if (args.deactivate) {} else {
         var isValid = false;
         var str = "";
@@ -11136,9 +12621,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
           str += ", ";
         }
 
-        for (var _i in this.typed_mappings) {
-          str += this.typed_mappings[_i].mapping_type + ": " + this.typed_mappings[_i].mapping;
-          if (_i < this.typed_mappings.length - 1) str += ", ";
+        for (var _i2 in this.typed_mappings) {
+          str += this.typed_mappings[_i2].mapping_type + ": " + this.typed_mappings[_i2].mapping;
+          if (_i2 < this.typed_mappings.length - 1) str += ", ";
         }
 
         var property;
@@ -11147,6 +12632,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
           property = prompt("Enter the property that the transformation represents: " + str); // No input, deactivate
 
           if (!property) {
+            args.btn.deactivate();
             return;
           }
 
@@ -11154,15 +12640,15 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
           if (property.length == 1) {
             isValid = this.set_mapping(property[0]);
+            args.btn.deactivate();
           } else {
             isValid = this.set_mapping({
               "type": property[0],
               "mapping": property[1]
             });
+            args.btn.deactivate();
           }
         }
-
-        console.log("Changing transformation space", property);
       }
     } // apply
     //
@@ -11176,6 +12662,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
   }, {
     key: "apply",
     value: function apply() {
+      if (!this.target) return;
+      if (this.target.is_collection) this.n_target = this.target.shapes.length;
+      this.init_random_target_indices();
+
       for (var idx = 0; idx < this.n_target; idx++) {
         var a = void 0;
         if (this.target.is_artwork) a = this.target;
@@ -11191,8 +12681,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
           var vertex_update = [];
 
           for (var v_idx = 0; v_idx < n_segments; v_idx++) {
-            var v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0);
-            var v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end");
+            var v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0, this.n_target);
+            var v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end", this.n_target);
             var v = {
               "x": v1.x - v0.x,
               "y": v1.y - v0.y,
@@ -11201,6 +12691,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
             vertex_update[v_idx] = this.get_vertex_value_update_at(a, v_idx, v, a_smooth);
           }
 
+          console.log(vertex_update);
+
           for (var _v_idx2 = 0; _v_idx2 < n_segments; _v_idx2++) {
             this.update_vertex_value_to(a, _v_idx2, vertex_update[_v_idx2]);
           }
@@ -11208,8 +12700,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
           // Transform the artwork
           if (this.tf_space_absolute) {
             var sv = void 0;
-            if (this.mapping == this.POSITION) sv = this.get_value_at_target_index_for_path_offset(idx, 0);else {
-              sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+            if (this.mapping == this.POSITION) sv = this.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);else {
+              sv = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index", this.n_target);
             }
             this.set_artwork_value_to(a, sv);
           }
@@ -11217,9 +12709,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
           var _v = void 0;
 
           if (this.mapping == this.POSITION) {
-            _v = this.get_value_at_target_index_for_path_offset(idx, null);
+            _v = this.get_value_at_target_index_for_path_offset(idx, null, this.n_target);
           } else {
-            _v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+            _v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index", this.n_target);
           }
 
           this.set_artwork_value_to(a, _v);
@@ -11227,20 +12719,47 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "init_random_target_indices",
+    value: function init_random_target_indices() {
+      this.random_indices = [];
+      if (this.target.is_artwork) this.random_indices = [0];
+
+      if (this.target.is_collection) {
+        var n = this.target.shapes.length;
+
+        for (var i = 0; i < n; i++) {
+          this.random_indices[i] = Math.random() * (n - 1);
+        }
+      }
+
+      console.log("random_indices: ", this.random_indices);
+    }
+  }, {
     key: "setup_playback_trackers",
     value: function setup_playback_trackers() {
       var n = 1;
+      console.log(this.target);
       if (this.target.is_artwork) n = 1;
       if (this.target.is_collection) n = this.n_target;
+
+      if (this.mapping == this.PLAYBACK) {
+        n = this.target.n_target;
+      }
+
       this.dx_total = [];
       this.dy_total = [];
       this.v_total = [];
       this.dx_direction = [];
       this.dy_direction = [];
       this.slope = [];
+      this.prev_slope_change = [];
       this.loop_count = [];
       this.is_playing = [];
       this.tween_helper_scale = [];
+      this.n_clones = [];
+      this.curr_state = [];
+      this.curr_remainder = [];
+      this.init_random_target_indices();
 
       for (var i = 0; i < n; i++) {
         this.loop_count[i] = 1;
@@ -11250,7 +12769,92 @@ var AMES_Transformation = /*#__PURE__*/function () {
         this.dx_direction[i] = 0;
         this.dy_direction[i] = 0;
         this.slope[i] = 1;
+        this.prev_slope_change[i] = Date.now();
         this.tween_helper_scale[i] = 1;
+        this.n_clones[i] = 0;
+        this.curr_state[i] = 0;
+        this.curr_remainder[i] = 0;
+      }
+
+      if (this.vertex_mapping) {
+        this.vertex_normals = [];
+        this.vertex_tangents = [];
+
+        for (var idx = 0; idx < this.n_target; idx++) {
+          var a = void 0;
+          if (this.target.is_collection) a = this.target.shapes[idx];
+          if (this.target.is_artwork) a = this.target;
+          var n_segments = a.poly.segments.length;
+          this.vertex_normals[idx] = [];
+          this.vertex_tangents[idx] = [];
+          var eps = 0.01;
+
+          for (var _i3 = 0; _i3 < n_segments; _i3++) {
+            var p = a.poly.segments[_i3].point;
+            var o = a.poly.getOffsetOf(p);
+
+            var _n2 = void 0;
+
+            var t = void 0;
+            var n1 = void 0;
+            var n2 = void 0;
+            var p1 = void 0;
+            var p2 = void 0;
+            var c = new PointText({
+              point: p,
+              content: _i3
+            });
+            c.visible = false;
+            var o1 = o - eps;
+            var o2 = o + eps;
+
+            if (_i3 == 0) {
+              o1 = a.poly.length - eps;
+            }
+
+            p1 = a.poly.getPointAt(o1);
+            p2 = a.poly.getPointAt(o2);
+
+            if (a.poly.segments[_i3].isSmooth()) {
+              _n2 = a.poly.getNormalAt(o);
+              t = a.poly.getTangentAt(o);
+            } else {
+              n1 = a.poly.getNormalAt(o1);
+              n2 = a.poly.getNormalAt(o2);
+              _n2 = n1.add(n2).normalize();
+              var t1 = a.poly.getTangentAt(o1);
+              var t2 = a.poly.getTangentAt(o2);
+              t = t1.add(t2).normalize();
+            }
+
+            this.vertex_normals[idx][_i3] = _n2;
+            this.vertex_tangents[idx][_i3] = t;
+            var nPath = new Path.Line({
+              segments: [p, p.add(_n2.multiply(20))],
+              strokeColor: "pink",
+              strokeWidth: 1
+            });
+            nPath.visible = false;
+            var n1Path = new Path.Line({
+              segments: [p1, p1.add(n1.multiply(20))],
+              strokeColor: "red",
+              strokeWidth: 1
+            });
+            n1Path.visible = false;
+            var n2Path = new Path.Line({
+              segments: [p2, p2.add(n2.multiply(20))],
+              strokeColor: "lightblue",
+              strokeWidth: 1
+            });
+            n2Path.visible = false;
+            var tPath = new Path.Line({
+              segments: [p, p.add(t.multiply(20))],
+              strokeColor: "green",
+              strokeWidth: 1
+            });
+            tPath.visible = false;
+          }
+        }
       }
     } // play
     // ------------------------------------------------------------------------
@@ -11263,90 +12867,41 @@ var AMES_Transformation = /*#__PURE__*/function () {
     key: "play",
     value: function play() {
       var state_idx = 0;
-      this.vertex_normals = [];
-      this.vertex_tangents = [];
+      this.setup_playback_trackers();
+      if (!this.target) return;
+      if (this.target.is_collection) this.n_target = this.target.shapes.length;
+      var n_target = this.n_target;
 
-      for (var idx = 0; idx < this.n_target; idx++) {
+      if (this.mapping == this.PLAYBACK) {
+        this.target.setup_playback_trackers();
+        n_target = this.target.n_target; // this.tf_space_path_nsegments = 2*this.target.tf_space_path_nsegments;
+
+        this.target.tf_space_path_nsegments = .75 * this.tf_space_path_nsegments;
+        console.log("Playing playback transform to drive ", this.target.name);
+        console.log("The parent transform has n segments:", this.tf_space_path_nsegments);
+        console.log("The child transform has n segements: ", this.target.tf_space_path_nsegments);
+      } else {
+        this.set_tf_space_path_nsegments();
+      }
+
+      for (var idx = 0; idx < n_target; idx++) {
         var a = void 0;
-        if (this.target.is_artwork) a = this.target;
         if (this.target.is_collection) a = this.target.shapes[idx];
-        var n_segments = a.poly.segments.length;
-        this.vertex_normals[idx] = [];
-        this.vertex_tangents[idx] = [];
-        var eps = 0.01;
+        if (this.target.is_artwork) a = this.target;
 
-        for (var i = 0; i < n_segments; i++) {
-          var p = a.poly.segments[i].point;
-          var o = a.poly.getOffsetOf(p);
-          var n = void 0;
-          var t = void 0;
-          var n1 = void 0;
-          var n2 = void 0;
-          var p1 = void 0;
-          var p2 = void 0;
-          var c = new PointText({
-            point: p,
-            content: i
-          });
-          c.visible = false;
-          var o1 = o - eps;
-          var o2 = o + eps;
-
-          if (i == 0) {
-            o1 = a.poly.length - eps;
-          }
-
-          p1 = a.poly.getPointAt(o1);
-          p2 = a.poly.getPointAt(o2);
-
-          if (a.poly.segments[i].isSmooth()) {
-            n = a.poly.getNormalAt(o);
-            t = a.poly.getTangentAt(o);
-          } else {
-            n1 = a.poly.getNormalAt(o1);
-            n2 = a.poly.getNormalAt(o2);
-            n = n1.add(n2).normalize();
-            var t1 = a.poly.getTangentAt(o1);
-            var t2 = a.poly.getTangentAt(o2);
-            t = t1.add(t2).normalize();
-          }
-
-          this.vertex_normals[idx][i] = n;
-          this.vertex_tangents[idx][i] = t;
-          var nPath = new Path.Line({
-            segments: [p, p.add(n.multiply(20))],
-            strokeColor: "pink",
-            strokeWidth: 1
-          });
-          nPath.visible = false;
-          var n1Path = new Path.Line({
-            segments: [p1, p1.add(n1.multiply(20))],
-            strokeColor: "red",
-            strokeWidth: 1
-          });
-          n1Path.visible = false;
-          var n2Path = new Path.Line({
-            segments: [p2, p2.add(n2.multiply(20))],
-            strokeColor: "lightblue",
-            strokeWidth: 1
-          });
-          n2Path.visible = false;
-          var tPath = new Path.Line({
-            segments: [p, p.add(t.multiply(20))],
-            strokeColor: "green",
-            strokeWidth: 1
-          });
-          tPath.visible = false;
+        if (this.target.is_transformation) {
+          if (this.target.target.is_artwork) a = this.target.target;
+          if (this.target.target.is_collection) a = this.target.target.shapes[idx];
         }
 
         if (false) {
           this.loop_count[idx] = [];
           this.is_playing[idx] = [];
-          var _n_segments = a.poly.segments.length;
+          var n_segments = a.poly.segments.length;
 
-          for (var v_idx = 0; v_idx < _n_segments; v_idx++) {
+          for (var v_idx = 0; v_idx < n_segments; v_idx++) {
             if (this.tf_space_absolute) {
-              var sv = this.get_value_at_target_index_for_path_offset(v_idx, 0); // set_vertex_value_to
+              var sv = this.get_value_at_target_index_for_path_offset(v_idx, 0, this.n_target); // set_vertex_value_to
             }
 
             this.loop_count[idx][v_idx] = 1;
@@ -11360,48 +12915,86 @@ var AMES_Transformation = /*#__PURE__*/function () {
           this.is_playing[idx] = 1; // Jump target to match transformation input start values
 
           if (this.tf_space_absolute) {
-            var _sv = this.get_value_at_target_index_for_path_offset(idx, 0);
+            if (this.mapping == this.PLAYBACK) {
+              if (this.target.tf_space_absolute) {
+                var _sv2 = this.target.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
 
-            this.set_artwork_value_to(a, _sv);
+                this.target.set_artwork_value_to(a, _sv2);
+              }
+            } else {
+              var _sv3 = this.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
+
+              this.set_artwork_value_to(a, _sv3);
+            }
           }
 
-          this.play_helper(state_idx, a, idx);
+          this.play_helper({
+            "state_idx": state_idx,
+            "a": a,
+            "a_idx": idx
+          });
         }
       }
     } // TO DO update for vertex transformations
 
   }, {
     key: "trigger_function_for_target_idx",
-    value: function trigger_function_for_target_idx(a, a_idx) {
+    value: function trigger_function_for_target_idx(a, a_idx, n_target) {
+      console.log("trigger ", this.name, "for ", a.name, "at ", a_idx);
       var idx = a_idx; // Play or apply transformation
 
       if (this.is_playable) {
         // Cannot trigger an animation that is already playing
         // if (this.is_playing[idx] == 1) return;
         // Reset playback trackers
-        this.dx_total[idx] = 0;
-        this.dy_total[idx] = 0;
-        this.v_total[idx] = 0;
-        this.loop_count[idx] = 1;
-        this.is_playing[idx] = 1;
+        this.dx_total[a_idx] = 0;
+        this.dy_total[a_idx] = 0;
+        this.v_total[a_idx] = 0;
+        this.loop_count[a_idx] = 1;
+        this.is_playing[a_idx] = 1;
         this.slope[a_idx] = 1;
-        this.tween_helper_scale[a_idx] = 1; // Jump target to match transformation input start values
+        this.prev_slope_change[a_idx] = Date.now();
+        this.tween_helper_scale[a_idx] = 1;
+        this.n_clones[a_idx] = 0;
+        this.random_indices[a_idx] = Math.random() * (n_target - 1); // Jump target to match transformation input start values
 
         if (this.tf_space_absolute) {
-          var sv = this.get_value_at_target_index_for_path_offset(idx, 0);
-          this.set_artwork_value_to(a, sv);
+          if (this.mapping == this.PLAYBACK) {
+            if (this.target.tf_space_absolute) {
+              var sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+              this.target.set_artwork_value_to(a, sv);
+            }
+          } else {
+            var _sv4 = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+
+            this.set_artwork_value_to(a, _sv4);
+          }
         }
 
-        this.play_helper(0, a, idx);
+        console.log('setup triggered transformation', this.name, 'for artwork', a, 'at ', a_idx);
+        this.play_helper({
+          "state_idx": 0,
+          "a": a,
+          "a_idx": a_idx,
+          "n_target": n_target
+        });
       } else {
         if (this.tf_space_absolute) {
           if (this.tf_space_absolute) {
-            var _sv2 = this.get_value_at_target_index_for_axis_mapping(idx, 0, "index");
+            if (this.mapping == this.PLAYBACK) {
+              if (this.target.tf_space_absolute) {
+                var _sv5 = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
 
-            this.set_artwork_value_to(a, _sv2);
+                this.target.set_artwork_value_to(a, _sv5);
+              }
+            } else {
+              var _sv6 = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+
+              this.set_artwork_value_to(a, _sv6);
+            }
           }
 
-          var v = this.get_value_at_target_index_for_axis_mapping(idx, idx, "index");
+          var v = this.get_value_at_target_index_for_axis_mapping(a_idx, a_idx, "index", n_target);
           this.set_artwork_value_to(a, v);
         }
       }
@@ -11424,13 +13017,19 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.mapping == this.DUPLICATE_EACH) {
-        var eps = .001;
-        var inc = this.dy_total[a_idx] - 1;
+        var next_clone_num = this.n_clones[a_idx] + 1;
+        var eps = .015;
+        var inc = this.dy_total[a_idx] - next_clone_num; // if ((-eps <= inc && inc <= 0) || (0 <= inc && inc <= eps))
 
-        if (-eps < inc && inc < 0 || 0 < inc < eps) {
-          var new_a = Object.create(a);
-          new_a.poly = a.poly.clone();
-          this.dy_total[a_idx] = 0; // if (a_idx == 1) console.log("making new instance", a_idx);
+        var y_prev = this.dy_total[a_idx] - d.y / f; // console.log(next_clone_num, y_prev.toFixed(5), this.dy_total[a_idx].toFixed(5));
+
+        if (y_prev <= next_clone_num && next_clone_num <= this.dy_total[a_idx]) {
+          // let new_a = Object.create(a);
+          // new_a.poly = a.poly.clone();
+          this.n_clones[a_idx] += 1;
+          var new_a = a.clone();
+          new_a.poly.insertBelow(a.poly); // this.dy_total[a_idx] = 0;
+          // if (a_idx == 1) console.log("making new instance", a_idx);
 
           this.trigger_new_instance(new_a, a_idx);
         }
@@ -11450,6 +13049,55 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
         a.poly.clearHandles();
       }
+
+      if (this.mapping == this.PLAYBACK) {
+        var reverse = false;
+
+        if (d.y < 0) {
+          reverse = true;
+          d.y = -d.y;
+        }
+
+        var qt = d.y / f - Math.floor(d.y / f);
+        var frame_progression = this.target.tf_space_path_nsegments * qt;
+        var target_frames = Math.floor(frame_progression);
+        this.curr_remainder[a_idx] += frame_progression - target_frames;
+
+        if (Math.round(this.curr_remainder[a_idx]) == 1) {
+          this.curr_remainder[a_idx] -= 1;
+          target_frames += 1;
+        }
+
+        var stop_state_idx = this.curr_state[a_idx] + target_frames;
+        if (reverse) stop_state_idx = this.curr_state[a_idx] - target_frames; // TO DO... timing factor?
+
+        if (stop_state_idx >= 0 && this.curr_state[a_idx] != stop_state_idx) {
+          if (a_idx == 0) {// console.log("playback transform", a.name, d.y.toFixed(4), this.curr_state[a_idx], stop_state_idx, "reverse?", reverse);
+          }
+
+          this.target.play_helper({
+            "state_idx": this.curr_state[a_idx],
+            "stop_state_idx": stop_state_idx,
+            "a": a,
+            "a_idx": a_idx,
+            "v_idx": v_idx,
+            "reverse": reverse
+          });
+          this.curr_state[a_idx] = stop_state_idx;
+        }
+      }
+    }
+  }, {
+    key: "remove_playback_point",
+    value: function remove_playback_point(playback_pt) {
+      var idx = -1;
+
+      for (var i = 0; i < this.transformation_functions_to_trigger.length; i++) {
+        var trigger = this.transformation_functions_to_trigger[i];
+        if (trigger == playback_pt) idx = i;
+      }
+
+      if (idx > -1) this.transformation_functions_to_trigger.splice(idx, 1);
     }
   }, {
     key: "use_playback_points_to_trigger_transformation",
@@ -11471,6 +13119,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       this.transformation_functions_to_trigger.push(trigger);
+      console.log(this.transformation_functions_to_trigger);
       this.check_playback_points = true;
     }
   }, {
@@ -11479,9 +13128,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
       for (var x in this.transformation_functions_to_trigger) {
         var tf = this.transformation_functions_to_trigger[x];
 
-        if (tf.condition == "remove at end") {
-          // if (a_idx == 1) console.log("remove at", a_idx);
-          a.poly.remove();
+        if (tf.condition == "end") {
+          if (tf.tf != "remove") tf.tf.trigger_function_for_target_idx(a, a_idx);else a.remove();
         }
       }
     }
@@ -11490,7 +13138,11 @@ var AMES_Transformation = /*#__PURE__*/function () {
     value: function trigger_new_instance(a, a_idx) {
       for (var x in this.transformation_functions_to_trigger) {
         var tf = this.transformation_functions_to_trigger[x];
-        if (tf.condition == "new instance") tf.tf.trigger_function_for_target_idx(a, a_idx);
+        if (tf.condition == "new instance") console.log("trigger function for new instance", a_idx);
+        var n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
+
+        console.log("using n_target", n_target);
+        tf.tf.trigger_function_for_target_idx(a, this.n_clones[a_idx] - 1, n_target);
       }
     }
   }, {
@@ -11590,8 +13242,10 @@ var AMES_Transformation = /*#__PURE__*/function () {
         var m_eps = .001;
 
         if (m_diff > m_eps || m_diff < -m_eps) {
-          slope_change = true;
-          this.slope[a_idx] = m;
+          this.slope[a_idx] = m; // console.log(m_diff, this.prev_slope_change[a_idx]);
+
+          if (Date.now() - this.prev_slope_change[a_idx] > 50) slope_change = true;
+          this.prev_slope_change[a_idx] = Date.now();
         }
       }
 
@@ -11612,8 +13266,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         }
 
         if (trigger_tf) {
-          // console.log(a_idx, "trigger");
-          tf.tf.trigger_function_for_target_idx(a, a_idx);
+          if (tf.tf == "remove") a.remove();else tf.tf.trigger_function_for_target_idx(a, a_idx);
         }
       }
     }
@@ -11735,20 +13388,22 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (this.mapping == this.STATIC_SCALE) a.set_scaling(sv.y);
       if (this.mapping == this.SCALE) a.poly.scale(sv.y, sv.y);
 
-      if (this.mapping == this.HUE) {
+      if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
         var saturation;
         var brightness;
 
-        if (a.poly.fillColor) {
+        if (this.mapping == this.FILL_HUE && a.poly.fillColor) {
           saturation = a.poly.fillColor.saturation;
+          if (saturation == 0) saturation = 1;
           brightness = a.poly.fillColor.brightness;
           a.poly.fillColor.hue = Math.round(sv.y);
           a.poly.fillColor.saturation = saturation;
           a.poly.fillColor.brightness = brightness;
         }
 
-        if (a.poly.strokeColor) {
+        if (this.mapping == this.HUE && a.poly.strokeColor) {
           saturation = a.poly.strokeColor.saturation;
+          if (saturation == 0) saturation = 1;
           brightness = a.poly.strokeColor.brightness;
           a.poly.strokeColor.hue = Math.round(sv.y);
           a.poly.strokeColor.saturation = saturation;
@@ -11759,9 +13414,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
   }, {
     key: "get_transform_artwork_at_state",
-    value: function get_transform_artwork_at_state(state_idx, a_idx) {
+    value: function get_transform_artwork_at_state(state_idx, a_idx, nxt_i, n_target) {
       var i = state_idx;
-      var nxt_i = state_idx + 1;
+      if (nxt_i == null) nxt_i = state_idx + 1;
       var d;
       var dx;
       var dy;
@@ -11777,7 +13432,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.input.is_collection) {
-        if (this.mapping_behavior == "interpolate") {
+        if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
           d = [];
           var x = [];
           var y = [];
@@ -11797,10 +13452,25 @@ var AMES_Transformation = /*#__PURE__*/function () {
           d = d.map(function (m) {
             return Math.sqrt(m.x * m.x + m.y * m.y);
           });
-          dx = _utils.AMES_Utils.interpolate_fast(x, a_idx);
-          dy = _utils.AMES_Utils.interpolate_fast(y, a_idx);
-          d = _utils.AMES_Utils.interpolate_fast(d, a_idx);
-          seg_change_value = _utils.AMES_Utils.interpolate_fast(seg_change_value, a_idx);
+          var target_idx = a_idx;
+          var divisor = this.input.shapes.length - 1;
+          if (n_target > 1) divisor = n_target - 1;
+
+          if (this.mapping_behavior == "random") {
+            target_idx = this.random_indices[a_idx];
+
+            if (this.mapping == this.PLAYBACK) {
+              target_idx = this.target.random_indices[a_idx];
+              divisor = this.target.n_target - 1;
+            }
+          }
+
+          target_idx *= (this.n_input - 1) / divisor; // if (a_idx == 0) console.log(target_idx);
+
+          dx = _utils.AMES_Utils.interpolate_fast(x, target_idx);
+          dy = _utils.AMES_Utils.interpolate_fast(y, target_idx);
+          d = _utils.AMES_Utils.interpolate_fast(d, target_idx);
+          seg_change_value = _utils.AMES_Utils.interpolate_fast(seg_change_value, target_idx);
         }
 
         if (this.mapping_behavior == "alternate") {
@@ -11821,7 +13491,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         "v": d,
         "change_segment": change_segment
       };
-      var duration = 1000 / ames.fps * (1 / this.tf_space_speed_factor);
+      var duration = 1000 / ames.fps;
 
       if (this.tf_space_speed == this.SPEED_CONSTANT) {
         duration = duration;
@@ -11848,9 +13518,14 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (this.tf_space_speed == this.SPEED_MAP) {} // TBD
 
 
-      if (duration == 0) duration = .001;
-      var rate = delta.v / duration; // This is actually the time per segment
-      // if (a_idx == 4) console.log(delta.v.toFixed(4), rate.toFixed(4));
+      if (duration == 0) duration = .001; // if (a_idx == 0) {
+      // 	if (!this.debug_sum) this.debug_sum = 0;
+      // 	this.debug_sum += delta.y;
+      // 	if (!this.tracker_dot) this.tracker_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+      // 	if (!this.og_dot) this.og_dot = utils.make_dot(new Point(150, 150), 'pink', 2);
+      // 	// if (state_idx == 0) this.tracker_dot.position = new Point(150, 150);
+      // 	this.tracker_dot.position.add(new Point(delta.x, delta.y));
+      // }
 
       return [delta, duration];
     }
@@ -11918,15 +13593,14 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
       var line = new Path.Line(p1, p2);
       var intersects = artwork.getIntersections(line);
-      line.strokeWidth = 1;
-      line.strokeColor = "lightblue";
-      line.dashArray = [3, 5];
-      var p3 = new Point(this.tf_sx1, intersects[0].point.y);
-      var p4 = new Point(this.tf_sx2, intersects[0].point.y);
-      var line_v = new Path.Line(p3, p4);
-      line_v.strokeWidth = 1;
-      line_v.strokeColor = "lightblue";
-      line_v.dashArray = [3, 5];
+      line.visible = false; // line.strokeWidth = 1; line.strokeColor = "lightblue"; line.dashArray = [3, 5];
+      // let p3 = new Point(this.tf_sx1, intersects[0].point.y);
+      // let p4 = new Point(this.tf_sx2, intersects[0].point.y);
+      // let line_v = new Path.Line(p3, p4);
+      // line_v.visible = false;
+      // line_v.strokeWidth = 1; line_v.strokeColor = "lightblue"; line_v.dashArray = [3, 5];
+
+      console.log(intersects[0], p1, p2);
       var t = this.tf_space_map_x_y(intersects[0].point.x, intersects[0].point.y); // let t_label = new PointText({
       // 	point: [p3.x - 5*utils.ICON_OFFSET, p3.y],
       // 	content: t.y.toFixed(2),
@@ -11939,27 +13613,43 @@ var AMES_Transformation = /*#__PURE__*/function () {
     }
   }, {
     key: "get_value_at_target_index_for_axis_mapping",
-    value: function get_value_at_target_index_for_axis_mapping(artwork_idx, axis_idx, axis_mapping) {
-      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, null, axis_idx, axis_mapping);
+    value: function get_value_at_target_index_for_axis_mapping(artwork_idx, axis_idx, axis_mapping, n_target) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, null, axis_idx, axis_mapping, n_target);
     }
   }, {
     key: "get_value_at_target_index_for_path_offset",
-    value: function get_value_at_target_index_for_path_offset(artwork_idx, offset) {
-      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, offset, null, null);
+    value: function get_value_at_target_index_for_path_offset(artwork_idx, offset, n_target) {
+      return this.get_value_at_target_index_for_path_offset_or_axis_mapping(artwork_idx, offset, null, null, n_target);
     }
   }, {
     key: "get_value_at_target_index_for_path_offset_or_axis_mapping",
-    value: function get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping) {
+    value: function get_value_at_target_index_for_path_offset_or_axis_mapping(a_idx, offset, axis_idx, axis_mapping, n_target) {
       var p;
       var x;
       var y;
 
       if (this.input.is_shape) {
         if (axis_mapping) {
-          p = this.get_artwork_value_at_intersection(this.input.poly, axis_idx, axis_mapping);
+          var target_idx = a_idx;
+
+          if (this.mapping_behavior == "random") {
+            target_idx = Math.random() * (n_target - 1);
+          }
+
+          p = this.get_artwork_value_at_intersection(this.input.poly, target_idx, axis_mapping);
         } else {
-          if (offset == null) offset = (a_idx + 0.5) * this.input.poly.length / this.n_target;
           if (offset == "end") offset = this.input.poly.length;
+
+          if (offset == null) {
+            var _target_idx = a_idx;
+
+            if (this.mapping_behavior == "random") {
+              _target_idx = Math.random() * (n_target - 1);
+            }
+
+            offset = (_target_idx + 0.5) * this.input.poly.length / this.n_target;
+          }
+
           p = this.get_artwork_value_at_offset(this.input.poly, offset);
         }
 
@@ -11969,16 +13659,32 @@ var AMES_Transformation = /*#__PURE__*/function () {
       }
 
       if (this.input.is_collection) {
-        if (this.mapping_behavior == "interpolate") {
+        if (this.mapping_behavior == "interpolate" || this.mapping_behavior == "random") {
           p = [];
 
           for (var in_idx = 0; in_idx < this.n_input; in_idx++) {
             var in_artwork = this.input.shapes[in_idx].poly;
 
             if (axis_mapping) {
-              p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, axis_idx, axis_mapping);
+              var _target_idx3 = a_idx;
+
+              if (this.mapping_behavior == "random") {
+                _target_idx3 = Math.random() * (n_target - 1);
+              }
+
+              console.log(_target_idx3);
+              p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, _target_idx3, axis_mapping);
             } else {
-              if (offset == null) offset = (a_idx + 0.5) * in_artwork.length / this.n_target;
+              if (offset == null) {
+                var _target_idx4 = a_idx;
+
+                if (this.mapping_behavior == "random") {
+                  _target_idx4 = Math.random() * (n_target - 1);
+                }
+
+                offset = (_target_idx4 + 0.5) * in_artwork.length / this.n_target;
+              }
+
               if (offset == "end") offset = in_artwork.length;
               p[in_idx] = this.get_artwork_value_at_offset(in_artwork, offset);
             }
@@ -11993,9 +13699,23 @@ var AMES_Transformation = /*#__PURE__*/function () {
           p = p.map(function (p) {
             return Math.sqrt(p.x * p.x + p.y * p.y);
           });
-          x = _utils.AMES_Utils.interpolate_fast(x, a_idx);
-          y = _utils.AMES_Utils.interpolate_fast(y, a_idx);
-          p = _utils.AMES_Utils.interpolate_fast(p, a_idx);
+          var _target_idx2 = a_idx;
+          var divisor = this.input.shapes.length - 1;
+          if (this.target.is_collection) divisor = n_target - 1;
+
+          if (this.mapping_behavior == "random") {
+            _target_idx2 = this.random_indices[a_idx];
+
+            if (this.mapping == this.PLAYBACK) {
+              _target_idx2 = this.target.random_indices[a_idx];
+              divisor = this.target.n_target - 1;
+            }
+          }
+
+          _target_idx2 *= (this.input.shapes.length - 1) / divisor;
+          x = _utils.AMES_Utils.interpolate_fast(x, _target_idx2);
+          y = _utils.AMES_Utils.interpolate_fast(y, _target_idx2);
+          p = _utils.AMES_Utils.interpolate_fast(p, _target_idx2);
         }
 
         if (this.mapping_behavior == "alternate") {
@@ -12021,6 +13741,21 @@ var AMES_Transformation = /*#__PURE__*/function () {
         "y": y,
         "v": p
       };
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      for (var x in this.tf_s) {
+        this.tf_s[x].remove();
+      }
+
+      if (this.input) this.input.remove_transformation(this);
+      this.input = null;
+      this.target = null;
+      ames.update_layers({
+        "remove": true,
+        "box": ames.obj_boxes_dict[this.name]
+      });
     }
   }]);
 
@@ -12159,6 +13894,7 @@ var AMES_Utils = /*#__PURE__*/function () {
       var p = new Path.Rectangle(r);
       p.strokeColor = color;
       p.strokeWidth = 0.5;
+      p.sendToBack();
       return p;
     } // interpolate: Lagrange interpolation over polynomial given by y = f(x),
     // where data = [[x,y], [x,y], ...] and idx is the relative idx of the
@@ -12285,6 +14021,8 @@ _defineProperty(AMES_Utils, "FONT", 'Times');
 
 _defineProperty(AMES_Utils, "FONT_SIZE", 10);
 
+_defineProperty(AMES_Utils, "SCROLLBAR_WIDTH", 5);
+
 _defineProperty(AMES_Utils, "L_CONTROLS", ["Shapes", "Lists", "Animations"]);
 
 _defineProperty(AMES_Utils, "L_IDX_BOX", 0);
@@ -12305,7 +14043,7 @@ _defineProperty(AMES_Utils, "L_CONTRACT_IDX", 3);
 
 _defineProperty(AMES_Utils, "SIDEBAR_WIDTH", 300);
 
-_defineProperty(AMES_Utils, "SIDEBAR_HEIGHT", 500);
+_defineProperty(AMES_Utils, "SIDEBAR_HEIGHT", 550);
 
 _defineProperty(AMES_Utils, "OFFSET", 4);
 
