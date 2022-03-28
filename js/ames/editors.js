@@ -595,6 +595,9 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 			// Remove obj field
 			this.obj.set_geometry_field(field, null);
 			this.geometry_field_info[field].label.content = field;
+			if (field == "playback transformation") {
+				this.geometry_field_info[field].label.content = "remove";
+			}
 			link.visible = true;
 			link_remove.visible = false;
 		}

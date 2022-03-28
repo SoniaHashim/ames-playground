@@ -1515,7 +1515,7 @@ export class AMES {
 				if (mapping) {
 					mapping = mapping[0].toUpperCase() + mapping.substr(1);
 					input = input[0].toUpperCase() + input.substr(1);
-					name = "T" + " (" + input + ": " + mapping + ")";
+					name = obj.name + ": (" + input + ": " + mapping + ")";
 				}
 			}
 			box_label.content = name;

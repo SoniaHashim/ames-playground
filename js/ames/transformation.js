@@ -948,10 +948,10 @@ export class AMES_Transformation {
 				for (let v_idx = 0; v_idx < n_segments; v_idx++) {
 					let v0 = this.get_value_at_target_index_for_path_offset(v_idx, 0, this.n_target);
 					let v1 = this.get_value_at_target_index_for_path_offset(v_idx, "end", this.n_target);
-					console.log(v1);
 					let v = {"x":v1.x-v0.x, "y": v1.y-v0.y, "v": v1.v.subtract(v0.v)};
 					vertex_update[v_idx] = this.get_vertex_value_update_at(a, v_idx, v, a_smooth);
 				}
+				console.log(vertex_update);
 				for (let v_idx = 0; v_idx < n_segments; v_idx++) {
 					this.update_vertex_value_to(a, v_idx, vertex_update[v_idx]);
 				}
@@ -1299,6 +1299,17 @@ export class AMES_Transformation {
 						this.loop_count[a_idx] += 1;
 					}
 					if (this.target.is_transformation) this.target.setup_playback_trackers();
+					if (this.tf_space_absolute) {
+						if (this.mapping == this.PLAYBACK) {
+							if (this.target.tf_space_absolute) {
+								let sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+								this.target.set_artwork_value_to(a, sv);
+							}
+						} else {
+							let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+							this.set_artwork_value_to(a, sv);
+						}
+					}
 				} else {
 					this.is_playing[a_idx] = 0;
 					return;
@@ -1539,8 +1550,8 @@ export class AMES_Transformation {
 			let tf = this.transformation_functions_to_trigger[x];
 
 			if (tf.condition == "end") {
-				if (tf.tf == "remove") a.remove();
-				else tf.tf.trigger_function_for_target_idx(a, a_idx);
+				if (tf.tf != "remove") tf.tf.trigger_function_for_target_idx(a, a_idx);
+				else a.remove();
 			}
 		}
 	}
@@ -1550,7 +1561,7 @@ export class AMES_Transformation {
 			let tf = this.transformation_functions_to_trigger[x];
 			if (tf.condition == "new instance")
 				console.log("trigger function for new instance", a_idx);
-				let n_target = this.tf_my2 - 1; // TO DO: Update to support interpolation (calculate per a_idx)
+				let n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
 				console.log("using n_target", n_target);
 				tf.tf.trigger_function_for_target_idx(a, this.n_clones[a_idx]-1, n_target);
 		}
@@ -1848,7 +1859,7 @@ export class AMES_Transformation {
 				let target_idx = a_idx;
 				let divisor = this.input.shapes.length-1;
 				if (n_target > 1) divisor = n_target-1;
-				console.log("divisor", divisor);
+
 				if (this.mapping_behavior == "random") {
 					target_idx = this.random_indices[a_idx];
 					if (this.mapping == this.PLAYBACK) {
@@ -1961,12 +1972,12 @@ export class AMES_Transformation {
 		line.visible = false;
 		// line.strokeWidth = 1; line.strokeColor = "lightblue"; line.dashArray = [3, 5];
 
-		let p3 = new Point(this.tf_sx1, intersects[0].point.y);
-		let p4 = new Point(this.tf_sx2, intersects[0].point.y);
-		let line_v = new Path.Line(p3, p4);
-		line_v.visible = false;
+		// let p3 = new Point(this.tf_sx1, intersects[0].point.y);
+		// let p4 = new Point(this.tf_sx2, intersects[0].point.y);
+		// let line_v = new Path.Line(p3, p4);
+		// line_v.visible = false;
 		// line_v.strokeWidth = 1; line_v.strokeColor = "lightblue"; line_v.dashArray = [3, 5];
-
+		console.log(intersects[0], p1, p2);
 		let t = this.tf_space_map_x_y(intersects[0].point.x, intersects[0].point.y);
 		// let t_label = new PointText({
 		// 	point: [p3.x - 5*utils.ICON_OFFSET, p3.y],
@@ -1991,7 +2002,7 @@ export class AMES_Transformation {
 		let p; let x; let y;
 		if (this.input.is_shape) {
 			if (axis_mapping) {
-				let target_idx = axis_idx;
+				let target_idx = a_idx;
 				if (this.mapping_behavior == "random") {
 					target_idx = Math.random()*(n_target-1);
 				}
@@ -2016,10 +2027,11 @@ export class AMES_Transformation {
 				for (let in_idx = 0; in_idx < this.n_input; in_idx++) {
 					let in_artwork = this.input.shapes[in_idx].poly;
 					if (axis_mapping) {
-						let target_idx = axis_idx;
+						let target_idx = a_idx;
 						if (this.mapping_behavior == "random") {
 							target_idx = Math.random()*(n_target-1);
 						}
+						console.log(target_idx);
 						p[in_idx] = this.get_artwork_value_at_intersection(in_artwork, target_idx, axis_mapping);
 					} else {
 						if (offset == null) {

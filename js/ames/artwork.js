@@ -1124,7 +1124,7 @@ export class AMES_Artwork {
 				let t = this.transformations[i];
 				let mapping = t.get_mapping();
 				mapping = mapping[0].toUpperCase() + mapping.substr(1);
-				let str = " T ( " + t.input.name + ": " + mapping + ")";
+				let str = t.name + " : (" + t.input.name + ": " + mapping + ")";
 				opt_names.push(str);
 				opts[str] = t;
 			}
@@ -1135,7 +1135,7 @@ export class AMES_Artwork {
 					let t = c.transformations[j];
 					let mapping = t.get_mapping();
 					mapping = mapping[0].toUpperCase() + mapping.substr(1);
-					let str = " T ( " + t.input.name + ": " + mapping + ")";
+					let str = t.name + " : (" + t.input.name + ": " + mapping + ")";
 					opt_names.push(str);
 					opts[str] = t;
 				}
@@ -1161,7 +1161,7 @@ export class AMES_Artwork {
 			let opt = new Group();
 			let opt_box = new Path.Rectangle({
 				point: new Point(bx-7.5, by - 0.25),
-				size: new Size(200, utils.LAYER_HEIGHT*.75),
+				size: new Size(225, utils.LAYER_HEIGHT*.75),
 				fillColor: utils.INACTIVE_DARK_COLOR,
 				strokeColor: utils.INACTIVE_S_COLOR,
 				strokeWidth: 0,
