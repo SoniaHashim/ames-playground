@@ -125,6 +125,11 @@ export class AMES_Collection {
 		this.create_in_ames();
 	}
 
+	sort_right_to_left() {
+		// Sort shapes by x_position
+		this.shapes = this.shapes.sort((a, b) => b.poly.position.x - a.poly.position.x);
+	}
+
 	get_type() {
 		return this.type;
 	}

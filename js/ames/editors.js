@@ -48,6 +48,7 @@ class AMES_Editor {
 			fontSize: utils.FONT_SIZE
 		});
 		box.addChild(n_text);
+		this.name_label = n_text;
 		// Add close icon
 		let close_button = ames.icons["close"].clone();
 		close_button.scaling = 0.75;
@@ -1063,6 +1064,12 @@ export class AMES_Collection_Editor extends AMES_Shape_Editor {
 
 	constructor(obj) {
 		super(obj);
+		this.name_label.onClick = (e) => {
+			console.log("Click shortcut to sort right to left:", this.obj.name);
+			console.log(this.obj.shapes);
+			this.obj.sort_right_to_left();
+			console.log(this.obj.shapes);
+		}
 		// this.add_relative_index_to_constraint_info();
 	}
 

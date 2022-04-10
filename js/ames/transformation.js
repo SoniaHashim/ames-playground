@@ -54,7 +54,7 @@ export class AMES_Transformation {
 	// supported transformations
 	mapping = 0;
 	mapping_behavior = "interpolate";
-	mappings = ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue"];
+	mappings = ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue", "duplicate"];
 	typed_mappings = [
 		{ "mapping_type": "Polygon",
 		  "mapping": "number of sides" },
@@ -72,6 +72,7 @@ export class AMES_Transformation {
 	HUE = 4;
 	POSITION = 5;
 	FILL_HUE = 6;
+	DUPLICATE = 7;
 	NUMBER_OF_SIDES = -1;
 	RELATIVE_POSITION = -2;
 	RELATIVE_ANIMATION = -3;
@@ -310,7 +311,7 @@ export class AMES_Transformation {
 		if (this.mapping == this.POSITION) this.is_playable = false;
 		if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
 		if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
-		if (this.mapping == this.DUPLICATE_EACH) {
+		if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
 			this.is_playable = true;
 		}
 		if (this.mapping == this.PLAYBACK) this.is_playable = true;
@@ -416,7 +417,7 @@ export class AMES_Transformation {
 			}); return;
 		}
 
-		if (this.mapping == this.DUPLICATE_EACH) {
+		if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
 			let my2 = Math.abs(this.linear_map(0, 25, 0, 1, BL.y - TL.y));
 			this.set_tf_space({
 				"mx": null, "mx1": 0, "mx2": null,
@@ -1174,7 +1175,8 @@ export class AMES_Transformation {
 				if (this.tf_space_absolute) {
 					if (this.mapping == this.PLAYBACK) {
 						if (this.target.tf_space_absolute) {
-							let sv = this.target.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
+							let sv = this.target.get_value_at_target_index_for_path_offset(idx, 0, n_target);
+							console.log(idx, 0, sv);
 							this.target.set_artwork_value_to(a, sv);
 						}
 					} else {
@@ -1204,6 +1206,7 @@ export class AMES_Transformation {
 			// if (this.is_playing[idx] == 1) return;
 
 			// Reset playback trackers
+			if (!this.dx_total) this.setup_playback_trackers();
 			this.dx_total[a_idx] = 0;
 			this.dy_total[a_idx] = 0;
 			this.v_total[a_idx] = 0;
@@ -1234,7 +1237,7 @@ export class AMES_Transformation {
 				if (this.tf_space_absolute) {
 					if (this.mapping == this.PLAYBACK) {
 						if (this.target.tf_space_absolute) {
-							let sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+							let sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, this.target.n_target);
 							this.target.set_artwork_value_to(a, sv);
 						}
 					} else {
@@ -1302,9 +1305,12 @@ export class AMES_Transformation {
 					if (this.tf_space_absolute) {
 						if (this.mapping == this.PLAYBACK) {
 							if (this.target.tf_space_absolute) {
-								let sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+								console.log("looping playback function: ", this.target.n_target);
+								let sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, this.target.n_target);
 								this.target.set_artwork_value_to(a, sv);
 							}
+							this.curr_state[a_idx] = 0;
+							this.curr_remainder[a_idx] = 0;
 						} else {
 							let sv = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
 							this.set_artwork_value_to(a, sv);
@@ -1400,9 +1406,9 @@ export class AMES_Transformation {
 			let d = update[DELTA];
 			let t = update[DURATION];
 
-			if (this.mapping == this.DUPLICATE_EACH) {
-				this.tween(a_idx, a, d, 1, state_idx)
-			} else {
+			// if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
+			// 	this.tween(a_idx, a, d, 1, state_idx)
+			// } else {
 				let t_frame = 1000/ames.fps;
 				let nframes = Math.ceil(t / t_frame);
 				this.tween(a_idx, a, d, nframes, state_idx);
@@ -1412,7 +1418,7 @@ export class AMES_Transformation {
 						this.tween(a_idx, a, d, nframes, state_idx);
 					}, n*t_frame);
 				}
-			}
+			// }
 
 			setTimeout(() => {
 				this.play_helper({
@@ -1442,7 +1448,7 @@ export class AMES_Transformation {
 			a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx])/prev_sf;
 			this.tween_helper_scale[a_idx] = sf;
 		}
-		if (this.mapping == this.DUPLICATE_EACH) {
+		if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
 			let next_clone_num = this.n_clones[a_idx] + 1;
 			let eps = .015; let inc = this.dy_total[a_idx] - next_clone_num;
 			// if ((-eps <= inc && inc <= 0) || (0 <= inc && inc <= eps))
@@ -1452,11 +1458,26 @@ export class AMES_Transformation {
 				// let new_a = Object.create(a);
 				// new_a.poly = a.poly.clone();
 				this.n_clones[a_idx] += 1;
-				let new_a = a.clone();
-				new_a.poly.insertBelow(a.poly);
+				let original = a;
+				let dup_idx = a_idx;
+				// if (this.mapping == this.DUPLICATE) {
+				// 	let random_shape_idx = Math.floor(Math.random()*this.target.shapes.length);
+				// 	original = this.target.shapes[random_shape_idx];
+				// 	dup_idx = random_shape_idx;
+				// 	console.log(random_shape_idx, original);
+				// }
+				let new_a = original.clone();
+				new_a.poly.insertBelow(original.poly);
+				if (this.mapping == this.DUPLICATE) this.target.add_to_collection(new_a);
 				// this.dy_total[a_idx] = 0;
 
 				// if (a_idx == 1) console.log("making new instance", a_idx);
+				// if (this.mapping == this.DUPLICATE) {
+				// 	let n_t = Math.round(this.tf_my2 - 1) * this.target.shapes.length-1;
+				// 	this.trigger_new_instance(new_a, Math.floor(Math.random()*n_t), n_t);
+				// } else {
+				// 	this.trigger_new_instance(new_a, a_idx);
+				// }
 				this.trigger_new_instance(new_a, a_idx);
 			}
 		}
@@ -1550,20 +1571,33 @@ export class AMES_Transformation {
 			let tf = this.transformation_functions_to_trigger[x];
 
 			if (tf.condition == "end") {
-				if (tf.tf != "remove") tf.tf.trigger_function_for_target_idx(a, a_idx);
-				else a.remove();
+				if (tf.tf != "remove") {
+					if (this.target == tf.tf.target) {
+						tf.tf.trigger_function_for_target_idx(a, a_idx);
+					} else {
+						tf.tf.transform();
+					}
+				}
+				else a.remove()
 			}
 		}
 	}
 
-	trigger_new_instance(a, a_idx) {
+	trigger_new_instance(a, a_idx, n_target) {
 		for (let x in this.transformation_functions_to_trigger) {
 			let tf = this.transformation_functions_to_trigger[x];
 			if (tf.condition == "new instance")
 				console.log("trigger function for new instance", a_idx);
-				let n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
-				console.log("using n_target", n_target);
-				tf.tf.trigger_function_for_target_idx(a, this.n_clones[a_idx]-1, n_target);
+				if (!n_target) {
+					n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
+				}
+				let idx = this.n_clones[a_idx]-1;
+				let total = n_target;
+				if (this.mapping == this.DUPLICATE) {
+					idx = Math.floor(Math.random()*n_target);
+				}
+				console.log("using n_target", n_target, "at", idx);
+				tf.tf.trigger_function_for_target_idx(a, idx, n_target);
 		}
 	}
 
@@ -1811,7 +1845,11 @@ export class AMES_Transformation {
 				saturation = a.poly.fillColor.saturation;
 				if (saturation == 0) saturation = 1;
 				brightness = a.poly.fillColor.brightness;
-				a.poly.fillColor.hue = Math.round(sv.y);
+				if (this.tf_space_absolute) {
+					a.poly.fillColor.hue = Math.round(sv.y);
+				} else {
+					a.poly.fillColor.hue += Math.round(sv.y);
+				}
 				a.poly.fillColor.saturation = saturation;
 				a.poly.fillColor.brightness = brightness;
 
@@ -1820,7 +1858,11 @@ export class AMES_Transformation {
 				saturation = a.poly.strokeColor.saturation;
 				if (saturation == 0) saturation = 1;
 				brightness = a.poly.strokeColor.brightness;
-				a.poly.strokeColor.hue = Math.round(sv.y);
+				if (this.tf_space_absolute) {
+					a.poly.strokeColor.hue = Math.round(sv.y);
+				} else {
+					a.poly.strokeColor.hue += Math.round(sv.y);
+				}
 				a.poly.strokeColor.saturation = saturation;
 				a.poly.strokeColor.brightness = brightness;
 			}
