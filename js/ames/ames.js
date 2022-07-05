@@ -396,7 +396,7 @@ export class AMES {
 		let r_top = new Path.Rectangle({
 			point: [100, 100],
 			size: [sidebar.bounds.width + 2, 22],
-			fillColor: "white"
+			// fillColor: "white"
 		});
 		r_top.position = new Point(sidebar.position.x, scrollbar_top - 10.25);
 		let r_btm = r_top.clone();
@@ -1160,8 +1160,7 @@ export class AMES {
 		if (step >= 0) {
 			// Create polygon collection
 			tri = new AMES_Polygon();
-			tri.poly.strokeColor = "blue";
-			tri.poly.strokeWidth = 1.5
+			tri.poly.strokeWidth = 2;
 		}
 
 		let poly_collection;
@@ -1173,9 +1172,8 @@ export class AMES {
 		let dot; let dot_collection;
 		if (step >= 2) {
 			// Create dot collection
-			dot = new AMES_Ellipse();
-			dot.poly.fillColor = "blue";
-			dot.poly.strokeWidth = 0;
+			dot = new AMES_Ellipse({r: 5});
+			dot.poly.strokeWidth = 3;
 			dot_collection = new AMES_Collection([dot]);
 			dot_collection.set_count(6)
 		}
@@ -1204,7 +1202,7 @@ export class AMES {
 		if (step >= 4) {
 			// Create static scaling transformation function using a line
 			line2 = new AMES_Artwork_Path();
-			line2.add_points([new Point(100, 450), new Point(200, 250)]);
+			line2.add_points([new Point(100, 450), new Point(200, 350)]);
 			// line2.add_points([new Point(100, 450), new Point(200, 250)]);
 			// line2.add_points([new Point(100, 300), new Point(200, 250)]);
 			tf_scale_tri = new AMES_Transformation({
@@ -1212,6 +1210,8 @@ export class AMES {
 				"target": poly_collection,
 				"mapping": "static scale"
 			});
+			tf_scale_tri.tf_my1 = 1;
+			tf_scale_tri.tf_my2 = 3;
 			tf_scale_tri.transform();
 			if (step == 4) tf_motion_path.transform();
 		}
@@ -1230,15 +1230,15 @@ export class AMES {
 		}
 
 		if (step >= 6) {
-			tf_motion_path.tf_space_speed_factor = 1;
-			tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
+			// tf_motion_path.tf_space_speed_factor = 1;
+			// tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
 			if (step == 6) tf_motion_path.transform();
 		}
 
 		let line3; let tf_duplicate_dots;
 		if (step >= 7) {
 			line3 = new AMES_Artwork_Path();
-			line3.add_points([new Point(100, 550), new Point(200, 500)]);
+			line3.add_points([new Point(100, 550), new Point(100, 545)]);
 			tf_duplicate_dots = new AMES_Transformation({
 				"input": line3,
 				"target": dot_collection,
@@ -1255,7 +1255,7 @@ export class AMES {
 		let circle; let quick_flare; let tf_scale_dots;
 		if (step >= 8) {
 			// Create scaling animation using a cirlce in image space (ease in and out)
-			circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 50});
+			circle = new AMES_Ellipse({"centroid": new Point(325, 150), "r": 10});
 			quick_flare = new AMES_Artwork_Path();
 			quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
 			tf_scale_dots = new AMES_Transformation({
@@ -1275,9 +1275,10 @@ export class AMES {
 
 		if (step >= 9) {
 			tf_scale_dots.use_playback_points_to_trigger_transformation({
-				"tf": null,
-				"condition": "remove at end"
+				"tf": "remove",
+				"condition": "end"
 			});
+			tf_motion_path.loop = true;
 			if (step == 9) tf_motion_path.transform();
 		}
 
@@ -1870,6 +1871,7 @@ export class AMES {
 			square_tool.onMouseDrag = null;
 			x.to_path();
 			x.poly.fillColor = utils.INACTIVE_COLOR;
+			x.poly.fillColor.alpha = 0;
 			// this.add_shape(x);
 			x = null
 		}
@@ -1903,6 +1905,7 @@ export class AMES {
 			circle_tool.onMouseDrag = null;
 			c.to_path();
 			c.poly.fillColor = utils.INACTIVE_COLOR;
+			c.poly.fillColor.alpha = 0.01;
 			// this.add_shape(c);
 			c = null;
 		}

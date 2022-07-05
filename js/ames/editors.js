@@ -202,7 +202,7 @@ export class AMES_Transformation_Editor extends AMES_Editor {
 		let box = new Path.Rectangle({
 			point: new Point(x_off-5, y_off),
 			size: new Size(150, utils.LAYER_HEIGHT*.75),
-			fillColor: utils.INACTIVE_DARK_COLOR,
+			// fillColor: utils.INACTIVE_DARK_COLOR,
 			strokeColor: utils.INACTIVE_S_COLOR,
 			strokeWidth: 1,
 			radius: 1.25,

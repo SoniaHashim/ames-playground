@@ -546,7 +546,8 @@ export class AMES_Transformation {
 				if (mode == "vertical" && this.tf_s_yflip) {
 					min_check = (this[value] + .5 < this[check_value]);
 				} else {
-					min_check = (this[check_value] < this[value] - .5);
+					// min_check = (this[check_value] < this[value] - .5);
+					min_check = true;
 				}
 				if (check_mode == "max" || (check_mode == "min" && min_check)) {
 					if (mode == "vertical" && this.tf_s_yflip) {
@@ -1445,8 +1446,10 @@ export class AMES_Transformation {
 			// a.poly.scaling = 1+d.y/f;
 			let prev_sf = this.tween_helper_scale[a_idx];
 			let sf = this.tf_my1 + this.dy_total[a_idx];
-			a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx])/prev_sf;
-			this.tween_helper_scale[a_idx] = sf;
+			if (sf >= .25) {
+				a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx])/prev_sf;
+				this.tween_helper_scale[a_idx] = sf;
+			}
 		}
 		if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
 			let next_clone_num = this.n_clones[a_idx] + 1;
@@ -1674,7 +1677,7 @@ export class AMES_Transformation {
 			}
 
 			// Check for slope change
-			let m = d.y/d.x; let m_diff = m - this.slope[a_idx]; let m_eps = .001;
+			let m = d.y/d.x; let m_diff = m - this.slope[a_idx]; let m_eps = .025;
 			if (m_diff > m_eps || m_diff < -m_eps) {
 				this.slope[a_idx] = m;
 				// console.log(m_diff, this.prev_slope_change[a_idx]);
@@ -1842,6 +1845,7 @@ export class AMES_Transformation {
 		if (this.mapping == this.HUE || this.mapping == this.FILL_HUE) {
 			let saturation; let brightness;
 			if (this.mapping == this.FILL_HUE && a.poly.fillColor) {
+				// a.poly.fillColor.alpha = 1;
 				saturation = a.poly.fillColor.saturation;
 				if (saturation == 0) saturation = 1;
 				brightness = a.poly.fillColor.brightness;
