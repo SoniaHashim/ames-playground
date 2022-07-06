@@ -16,6 +16,8 @@ import {AMES_Collection} from './collection.js'
 import {AMES_Animation_Test, AMES_Animation} from './animations.js'
 import {AMES_Transformation} from './transformation.js'
 
+import regeneratorRuntime from "regenerator-runtime";
+
 // Globals for ames
 // ames.canvas_cx;
 // ames.canvas_cy;
