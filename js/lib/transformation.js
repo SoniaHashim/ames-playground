@@ -58,7 +58,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
     _defineProperty(this, "mapping_behavior", "interpolate");
 
-    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue"]);
+    _defineProperty(this, "mappings", ["motion path", "static scale", "scale animation", "duplicate each", "hue", "position", "fill-hue", "duplicate"]);
 
     _defineProperty(this, "typed_mappings", [{
       "mapping_type": "Polygon",
@@ -87,6 +87,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
     _defineProperty(this, "POSITION", 5);
 
     _defineProperty(this, "FILL_HUE", 6);
+
+    _defineProperty(this, "DUPLICATE", 7);
 
     _defineProperty(this, "NUMBER_OF_SIDES", -1);
 
@@ -210,9 +212,13 @@ var AMES_Transformation = /*#__PURE__*/function () {
                 if (this.tf_space_absolute) {
                   if (this.mapping == this.PLAYBACK) {
                     if (this.target.tf_space_absolute) {
-                      sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                      console.log("looping playback function: ", this.target.n_target);
+                      sv = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, this.target.n_target);
                       this.target.set_artwork_value_to(a, sv);
                     }
+
+                    this.curr_state[a_idx] = 0;
+                    this.curr_remainder[a_idx] = 0;
                   } else {
                     _sv = this.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
                     this.set_artwork_value_to(a, _sv);
@@ -312,24 +318,21 @@ var AMES_Transformation = /*#__PURE__*/function () {
                     var update = _this.get_transform_artwork_at_state(state_idx, a_idx, nxt_state_idx, n_target);
 
                     var d = update[DELTA];
-                    var t = update[DURATION];
+                    var t = update[DURATION]; // if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
+                    // 	this.tween(a_idx, a, d, 1, state_idx)
+                    // } else {
 
-                    if (_this.mapping == _this.DUPLICATE_EACH) {
-                      _this.tween(a_idx, a, d, 1, state_idx);
-                    } else {
-                      (function () {
-                        var t_frame = 1000 / ames.fps;
-                        var nframes = Math.ceil(t / t_frame);
+                    var t_frame = 1000 / ames.fps;
+                    var nframes = Math.ceil(t / t_frame);
 
+                    _this.tween(a_idx, a, d, nframes, state_idx);
+
+                    for (var n = 1; n < nframes; n++) {
+                      setTimeout(function () {
                         _this.tween(a_idx, a, d, nframes, state_idx);
+                      }, n * t_frame);
+                    } // }
 
-                        for (var n = 1; n < nframes; n++) {
-                          setTimeout(function () {
-                            _this.tween(a_idx, a, d, nframes, state_idx);
-                          }, n * t_frame);
-                        }
-                      })();
-                    }
 
                     setTimeout(function () {
                       _this.play_helper({
@@ -576,7 +579,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
       if (this.mapping == this.RELATIVE_POSITION) this.is_playable = false;
       if (this.mapping == this.RELATIVE_ANIMATION) this.is_playable = true;
 
-      if (this.mapping == this.DUPLICATE_EACH) {
+      if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
         this.is_playable = true;
       }
 
@@ -755,7 +758,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         return;
       }
 
-      if (this.mapping == this.DUPLICATE_EACH) {
+      if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
         var _my3 = Math.abs(this.linear_map(0, 25, 0, 1, BL.y - TL.y));
 
         this.set_tf_space({
@@ -930,7 +933,8 @@ var AMES_Transformation = /*#__PURE__*/function () {
           if (mode == "vertical" && _this2.tf_s_yflip) {
             min_check = _this2[value] + .5 < _this2[check_value];
           } else {
-            min_check = _this2[check_value] < _this2[value] - .5;
+            // min_check = (this[check_value] < this[value] - .5);
+            min_check = true;
           }
 
           if (check_mode == "max" || check_mode == "min" && min_check) {
@@ -1635,8 +1639,9 @@ var AMES_Transformation = /*#__PURE__*/function () {
           if (this.tf_space_absolute) {
             if (this.mapping == this.PLAYBACK) {
               if (this.target.tf_space_absolute) {
-                var _sv2 = this.target.get_value_at_target_index_for_path_offset(idx, 0, this.n_target);
+                var _sv2 = this.target.get_value_at_target_index_for_path_offset(idx, 0, n_target);
 
+                console.log(idx, 0, _sv2);
                 this.target.set_artwork_value_to(a, _sv2);
               }
             } else {
@@ -1665,6 +1670,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
         // Cannot trigger an animation that is already playing
         // if (this.is_playing[idx] == 1) return;
         // Reset playback trackers
+        if (!this.dx_total) this.setup_playback_trackers();
         this.dx_total[a_idx] = 0;
         this.dy_total[a_idx] = 0;
         this.v_total[a_idx] = 0;
@@ -1701,7 +1707,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
           if (this.tf_space_absolute) {
             if (this.mapping == this.PLAYBACK) {
               if (this.target.tf_space_absolute) {
-                var _sv5 = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, n_target);
+                var _sv5 = this.target.get_value_at_target_index_for_path_offset(a_idx, 0, this.target.n_target);
 
                 this.target.set_artwork_value_to(a, _sv5);
               }
@@ -1730,11 +1736,14 @@ var AMES_Transformation = /*#__PURE__*/function () {
         // a.poly.scaling = 1+d.y/f;
         var prev_sf = this.tween_helper_scale[a_idx];
         var sf = this.tf_my1 + this.dy_total[a_idx];
-        a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx]) / prev_sf;
-        this.tween_helper_scale[a_idx] = sf;
+
+        if (sf >= .25) {
+          a.poly.scaling = (this.tf_my1 + this.dy_total[a_idx]) / prev_sf;
+          this.tween_helper_scale[a_idx] = sf;
+        }
       }
 
-      if (this.mapping == this.DUPLICATE_EACH) {
+      if (this.mapping == this.DUPLICATE_EACH || this.mapping == this.DUPLICATE) {
         var next_clone_num = this.n_clones[a_idx] + 1;
         var eps = .015;
         var inc = this.dy_total[a_idx] - next_clone_num; // if ((-eps <= inc && inc <= 0) || (0 <= inc && inc <= eps))
@@ -1745,9 +1754,24 @@ var AMES_Transformation = /*#__PURE__*/function () {
           // let new_a = Object.create(a);
           // new_a.poly = a.poly.clone();
           this.n_clones[a_idx] += 1;
-          var new_a = a.clone();
-          new_a.poly.insertBelow(a.poly); // this.dy_total[a_idx] = 0;
+          var original = a;
+          var dup_idx = a_idx; // if (this.mapping == this.DUPLICATE) {
+          // 	let random_shape_idx = Math.floor(Math.random()*this.target.shapes.length);
+          // 	original = this.target.shapes[random_shape_idx];
+          // 	dup_idx = random_shape_idx;
+          // 	console.log(random_shape_idx, original);
+          // }
+
+          var new_a = original.clone();
+          new_a.poly.insertBelow(original.poly);
+          if (this.mapping == this.DUPLICATE) this.target.add_to_collection(new_a); // this.dy_total[a_idx] = 0;
           // if (a_idx == 1) console.log("making new instance", a_idx);
+          // if (this.mapping == this.DUPLICATE) {
+          // 	let n_t = Math.round(this.tf_my2 - 1) * this.target.shapes.length-1;
+          // 	this.trigger_new_instance(new_a, Math.floor(Math.random()*n_t), n_t);
+          // } else {
+          // 	this.trigger_new_instance(new_a, a_idx);
+          // }
 
           this.trigger_new_instance(new_a, a_idx);
         }
@@ -1847,20 +1871,36 @@ var AMES_Transformation = /*#__PURE__*/function () {
         var tf = this.transformation_functions_to_trigger[x];
 
         if (tf.condition == "end") {
-          if (tf.tf != "remove") tf.tf.trigger_function_for_target_idx(a, a_idx);else a.remove();
+          if (tf.tf != "remove") {
+            if (this.target == tf.tf.target) {
+              tf.tf.trigger_function_for_target_idx(a, a_idx);
+            } else {
+              tf.tf.transform();
+            }
+          } else a.remove();
         }
       }
     }
   }, {
     key: "trigger_new_instance",
-    value: function trigger_new_instance(a, a_idx) {
+    value: function trigger_new_instance(a, a_idx, n_target) {
       for (var x in this.transformation_functions_to_trigger) {
         var tf = this.transformation_functions_to_trigger[x];
         if (tf.condition == "new instance") console.log("trigger function for new instance", a_idx);
-        var n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
 
-        console.log("using n_target", n_target);
-        tf.tf.trigger_function_for_target_idx(a, this.n_clones[a_idx] - 1, n_target);
+        if (!n_target) {
+          n_target = Math.round(this.tf_my2 - 1); // TO DO: Update to support interpolation (calculate per a_idx)
+        }
+
+        var idx = this.n_clones[a_idx] - 1;
+        var total = n_target;
+
+        if (this.mapping == this.DUPLICATE) {
+          idx = Math.floor(Math.random() * n_target);
+        }
+
+        console.log("using n_target", n_target, "at", idx);
+        tf.tf.trigger_function_for_target_idx(a, idx, n_target);
       }
     }
   }, {
@@ -1957,7 +1997,7 @@ var AMES_Transformation = /*#__PURE__*/function () {
 
         var m = d.y / d.x;
         var m_diff = m - this.slope[a_idx];
-        var m_eps = .001;
+        var m_eps = .025;
 
         if (m_diff > m_eps || m_diff < -m_eps) {
           this.slope[a_idx] = m; // console.log(m_diff, this.prev_slope_change[a_idx]);
@@ -2111,10 +2151,17 @@ var AMES_Transformation = /*#__PURE__*/function () {
         var brightness;
 
         if (this.mapping == this.FILL_HUE && a.poly.fillColor) {
+          // a.poly.fillColor.alpha = 1;
           saturation = a.poly.fillColor.saturation;
           if (saturation == 0) saturation = 1;
           brightness = a.poly.fillColor.brightness;
-          a.poly.fillColor.hue = Math.round(sv.y);
+
+          if (this.tf_space_absolute) {
+            a.poly.fillColor.hue = Math.round(sv.y);
+          } else {
+            a.poly.fillColor.hue += Math.round(sv.y);
+          }
+
           a.poly.fillColor.saturation = saturation;
           a.poly.fillColor.brightness = brightness;
         }
@@ -2123,7 +2170,13 @@ var AMES_Transformation = /*#__PURE__*/function () {
           saturation = a.poly.strokeColor.saturation;
           if (saturation == 0) saturation = 1;
           brightness = a.poly.strokeColor.brightness;
-          a.poly.strokeColor.hue = Math.round(sv.y);
+
+          if (this.tf_space_absolute) {
+            a.poly.strokeColor.hue = Math.round(sv.y);
+          } else {
+            a.poly.strokeColor.hue += Math.round(sv.y);
+          }
+
           a.poly.strokeColor.saturation = saturation;
           a.poly.strokeColor.brightness = brightness;
         }

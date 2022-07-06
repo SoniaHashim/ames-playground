@@ -83,7 +83,8 @@ var AMES_Editor = /*#__PURE__*/function () {
       fontFamily: _utils.AMES_Utils.FONT,
       fontSize: _utils.AMES_Utils.FONT_SIZE
     });
-    box.addChild(n_text); // Add close icon
+    box.addChild(n_text);
+    this.name_label = n_text; // Add close icon
 
     var close_button = ames.icons["close"].clone();
     close_button.scaling = 0.75;
@@ -275,7 +276,7 @@ var AMES_Transformation_Editor = /*#__PURE__*/function (_AMES_Editor) {
       var box = new Path.Rectangle({
         point: new Point(x_off - 5, y_off),
         size: new Size(150, _utils.AMES_Utils.LAYER_HEIGHT * .75),
-        fillColor: _utils.AMES_Utils.INACTIVE_DARK_COLOR,
+        // fillColor: utils.INACTIVE_DARK_COLOR,
         strokeColor: _utils.AMES_Utils.INACTIVE_S_COLOR,
         strokeWidth: 1,
         radius: 1.25
@@ -1235,11 +1236,21 @@ var AMES_Collection_Editor = /*#__PURE__*/function (_AMES_Shape_Editor) {
 
     _classCallCheck(this, AMES_Collection_Editor);
 
-    _this11 = _super3.call(this, obj); // this.add_relative_index_to_constraint_info();
+    _this11 = _super3.call(this, obj);
 
     _defineProperty(_assertThisInitialized(_this11), "rel_idx_val", void 0);
 
     _defineProperty(_assertThisInitialized(_this11), "e_height", 175);
+
+    _this11.name_label.onClick = function (e) {
+      console.log("Click shortcut to sort right to left:", _this11.obj.name);
+      console.log(_this11.obj.shapes);
+
+      _this11.obj.sort_right_to_left();
+
+      console.log(_this11.obj.shapes);
+    }; // this.add_relative_index_to_constraint_info();
+
 
     return _this11;
   } // add_relative_index_to_constraint_info() {

@@ -483,8 +483,8 @@ var AMES = /*#__PURE__*/function () {
 
       var r_top = new Path.Rectangle({
         point: [100, 100],
-        size: [sidebar.bounds.width + 2, 22],
-        fillColor: "white"
+        size: [sidebar.bounds.width + 2, 22] // fillColor: "white"
+
       });
       r_top.position = new Point(sidebar.position.x, scrollbar_top - 10.25);
       var r_btm = r_top.clone();
@@ -1284,8 +1284,7 @@ var AMES = /*#__PURE__*/function () {
       if (step >= 0) {
         // Create polygon collection
         tri = new _artwork.AMES_Polygon();
-        tri.poly.strokeColor = "blue";
-        tri.poly.strokeWidth = 1.5;
+        tri.poly.strokeWidth = 2;
       }
 
       var poly_collection;
@@ -1300,9 +1299,10 @@ var AMES = /*#__PURE__*/function () {
 
       if (step >= 2) {
         // Create dot collection
-        dot = new _artwork.AMES_Ellipse();
-        dot.poly.fillColor = "blue";
-        dot.poly.strokeWidth = 0;
+        dot = new _artwork.AMES_Ellipse({
+          r: 5
+        });
+        dot.poly.strokeWidth = 3;
         dot_collection = new _collection.AMES_Collection([dot]);
         dot_collection.set_count(6);
       }
@@ -1334,7 +1334,7 @@ var AMES = /*#__PURE__*/function () {
       if (step >= 4) {
         // Create static scaling transformation function using a line
         line2 = new _artwork.AMES_Artwork_Path();
-        line2.add_points([new Point(100, 450), new Point(200, 250)]); // line2.add_points([new Point(100, 450), new Point(200, 250)]);
+        line2.add_points([new Point(100, 450), new Point(200, 350)]); // line2.add_points([new Point(100, 450), new Point(200, 250)]);
         // line2.add_points([new Point(100, 300), new Point(200, 250)]);
 
         tf_scale_tri = new _transformation.AMES_Transformation({
@@ -1342,6 +1342,8 @@ var AMES = /*#__PURE__*/function () {
           "target": poly_collection,
           "mapping": "static scale"
         });
+        tf_scale_tri.tf_my1 = 1;
+        tf_scale_tri.tf_my2 = 3;
         tf_scale_tri.transform();
         if (step == 4) tf_motion_path.transform();
       }
@@ -1365,8 +1367,8 @@ var AMES = /*#__PURE__*/function () {
       }
 
       if (step >= 6) {
-        tf_motion_path.tf_space_speed_factor = 1;
-        tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
+        // tf_motion_path.tf_space_speed_factor = 1;
+        // tf_motion_path.tf_space_speed = tf_motion_path.SPEED_LINEAR;
         if (step == 6) tf_motion_path.transform();
       }
 
@@ -1375,7 +1377,7 @@ var AMES = /*#__PURE__*/function () {
 
       if (step >= 7) {
         line3 = new _artwork.AMES_Artwork_Path();
-        line3.add_points([new Point(100, 550), new Point(200, 500)]);
+        line3.add_points([new Point(100, 550), new Point(100, 545)]);
         tf_duplicate_dots = new _transformation.AMES_Transformation({
           "input": line3,
           "target": dot_collection,
@@ -1397,7 +1399,7 @@ var AMES = /*#__PURE__*/function () {
         // Create scaling animation using a cirlce in image space (ease in and out)
         circle = new _artwork.AMES_Ellipse({
           "centroid": new Point(325, 150),
-          "r": 50
+          "r": 10
         });
         quick_flare = new _artwork.AMES_Artwork_Path();
         quick_flare.add_points([new Point(325, 200), new Point(325, 100), new Point(275, 100), new Point(325, 200)]);
@@ -1418,9 +1420,10 @@ var AMES = /*#__PURE__*/function () {
 
       if (step >= 9) {
         tf_scale_dots.use_playback_points_to_trigger_transformation({
-          "tf": null,
-          "condition": "remove at end"
+          "tf": "remove",
+          "condition": "end"
         });
+        tf_motion_path.loop = true;
         if (step == 9) tf_motion_path.transform();
       }
 
@@ -2076,7 +2079,8 @@ var AMES = /*#__PURE__*/function () {
         if (!x) return;
         square_tool.onMouseDrag = null;
         x.to_path();
-        x.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR; // this.add_shape(x);
+        x.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
+        x.poly.fillColor.alpha = 0; // this.add_shape(x);
 
         x = null;
       };
@@ -2117,7 +2121,8 @@ var AMES = /*#__PURE__*/function () {
         if (!c) return;
         circle_tool.onMouseDrag = null;
         c.to_path();
-        c.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR; // this.add_shape(c);
+        c.poly.fillColor = _utils.AMES_Utils.INACTIVE_COLOR;
+        c.poly.fillColor.alpha = 0.01; // this.add_shape(c);
 
         c = null;
       };

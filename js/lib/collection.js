@@ -195,6 +195,14 @@ var AMES_Collection = /*#__PURE__*/function () {
   }
 
   _createClass(AMES_Collection, [{
+    key: "sort_right_to_left",
+    value: function sort_right_to_left() {
+      // Sort shapes by x_position
+      this.shapes = this.shapes.sort(function (a, b) {
+        return b.poly.position.x - a.poly.position.x;
+      });
+    }
+  }, {
     key: "get_type",
     value: function get_type() {
       return this.type;
@@ -302,25 +310,27 @@ var AMES_Collection = /*#__PURE__*/function () {
   }, {
     key: "set_count",
     value: function set_count(n) {
-      // Count has to be greater than or equal to 1
-      if (n < 1) return;
-
-      if (this.shapes.length == 1) {
-        var og = this.shapes[0]; // this.shapes = [];
-
-        for (var i = 1; i < n; i++) {
-          var a = og.clone();
-          var c = i * 10;
-          a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
-          this.shapes.push(a);
-          a.add_collection(this); // this.add_to_collection(a, true);
-
-          ames.hide_editors(this);
-          this.show(true);
-        }
-
-        console.log("setting count");
-      } else {// Increase copies using first and last
+      // // Count has to be greater than or equal to 1
+      // if (n < 1) return;
+      // if (this.shapes.length == 1) {
+      // 	let og = this.shapes[0];
+      // 	// this.shapes = [];
+      // 	for (let i = 1; i < n; i++) {
+      // 		let a = og.clone();
+      // 		let c = i*10;
+      // 		a.poly.position = new Point(og.poly.position.x + c, og.poly.position.y + c);
+      // 		this.shapes.push(a);
+      // 		a.add_collection(this);
+      // 		// this.add_to_collection(a, true);
+      // 		ames.hide_editors(this);
+      // 		this.show(true);
+      // 	}
+      // 	console.log("setting count", );
+      // } else {
+      // 	// Increase copies using first and last
+      // }
+      for (var i = 0; i < n - 1; i++) {
+        this.duplicate();
       }
     }
   }, {
